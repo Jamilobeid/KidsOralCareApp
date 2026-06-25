@@ -1,0 +1,19 @@
+﻿{
+  "children": [
+    {
+      "id": "demo-child-1",
+      "nickname": "Sparkle",
+      "age": 7,
+      "ageGroup": "6-8",
+      "avatar": "star",
+      "theme": "ocean",
+      "points": 780,
+      "level": 4
+    }
+  ],
+  "challenges": [
+    { "id": "daily-two-brushes", "cadence": "daily", "points": 40 },
+    { "id": "weekly-streak", "cadence": "weekly", "points": 120 }
+  ],
+  "privacyNote": "Leaderboard entries should use nickname and avatar only, never full child names or contact details."
+}

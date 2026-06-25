@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "Kids Oral Care",
+    "slug": "kids-oral-care",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#7BDFF2",
+      "resizeMode": "contain"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.example.kidsoralcare"
+    },
+    "android": {
+      "package": "com.example.kidsoralcare",
+      "adaptiveIcon": {
+        "backgroundColor": "#7BDFF2"
+      },
+      "permissions": [
+        "POST_NOTIFICATIONS"
+      ]
+    },
+    "plugins": [
+      "expo-localization",
+      "expo-notifications",
+      "expo-av",
+      "expo-asset"
+    ]
+  }
+}
