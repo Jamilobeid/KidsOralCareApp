@@ -1,4 +1,5 @@
 ﻿export type LanguageCode = 'en' | 'fr' | 'ar';
+export type AuthMode = 'login' | 'signup';
 export type AgeGroup = '3-5' | '6-8' | '9-12';
 export type ThemeName = 'ocean' | 'sunny' | 'mint' | 'berry';
 

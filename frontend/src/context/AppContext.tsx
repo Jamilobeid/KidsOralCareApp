@@ -1,13 +1,15 @@
 ﻿import React, { createContext, useContext, useMemo, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
 import { avatarOptions, challenges as initialChallenges, childProfile as demoChild, games, leaderboard } from '../data/demoData';
 import { themes } from '../data/themes';
 import { applyTextDirection, getInitialLanguage, translate } from '../i18n/translations';
 import { scheduleDailyReminder } from '../services/reminders';
-import { ChildProfile, Challenge, LanguageCode, ReminderSettings, RootScreen, ThemeName } from '../types/app';
+import { AuthMode, ChildProfile, Challenge, LanguageCode, ReminderSettings, RootScreen, ThemeName } from '../types/app';
 
 const initialLanguage = getInitialLanguage();
 applyTextDirection(initialLanguage);
+const REMEMBERED_CHILD_KEY = 'kidsOralCare:rememberedChild';
 
 type AppContextValue = {
   screen: RootScreen;
@@ -18,8 +20,10 @@ type AppContextValue = {
   isRtl: boolean;
   child: ChildProfile;
   username: string;
-  signInChild: (username: string, password: string) => void;
-  registerChild: (username: string, password: string) => void;
+  authMode: AuthMode;
+  setAuthMode: (mode: AuthMode) => void;
+  signInChild: (username: string, password: string, remember?: boolean) => void;
+  registerChild: (username: string, password: string, age?: number) => void;
   theme: (typeof themes)[ThemeName];
   reminders: ReminderSettings;
   setReminders: (settings: ReminderSettings) => void;
@@ -43,6 +47,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [language, setLanguageState] = useState<LanguageCode>(initialLanguage);
   const [child, setChild] = useState<ChildProfile>(demoChild);
   const [username, setUsername] = useState(demoChild.nickname);
+  const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [reminders, setReminders] = useState<ReminderSettings>({ morning: '07:30', evening: '19:30' });
   const [brushingCountToday, setBrushingCountToday] = useState(1);
   const [gamePlays, setGamePlays] = useState<Record<string, number>>({ 'plaque-pop': 1 });
@@ -56,39 +61,54 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     setLanguageState(nextLanguage);
   };
 
+  React.useEffect(() => {
+    const restoreRememberedChild = async () => {
+      const savedUsername = await AsyncStorage.getItem(REMEMBERED_CHILD_KEY);
+      if (savedUsername) {
+        applyChildUsername(savedUsername);
+      }
+    };
+
+    restoreRememberedChild();
+  }, []);
+
   const addPoints = (points: number) => {
     setChild((current) => ({ ...current, points: current.points + points, level: Math.max(current.level, Math.floor((current.points + points) / 200) + 1) }));
   };
 
-  const applyChildUsername = (nextUsername: string) => {
+  const applyChildUsername = (nextUsername: string, nextAge?: number) => {
     const cleanUsername = nextUsername.trim() || demoChild.nickname;
     setUsername(cleanUsername);
-    setChild((current) => ({ ...current, nickname: cleanUsername }));
+    setChild((current) => ({ ...current, nickname: cleanUsername, age: nextAge ?? current.age }));
     setScreen('childHome');
   };
 
-  const signInChild = (nextUsername: string, password: string) => {
+  const signInChild = async (nextUsername: string, password: string, remember = false) => {
     if (!nextUsername.trim() || !password.trim()) {
       Alert.alert(t('missingLogin'));
       return;
     }
+    if (remember) {
+      await AsyncStorage.setItem(REMEMBERED_CHILD_KEY, nextUsername.trim());
+    } else {
+      await AsyncStorage.removeItem(REMEMBERED_CHILD_KEY);
+    }
     applyChildUsername(nextUsername);
   };
 
-  const registerChild = (nextUsername: string, password: string) => {
+  const registerChild = (nextUsername: string, password: string, age?: number) => {
     if (!nextUsername.trim() || password.trim().length < 4) {
       Alert.alert(t('passwordHint'));
       return;
     }
-    applyChildUsername(nextUsername);
+    applyChildUsername(nextUsername, age);
     Alert.alert(t('accountReady'), nextUsername.trim());
   };
 
   const completeBrushing = () => {
     setBrushingCountToday((value) => Math.min(value + 1, 2));
     setChallenges((items) => items.map((challenge) => challenge.id === 'daily-two-brushes' || challenge.id === 'weekly-streak' ? { ...challenge, progress: Math.min(challenge.progress + 1, challenge.target) } : challenge));
-    addPoints(30);
-    Alert.alert(t('earnedReward'), '+30 ' + t('points'));
+    addPoints(20);
   };
 
   const playGame = (gameId: string) => {
@@ -114,8 +134,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const updateTheme = (themeName: ThemeName) => setChild((current) => ({ ...current, theme: themeName }));
 
   const value = useMemo<AppContextValue>(() => ({
-    screen, setScreen, language, setLanguage, t, isRtl, child, username, signInChild, registerChild, theme: themes[child.theme], reminders, setReminders, saveReminders, brushingCountToday, completeBrushing, gamePlays, playGame, challenges, updateAvatar, updateTheme, games, leaderboard, avatarOptions
-  }), [screen, language, child, reminders, brushingCountToday, gamePlays, challenges]);
+    screen, setScreen, language, setLanguage, t, isRtl, child, username, authMode, setAuthMode, signInChild, registerChild, theme: themes[child.theme], reminders, setReminders, saveReminders, brushingCountToday, completeBrushing, gamePlays, playGame, challenges, updateAvatar, updateTheme, games, leaderboard, avatarOptions
+  }), [screen, language, child, authMode, reminders, brushingCountToday, gamePlays, challenges]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
