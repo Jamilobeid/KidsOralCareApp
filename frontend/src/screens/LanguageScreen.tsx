@@ -34,22 +34,24 @@ export const LanguageScreen = () => {
             <Image accessibilityLabel="Smiling earth globe" source={globeImage} style={styles.globe} resizeMode="contain" />
           </View>
 
-          <Text style={[bodyFont, styles.subtitle]}>Choose a language</Text>
+          <View style={styles.languagePanel}>
+            <Text style={[bodyFont, styles.subtitle]}>Choose a language</Text>
 
-          <View style={styles.buttonGroup}>
-            {languageOptions.map((option) => (
-              <Pressable
-                key={option.code}
-                accessibilityRole="button"
-                accessibilityLabel={`Choose ${option.label}`}
-                onPress={() => chooseLanguage(option.code)}
-                style={({ pressed }) => [styles.languageButton, pressed && styles.languageButtonPressed]}
-              >
-                <Image source={option.flag} style={styles.flagImage} resizeMode="contain" />
-                <Text style={[headingFont, styles.languageLabel]}>{option.label}</Text>
-              </Pressable>
-            ))}
-          </View>
+            <View style={styles.buttonGroup}>
+              {languageOptions.map((option) => (
+                <Pressable
+                  key={option.code}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Choose ${option.label}`}
+                  onPress={() => chooseLanguage(option.code)}
+                  style={({ pressed }) => [styles.languageButton, pressed && styles.languageButtonPressed]}
+                >
+                  <Image source={option.flag} style={styles.flagImage} resizeMode="contain" />
+                  <Text style={[headingFont, styles.languageLabel]}>{option.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+            </View>
         </View>
       </SafeAreaView>
     </LinearGradient>
@@ -66,8 +68,22 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 47,
+    paddingHorizontal: 24,
     paddingBottom: 28
+  },
+  languagePanel: {
+    alignSelf: 'stretch',
+    backgroundColor: '#F7FBFF',
+    borderRadius: 34,
+    paddingHorizontal: 22,
+    paddingTop: 30,
+    paddingBottom: 34,
+    gap: 17,
+    shadowColor: '#17324D',
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 15
   },
   titleRow: {
     alignItems: 'center',
@@ -87,11 +103,12 @@ const styles = StyleSheet.create({
     width: 76
   },
   subtitle: {
-    color: '#111111',
+    color: '#000000',
     fontSize: 20,
     lineHeight: 27,
     marginBottom: 36,
-    marginLeft: 18
+    marginLeft: 18,
+    fontFamily: 'Fredoka_700Bold'
   },
   buttonGroup: {
     gap: 28

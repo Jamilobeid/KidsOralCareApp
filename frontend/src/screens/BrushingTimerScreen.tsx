@@ -181,24 +181,23 @@ const styles = StyleSheet.create({
     width: '100%'
   },
   titleLeft: {
-    color: '#050505',
+    color: '#41438F',
     fontFamily: 'Fredoka_700Bold',
-    fontSize: 42,
-    fontWeight: '900',
-    lineHeight: 43
+    fontSize: 40,
+    lineHeight: 48,
+    marginRight: 100
   },
   titleRight: {
-    color: '#050505',
+    color: '#41438F',
     fontFamily: 'Fredoka_700Bold',
-    fontSize: 42,
-    fontWeight: '900',
-    lineHeight: 43,
-    marginLeft: 76,
+    fontSize: 40,
+    lineHeight: 48,
+    marginLeft: 130,
     marginTop: -3,
     width: 265
   },
   subtitleLeft: {
-    color: '#6F8184',
+    color: '#454f59',
     fontSize: 16,
     lineHeight: 22,
     marginLeft: 0,
@@ -209,15 +208,15 @@ const styles = StyleSheet.create({
   toothRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 10,
+    gap: 25,
     justifyContent: 'flex-end',
     position: 'absolute',
-    right: 92,
-    top: 96
+    right: 55,
+    top: 80
   },
   topTooth: {
-    height: 53,
-    width: 53
+    height: 75,
+    width: 75
   },
   topToothOne: {
     marginTop: 1,
@@ -233,15 +232,7 @@ const styles = StyleSheet.create({
     transform: [{ rotate: '8deg' }]
   },
   panel: {
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderColor: '#050505',
-    borderRadius: 8,
-    borderWidth: 4,
-    minHeight: 510,
-    paddingBottom: 18,
-    paddingHorizontal: 24,
-    paddingTop: 44
+    gap: 14, alignItems: 'center', backgroundColor: '#F7FFFC',borderWidth: 0, borderRadius: 28, shadowColor: '#17324D', shadowOpacity: 0.09, shadowRadius: 9, shadowOffset: { width: 0, height: 5 }, elevation: 3, paddingBottom: 28, paddingHorizontal: 24, paddingTop: 20
   },
   mouthWrap: {
     alignItems: 'center',
@@ -266,30 +257,26 @@ const styles = StyleSheet.create({
   },
   timerPart: {
     color: '#050505',
-    fontFamily: Platform.select({ ios: 'Arial', android: 'sans-serif-black', default: 'Arial' }),
-    fontSize: 48,
-    fontStyle: 'italic',
-    fontWeight: '900',
+    fontFamily: 'Fredoka_700Bold',
+    fontSize: 50,
     lineHeight: 58,
     minWidth: 76,
     textAlign: 'center'
   },
   timerSeparator: {
     color: '#050505',
-    fontFamily: Platform.select({ ios: 'Arial', android: 'sans-serif-black', default: 'Arial' }),
-    fontSize: 48,
-    fontStyle: 'italic',
-    fontWeight: '900',
+    fontFamily: 'Fredoka_700Bold',
+    fontSize: 50,
     lineHeight: 58,
-    marginHorizontal: 2,
     textAlign: 'center'
   },
   encouragement: {
-    color: '#6F6F6F',
+    color: '#979595',
     fontSize: 18,
     lineHeight: 22,
     marginBottom: 24,
-    textAlign: 'center'
+    textAlign: 'center',
+    fontFamily: 'Fredoka_700Bold'
   },
   instruction: {
     color: '#050505',
@@ -318,6 +305,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#DDF8DD',
     borderRadius: 999,
     height: 19,
+    marginBottom: 8,
     overflow: 'hidden',
     width: '88%'
   },
@@ -370,7 +358,7 @@ const styles = StyleSheet.create({
   buttons: {
     flexDirection: 'row',
     gap: 16,
-    marginTop: 8
+    marginTop: 26
   },
   actionButton: {
     alignItems: 'center',

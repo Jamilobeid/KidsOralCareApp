@@ -1,137 +1,228 @@
-﻿import React from 'react';
-import { Image, ImageSourcePropType, StyleSheet, Text, View } from 'react-native';
-import { AnimatedStatIcon } from '../components/AnimatedMascots';
-import { Card } from '../components/Card';
+import React from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { Alert, Image, ImageSourcePropType, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '../components/Screen';
-import { BodyText, Title } from '../components/Typography';
 import { useApp } from '../context/AppContext';
+import { toothBuddies } from '../data/toothBuddies';
 import { rewardFont } from '../utils/kidStyle';
 
-const badgeLabels: Record<string, string> = {
-  'morning-hero': 'Morning Hero',
-  'seven-day-smile': 'Seven-day Smile',
-  'food-detective': 'Food Detective'
-};
+const LEVEL_COUNT = 5;
+const STARS_PER_LEVEL = 200;
 
-const badgeImages: Record<string, ImageSourcePropType> = {
-  'morning-hero': require('../../assets/images/rewards-badge-morning-edge-cutout.png'),
-  'seven-day-smile': require('../../assets/images/rewards-badge-seven-day.png'),
-  'food-detective': require('../../assets/images/rewards-badge-food.png')
-};
+const badgeDefinitions = [
+  { id: 'first-brush', title: 'First Brush', image: require('../../assets/images/rewards-badge-first-brush-custom.png'), isNew: false },
+  { id: 'three-day-streak', title: '3-Day Streak', image: require('../../assets/images/rewards-badge-three-day-custom.png'), isNew: false },
+  { id: 'week-warrior', title: 'Week Warrior', image: require('../../assets/images/rewards-badge-week-warrior-custom.png'), isNew: false },
+  { id: 'morning-hero', title: 'Morning Hero', image: require('../../assets/images/rewards-badge-morning-hero-custom.png'), isNew: true },
+  { id: 'night-owl', title: 'Night Owl', image: require('../../assets/images/rewards-badge-night-owl-custom.png'), isNew: false },
+  { id: 'perfect-timer', title: 'Perfect Timer', image: require('../../assets/images/rewards-badge-perfect-timer-custom.png'), isNew: false },
+  { id: 'cavity-crusher', title: 'Cavity Crusher', image: require('../../assets/images/rewards-badge-cavity-crusher-custom.png'), isNew: false },
+  { id: 'sparkle-master', title: 'Sparkle Master', image: require('../../assets/images/rewards-badge-sparkle-master-custom.png'), isNew: false }
+];
 
-const levelImages: Record<number, ImageSourcePropType> = {
-  1: require('../../assets/images/rewards-level-1-cutout.png'),
-  2: require('../../assets/images/rewards-level-2-cutout.png'),
-  3: require('../../assets/images/rewards-level-3-cutout.png'),
-  4: require('../../assets/images/rewards-level-4-cutout.png'),
-  5: require('../../assets/images/rewards-level-5-cutout.png')
-};
-
-const prettyBadge = (badge: string) => badgeLabels[badge] ?? badge.replace(/-/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
-const getLevelImage = (level: number) => levelImages[Math.min(Math.max(level, 1), 5)];
-const getBadgeImage = (badge: string) => badgeImages[badge] ?? require('../../assets/images/rewards-badge-shield.png');
+const getProgress = (progress: number, target: number) => Math.min(progress / target, 1);
 
 export const RewardsScreen = () => {
-  const { t, child, theme } = useApp();
-  const nextLevelPoints = Math.max(0, child.level * 200 - child.points);
+  const { child, theme, brushingCountToday, challenges, chooseCharacter } = useApp();
+
+  const level = Math.min(Math.floor(child.points / STARS_PER_LEVEL) + 1, LEVEL_COUNT);
+  const levelStart = (level - 1) * STARS_PER_LEVEL;
+  const nextLevelAt = level * STARS_PER_LEVEL;
+  const starsIntoLevel = level === LEVEL_COUNT ? STARS_PER_LEVEL : child.points - levelStart;
+  const starsToNextLevel = level === LEVEL_COUNT ? 0 : Math.max(nextLevelAt - child.points, 0);
+  const progress = level === LEVEL_COUNT ? 1 : Math.min(Math.max(starsIntoLevel / STARS_PER_LEVEL, 0), 1);
+  const weeklyStreak = challenges.find((challenge) => challenge.id === 'weekly-streak');
+  const weeklyGames = challenges.find((challenge) => challenge.id === 'weekly-games');
+  const dailyBrushes = challenges.find((challenge) => challenge.id === 'daily-two-brushes');
+
+  const unlockedBadges = new Set<string>();
+  if (brushingCountToday >= 1 || child.points >= 20) unlockedBadges.add('first-brush');
+  if ((weeklyStreak?.progress ?? 0) >= 3) unlockedBadges.add('three-day-streak');
+  if ((weeklyStreak?.progress ?? 0) >= 5) unlockedBadges.add('week-warrior');
+  if (child.badges.includes('morning-hero') || brushingCountToday >= 1) unlockedBadges.add('morning-hero');
+  if (brushingCountToday >= 2) unlockedBadges.add('night-owl');
+  if (dailyBrushes && getProgress(dailyBrushes.progress, dailyBrushes.target) >= 1) unlockedBadges.add('perfect-timer');
+  if (weeklyGames && getProgress(weeklyGames.progress, weeklyGames.target) >= 1) unlockedBadges.add('cavity-crusher');
+  if (level >= LEVEL_COUNT) unlockedBadges.add('sparkle-master');
+
+  const handleBuddyPress = (buddy: (typeof toothBuddies)[number], unlocked: boolean) => {
+    if (unlocked) {
+      chooseCharacter(buddy.id);
+      return;
+    }
+    Alert.alert('Keep leveling up', `${buddy.title} unlocks at Level ${buddy.requiredLevel}.`);
+  };
 
   return (
-    <Screen contentContainerStyle={styles.screen}>
-      <Title size={38}>{t('rewards')}</Title>
-
-      <View style={styles.rewardStrip}>
-        <Image source={require('../../assets/images/rewards-smiling-star-cutout.png')} style={styles.starImage} resizeMode="contain" />
-        <View style={styles.stripTextWrap}>
-          <Text style={[rewardFont, styles.stripValue]}>{child.points}</Text>
-          <Text style={[rewardFont, styles.stripLabel]}>MY Smile Stars</Text>
-        </View>
+    <Screen contentContainerStyle={styles.screen} gradientBackground showDecorations={false}>
+      <View style={styles.header}>
+        <Text style={[rewardFont, styles.pageTitle, { color: theme.text }]}>Rewards</Text>
       </View>
 
-      <View style={[styles.rewardStrip, styles.levelStrip]}>
-        <Image source={getLevelImage(child.level)} style={styles.levelImage} resizeMode="contain" />
-        <View style={styles.stripTextWrap}>
-          <Text style={[rewardFont, styles.stripValue]}>Level {child.level}</Text>
-          <Text style={[rewardFont, styles.stripLabel, styles.stripSubLabel]}>{nextLevelPoints === 0 ? 'Next Level Is Ready!' : `${nextLevelPoints} Stars to the Next Level`}</Text>
+      <View style={styles.heroCard}>
+        <View style={styles.starHeroWrap}>
+          <Image source={require('../../assets/images/rewards-smile-star-clean-transparent.png')} style={styles.heroStar} resizeMode="contain" />
+          <View style={styles.levelPill}><Text style={styles.levelPillText}>Lv {level}</Text></View>
         </View>
-      </View>
-
-      <Card style={styles.badgesCard}>
-        <View style={styles.badgeHeader}>
-          <View style={styles.badgeTitleWrap}>
-            <Title size={28}>{t('badges')}</Title>
-            <Image source={require('../../assets/images/rewards-badge-shield.png')} style={styles.headerMedal} resizeMode="contain" />
+        <View style={styles.heroContent}>
+          <Text style={styles.heroLabel}>SMILE STARS</Text>
+          <Text style={styles.heroPoints}>{child.points}</Text>
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
           </View>
-          <Text style={[rewardFont, styles.badgeCount, { color: theme.text }]}>{child.badges.length}/8</Text>
+          <Text style={styles.heroHint}>{level === LEVEL_COUNT ? 'Max level reached' : `${starsToNextLevel} stars to Level ${level + 1}`}</Text>
         </View>
+      </View>
 
-        {child.badges.map((badge) => (
-          <View key={badge} style={styles.badgeRow}>
-            <View style={styles.badgeIconTile}>
-              <Image source={getBadgeImage(badge)} style={styles.rowMedal} resizeMode="contain" />
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>My Badges</Text>
+        <Text style={styles.sectionMeta}>{unlockedBadges.size} / {badgeDefinitions.length}</Text>
+      </View>
+
+      <View style={styles.badgeList}>
+        {badgeDefinitions.map((badge) => {
+          const unlocked = unlockedBadges.has(badge.id);
+          return (
+            <View key={badge.id} style={[styles.badgeRow, !unlocked && styles.badgeRowLocked]}>
+              <View style={[styles.badgeIcon, !unlocked && styles.lockedIcon]}>
+                <Image source={badge.image as ImageSourcePropType} style={[styles.badgeImage, !unlocked && styles.lockedImage]} resizeMode="contain" />
+                {!unlocked ? <View style={styles.lockOverlay}><Text style={styles.lockText}>LOCKED</Text></View> : null}
+              </View>
+              <View style={styles.badgeCopy}>
+                <Text style={[styles.badgeName, !unlocked && styles.lockedText]}>{badge.title}</Text>
+                <Text style={[styles.badgeStatus, !unlocked && styles.lockedText]}>{unlocked ? 'Unlocked' : 'Keep brushing to unlock'}</Text>
+              </View>
+              {unlocked && badge.isNew ? <Text style={styles.newPill}>NEW</Text> : null}
             </View>
-            <Text style={[rewardFont, styles.badgeText, { color: theme.text }]}>{prettyBadge(badge)}</Text>
-            <AnimatedStatIcon type="check" />
-          </View>
-        ))}
-      </Card>
+          );
+        })}
+      </View>
 
-      <Card style={styles.unlockedCard}>
-        <Title size={22}>{t('unlocked')}</Title>
-        <View style={styles.unlockedList}>
-          {child.unlockedCharacters.map((name) => <BodyText key={name}>- {name}</BodyText>)}
-        </View>
-      </Card>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>My Tooth Buddies</Text>
+        <Text style={styles.sectionMeta}>Unlock by level</Text>
+      </View>
+
+      <View style={styles.buddyGrid}>
+        {toothBuddies.map((buddy) => {
+          const unlocked = level >= buddy.requiredLevel;
+          const active = unlocked && child.selectedCharacter === buddy.id;
+          return (
+            <Pressable key={buddy.id} style={[styles.buddyCard, !unlocked && styles.buddyCardLocked, active && styles.buddyCardActive]} onPress={() => handleBuddyPress(buddy, unlocked)}>
+              <View style={[styles.buddyAvatar, { backgroundColor: buddy.tone }]}>
+                <Image source={buddy.image as ImageSourcePropType} style={[styles.buddyImage, !unlocked && styles.lockedBuddyImage]} resizeMode="contain" />
+                {!unlocked ? <View style={styles.buddyLockOverlay}><Ionicons name="lock-closed" size={14} color="#FFFFFF" /><Text style={styles.lockText}>LEVEL {buddy.requiredLevel}</Text></View> : null}
+              </View>
+              <Text style={styles.buddyName}>{buddy.title}</Text>
+              <Text style={styles.buddySubtitle}>{buddy.subtitle}</Text>
+              {unlocked ? (
+                <View style={[styles.chooseButton, active && styles.activeButton]}>
+                  <Text style={[styles.chooseText, active && styles.activeText]}>{active ? 'Active' : 'Choose'}</Text>
+                </View>
+              ) : (
+                <View style={styles.levelLockButton}>
+                  <Ionicons name="lock-closed" size={17} color="#8A6A1D" />
+                  <Text style={styles.levelLockText}>Level {buddy.requiredLevel}</Text>
+                </View>
+              )}
+            </Pressable>
+          );
+        })}
+      </View>
     </Screen>
   );
 };
 
 const styles = StyleSheet.create({
-  screen: { gap: 18, paddingBottom: 28 },
-  rewardStrip: {
-    minHeight: 112,
-    borderRadius: 28,
-    paddingHorizontal: 24,
-    paddingVertical: 16,
+  screen: { gap: 16, paddingBottom: 34 },
+  header: { minHeight: 46, alignItems: 'center', justifyContent: 'center' },
+  pageTitle: { fontSize: 26, lineHeight: 32, textAlign: 'center', fontFamily: 'Fredoka_700Bold' },
+  heroCard: {
+    minHeight: 200,
+    borderRadius: 30,
+    backgroundColor: 'rgba(239,255,253,0.92)',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 20,
-    backgroundColor: '#FFC84D',
-    shadowColor: '#C78000',
-    shadowOpacity: 0.24,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 5
+    paddingHorizontal: 30,
+    paddingVertical: 24,
+    gap: 24,
+    shadowColor: '#173D3B',
+    shadowOpacity: 0.13,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 8
   },
-  levelStrip: {
-    backgroundColor: '#76D4F4',
-    shadowColor: '#189AD6'
-  },
-  stripTextWrap: { flex: 1, justifyContent: 'center' },
-  stripValue: { color: '#FFFFFF', fontSize: 38, lineHeight: 43, fontWeight: '900' },
-  stripLabel: { color: '#FFFFFF', fontSize: 18, lineHeight: 23, fontWeight: '900' },
-  stripSubLabel: { fontStyle: 'italic' },
-  starImage: { width: 86, height: 78 },
-  levelImage: { width: 88, height: 88 },
-  badgesCard: { gap: 14, paddingVertical: 20 },
-  badgeHeader: { marginBottom: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  badgeTitleWrap: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  badgeCount: { fontSize: 17, fontWeight: '900', opacity: 0.55 },
-  headerMedal: { width: 54, height: 54 },
+  starHeroWrap: { width: 126, height: 138, alignItems: 'center', justifyContent: 'center' },
+  heroStar: { width: 122, height: 122 },
+  levelPill: { position: 'absolute', bottom: 0, right: 7, borderRadius: 999, backgroundColor: '#FFFFFF', paddingHorizontal: 13, paddingVertical: 5, shadowColor: '#173D3B', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 3 },
+  levelPillText: { color: '#087C72', fontFamily: 'Fredoka_700Bold', fontSize: 16, lineHeight: 18 },
+  heroContent: { flex: 1, gap: 7 },
+  heroLabel: { color: '#708C89', fontFamily: 'Fredoka_700Bold', fontSize: 15, letterSpacing: 0 },
+  heroPoints: { color: '#087C72', fontFamily: 'Fredoka_700Bold', fontSize: 44, lineHeight: 50 },
+  progressTrack: { height: 15, borderRadius: 999, backgroundColor: '#CFFBF2', overflow: 'hidden', marginTop: 6 },
+  progressFill: { height: '100%', borderRadius: 999, backgroundColor: '#26C8D9' },
+  heroHint: { color: '#708C89', fontFamily: 'Fredoka_700Bold', fontSize: 15, lineHeight: 20 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 8 },
+  sectionTitle: { color: '#173D3B', fontFamily: 'Fredoka_700Bold', fontSize: 27, lineHeight: 34 },
+  sectionMeta: { color: '#6A8380', fontFamily: 'Fredoka_700Bold', fontSize: 16, lineHeight: 24 },
+  badgeList: { gap: 12 },
   badgeRow: {
-    minHeight: 86,
+    minHeight: 110,
+    borderRadius: 25,
+    backgroundColor: 'rgba(244,255,253,0.92)',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#76D8E8'
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    gap: 18,
+    shadowColor: '#173D3B',
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 4
   },
-  badgeIconTile: { width: 64, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center', overflow: 'visible' },
-  rowMedal: { width: 58, height: 58 },
-  badgeText: { flex: 1, fontSize: 21, fontWeight: '900' },
-  unlockedCard: { gap: 8 },
-  unlockedList: { gap: 4 }
+  badgeRowLocked: { backgroundColor: 'rgba(226,250,247,0.82)', opacity: 0.92 },
+  badgeIcon: { width: 72, height: 72, borderRadius: 22, alignItems: 'center', justifyContent: 'center', shadowColor: '#173D3B', shadowOpacity: 0.13, shadowRadius: 7, shadowOffset: { width: 0, height: 4 }, elevation: 3 },
+  lockedIcon: { opacity: 0.5 },
+  badgeImage: { width: 72, height: 72 },
+  lockedImage: { opacity: 0.48 },
+  lockOverlay: { position: 'absolute', left: 8, right: 8, bottom: 8, borderRadius: 999, backgroundColor: 'rgba(23,61,59,0.78)', paddingVertical: 2, alignItems: 'center' },
+  lockText: { color: '#FFFFFF', fontFamily: 'Fredoka_700Bold', fontSize: 8, lineHeight: 11 },
+  badgeCopy: { flex: 1, gap: 4, backgroundColor: 'transparent' },
+  badgeName: { color: '#173D3B', fontFamily: 'Fredoka_700Bold', fontSize: 20, lineHeight: 25, backgroundColor: 'transparent' },
+  badgeStatus: { color: '#6E8582', fontFamily: 'Fredoka_700Bold', fontSize: 15, lineHeight: 20, backgroundColor: 'transparent' },
+  lockedText: { color: '#7A9995', opacity: 0.68 },
+  newPill: { overflow: 'hidden', borderRadius: 999, backgroundColor: '#DCF9F3', color: '#087C72', fontFamily: 'Fredoka_700Bold', fontSize: 13, lineHeight: 18, paddingHorizontal: 12, paddingVertical: 8 },
+  buddyGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
+  buddyCard: {
+    width: '47.8%',
+    minHeight: 236,
+    borderRadius: 28,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingVertical: 24,
+    gap: 8,
+    shadowColor: '#173D3B',
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 5,
+    borderWidth: 2,
+    borderColor: 'transparent'
+  },
+  buddyCardActive: { borderColor: '#00CDBB' },
+  buddyAvatar: { width: 118, height: 118, borderRadius: 59, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  buddyImage: { width: 112, height: 112 },
+  buddyCardLocked: { backgroundColor: '#F8FBFC', borderColor: '#E2EEF2' },
+  lockedBuddyImage: { opacity: 0.34 },
+  buddyLockOverlay: { position: 'absolute', left: 12, right: 12, bottom: 10, minHeight: 26, borderRadius: 999, backgroundColor: 'rgba(30,54,69,0.82)', paddingVertical: 4, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 5 },
+  buddyName: { color: '#173D3B', fontFamily: 'Fredoka_700Bold', fontSize: 19, lineHeight: 24, textAlign: 'center' },
+  buddySubtitle: { color: '#6E8582', fontFamily: 'Fredoka_700Bold', fontSize: 14, lineHeight: 19, textAlign: 'center', minHeight: 20 },
+  chooseButton: { alignSelf: 'stretch', minHeight: 42, borderRadius: 999, backgroundColor: '#26C8D9', alignItems: 'center', justifyContent: 'center', marginTop: 'auto' },
+  activeButton: { backgroundColor: '#D9F7F2' },
+  chooseText: { color: '#FFFFFF', fontFamily: 'Fredoka_700Bold', fontSize: 16, lineHeight: 22 },
+  activeText: { color: '#087C72' },
+  levelLockButton: { alignSelf: 'stretch', minHeight: 42, borderRadius: 999, backgroundColor: '#FFF1C7', borderWidth: 2, borderColor: '#FFE09A', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 'auto' },
+  levelLockText: { color: '#8A6A1D', fontFamily: 'Fredoka_700Bold', fontSize: 16, lineHeight: 22 }
 });
-
-

@@ -55,15 +55,13 @@ const RootNavigator = () => {
 };
 
 export default function App() {
-  const [fontsLoaded] = useFonts({
+  useFonts({
     Fredoka_700Bold,
     Baloo2_600SemiBold,
     Nunito_400Regular
   });
 
   useEffect(() => { configureNotifications(); }, []);
-
-  if (!fontsLoaded) return null;
 
   return (
     <SafeAreaProvider>

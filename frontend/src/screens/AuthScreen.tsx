@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
     color: '#41438F',
     fontSize: 27,
     lineHeight: 35,
-    marginBottom: 3,
+    marginBottom: 14,
     textAlign: 'center',
     textShadowColor: 'rgba(18, 26, 80, 0.18)',
     textShadowOffset: { width: 0, height: 2 },
@@ -288,9 +288,19 @@ const styles = StyleSheet.create({
     transform: [{ rotate: '7deg' }]
   },
   formPanel: {
-    height: 405,
-    paddingHorizontal: 52,
-    paddingTop: 40,
+    alignSelf: 'stretch',
+    backgroundColor: '#F7FBFF',
+    borderRadius: 28,
+    borderWidth: 0,
+    marginTop: 18,
+    paddingBottom: 34,
+    paddingHorizontal: 32,
+    paddingTop: 34,
+    shadowColor: '#17324D',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 10,
     width: '100%'
   },
   fieldBlock: {
@@ -382,7 +392,7 @@ const styles = StyleSheet.create({
   signupContent: {
     alignItems: 'center',
     flex: 1,
-    paddingHorizontal: 36,
+    paddingHorizontal: 35,
     paddingTop: 22
   },
   signupHeaderRow: {
@@ -405,13 +415,14 @@ const styles = StyleSheet.create({
   signupMascots: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 22,
+    gap: 40,
     justifyContent: 'center',
-    marginBottom: 7
+    marginBottom: 12,
+    marginTop: 12
   },
   signupMascot: {
-    height: 52,
-    width: 52
+    height: 60,
+    width: 60
   },
   signupSparkleMascot: {
     transform: [{ rotate: '-12deg' }]
@@ -420,7 +431,7 @@ const styles = StyleSheet.create({
     transform: [{ rotate: '10deg' }]
   },
   signupSubtitle: {
-    color: '#41438F',
+    color: '#17324D',
     fontSize: 25,
     lineHeight: 32,
     marginBottom: 20,
@@ -430,12 +441,19 @@ const styles = StyleSheet.create({
     textShadowRadius: 1
   },
   signupPanel: {
-    borderColor: '#41438F',
-    borderWidth: 2.5,
-    height: 425,
+    backgroundColor: '#F7FFFC',
+    borderWidth: 0,
+    borderRadius: 28,
+    shadowColor: '#17324D',
+    shadowOpacity: 0.09,
+    shadowRadius: 9,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 12,
+    height: 450,
     paddingHorizontal: 70,
     paddingTop: 29,
-    width: '100%'
+    width: '100%', 
+    gap: 10
   },
   signupField: {
     marginBottom: 19

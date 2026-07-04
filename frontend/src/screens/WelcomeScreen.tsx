@@ -68,9 +68,9 @@ const styles = StyleSheet.create({
     textAlign: 'center'
   },
   tooth: {
-    height: 190,
+    height: 195,
     marginBottom: 58,
-    width: 190
+    width: 200
   },
   actions: {
     alignItems: 'center',
@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.14,
     shadowRadius: 5,
-    elevation: 3
+    elevation: 5
   },
   buttonPressed: {
     opacity: 0.86,

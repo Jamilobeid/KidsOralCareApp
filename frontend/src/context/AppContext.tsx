@@ -10,6 +10,16 @@ import { AuthMode, ChildProfile, Challenge, LanguageCode, ReminderSettings, Root
 const initialLanguage = getInitialLanguage();
 applyTextDirection(initialLanguage);
 const REMEMBERED_CHILD_KEY = 'kidsOralCare:rememberedChild';
+const CHARACTER_LEVEL_REQUIREMENTS: Record<string, number> = {
+  Toothy: 1,
+  'Tooth Fairy': 2,
+  'Super Tooth': 2,
+  'Dr Smile': 3,
+  Brushy: 3,
+  Minty: 4,
+  Bubbles: 5,
+  Sparky: 5
+};
 
 type AppContextValue = {
   screen: RootScreen;
@@ -31,10 +41,13 @@ type AppContextValue = {
   brushingCountToday: number;
   completeBrushing: () => void;
   gamePlays: Record<string, number>;
-  playGame: (gameId: string) => void;
+  recordGamePlay: (gameId: string) => boolean;
+  awardGame: (gameId: string) => void;
   challenges: Challenge[];
   updateAvatar: (avatar: string) => void;
   updateTheme: (theme: ThemeName) => void;
+  chooseCharacter: (character: string) => void;
+  unlockCharacter: (character: string) => boolean;
   games: typeof games;
   leaderboard: typeof leaderboard;
   avatarOptions: typeof avatarOptions;
@@ -106,20 +119,39 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const completeBrushing = () => {
-    setBrushingCountToday((value) => Math.min(value + 1, 2));
-    setChallenges((items) => items.map((challenge) => challenge.id === 'daily-two-brushes' || challenge.id === 'weekly-streak' ? { ...challenge, progress: Math.min(challenge.progress + 1, challenge.target) } : challenge));
+    setBrushingCountToday((value) => {
+      const nextValue = Math.min(value + 1, 2);
+      setChallenges((items) => items.map((challenge) => {
+        if (challenge.id === 'daily-two-brushes') return { ...challenge, progress: Math.min(challenge.progress + 1, challenge.target) };
+        if (challenge.id === 'weekly-streak' && value === 0) return { ...challenge, progress: Math.min(challenge.progress + 1, challenge.target) };
+        return challenge;
+      }));
+      return nextValue;
+    });
+    setChild((current) => {
+      const todayIndex = (new Date().getDay() + 6) % 7;
+      const weeklyBrushes = [...current.weeklyBrushes];
+      weeklyBrushes[todayIndex] = Math.min((weeklyBrushes[todayIndex] ?? 0) + 1, 2);
+      return { ...current, totalBrushes: current.totalBrushes + 1, weeklyBrushes };
+    });
     addPoints(20);
   };
 
-  const playGame = (gameId: string) => {
+  const recordGamePlay = (gameId: string) => {
     const game = games.find((item) => item.id === gameId);
-    if (!game) return;
+    if (!game) return false;
     const used = gamePlays[gameId] ?? 0;
     if (used >= game.dailyLimit) {
       Alert.alert(t('limitReached'));
-      return;
+      return false;
     }
     setGamePlays((current) => ({ ...current, [gameId]: used + 1 }));
+    return true;
+  };
+
+  const awardGame = (gameId: string) => {
+    const game = games.find((item) => item.id === gameId);
+    if (!game) return;
     setChallenges((items) => items.map((challenge) => challenge.id === 'weekly-games' ? { ...challenge, progress: Math.min(challenge.progress + 1, challenge.target) } : challenge));
     addPoints(game.points);
   };
@@ -132,9 +164,31 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
   const updateAvatar = (avatar: string) => setChild((current) => ({ ...current, avatar }));
   const updateTheme = (themeName: ThemeName) => setChild((current) => ({ ...current, theme: themeName }));
+  const chooseCharacter = (character: string) => setChild((current) => {
+    const requiredLevel = CHARACTER_LEVEL_REQUIREMENTS[character] ?? 1;
+    if (current.level < requiredLevel) return current;
+    return {
+      ...current,
+      unlockedCharacters: current.unlockedCharacters.includes(character) ? current.unlockedCharacters : [...current.unlockedCharacters, character],
+      selectedCharacter: character
+    };
+  });
+  const unlockCharacter = (character: string) => {
+    const requiredLevel = CHARACTER_LEVEL_REQUIREMENTS[character] ?? 1;
+    if (child.level < requiredLevel) {
+      Alert.alert('Keep leveling up', `${character} unlocks at Level ${requiredLevel}.`);
+      return false;
+    }
+    setChild((current) => ({
+      ...current,
+      unlockedCharacters: current.unlockedCharacters.includes(character) ? current.unlockedCharacters : [...current.unlockedCharacters, character],
+      selectedCharacter: character
+    }));
+    return true;
+  };
 
   const value = useMemo<AppContextValue>(() => ({
-    screen, setScreen, language, setLanguage, t, isRtl, child, username, authMode, setAuthMode, signInChild, registerChild, theme: themes[child.theme], reminders, setReminders, saveReminders, brushingCountToday, completeBrushing, gamePlays, playGame, challenges, updateAvatar, updateTheme, games, leaderboard, avatarOptions
+    screen, setScreen, language, setLanguage, t, isRtl, child, username, authMode, setAuthMode, signInChild, registerChild, theme: themes[child.theme], reminders, setReminders, saveReminders, brushingCountToday, completeBrushing, gamePlays, recordGamePlay, awardGame, challenges, updateAvatar, updateTheme, chooseCharacter, unlockCharacter, games, leaderboard, avatarOptions
   }), [screen, language, child, authMode, reminders, brushingCountToday, gamePlays, challenges]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

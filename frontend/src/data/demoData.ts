@@ -9,8 +9,11 @@ export const childProfile: ChildProfile = {
   theme: 'ocean',
   points: 780,
   badges: ['morning-hero', 'seven-day-smile', 'food-detective'],
-  unlockedCharacters: ['Mina Molar', 'Captain Brush'],
-  level: 4
+  unlockedCharacters: ['Toothy', 'Tooth Fairy', 'Super Tooth', 'Dr Smile'],
+  selectedCharacter: 'Toothy',
+  level: 4,
+  totalBrushes: 87,
+  weeklyBrushes: [2, 2, 1, 2, 1, 0, 0]
 };
 
 export const ageTips: Record<AgeGroup, string[]> = {

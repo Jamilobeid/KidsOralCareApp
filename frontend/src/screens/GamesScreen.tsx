@@ -4,7 +4,6 @@ import { Animated, Image, ImageSourcePropType, Pressable, StyleSheet, Text, View
 import { AppButton } from '../components/AppButton';
 import { Card } from '../components/Card';
 import { Screen } from '../components/Screen';
-import { BodyText, Title } from '../components/Typography';
 import { useApp } from '../context/AppContext';
 import { Game } from '../types/app';
 import { bodyFont, buttonFont, headingFont, rewardFont } from '../utils/kidStyle';
@@ -101,6 +100,10 @@ const cleanItems: TargetSpec[] = [
   { label: 'Plaque', image: require('../../assets/images/game-rescue-plaque.png'), icon: 'ellipse', color: '#E0A800', background: '#FFF4C7' }
 ];
 
+const rewardTrophyImage = require('../../assets/images/game-reward-trophy.png');
+const rewardStarImage = require('../../assets/images/game-reward-star.png');
+const retryIconImage = require('../../assets/images/game-retry-icon.png');
+
 const quizQuestions: QuizQuestion[] = [
   { question: 'How many times a day should you brush?', choices: [{ label: '1 time', image: require('../../assets/images/game-genius-one.png'), icon: 'keypad', color: '#5AA5F5', background: '#EAF4FF' }, { label: '2 times', image: require('../../assets/images/game-genius-two.png'), icon: 'checkmark', color: '#31C778', background: '#E9FFF4' }, { label: 'Never', image: require('../../assets/images/game-genius-no.png'), icon: 'ban', color: '#FF5C8A', background: '#FFEAF2' }], answer: 1 },
   { question: 'How long is a good brushing?', choices: [{ label: '10 seconds', image: require('../../assets/images/game-genius-lightning.png'), icon: 'flash', color: '#FF7A3D', background: '#FFF0E2' }, { label: '2 minutes', image: require('../../assets/images/game-genius-alarm.png'), icon: 'timer', color: '#FF5C8A', background: '#FFEAF2' }, { label: '1 hour', image: require('../../assets/images/game-genius-clock.png'), icon: 'time', color: '#6D7480', background: '#F1F4F7' }], answer: 1 },
@@ -124,13 +127,28 @@ const GameHeader = ({ game, onBack }: { game: Game; onBack: () => void }) => (
     <View style={styles.focusTitleRow}>
       <IconBubble spec={gameIcons[game.id] ?? gameIcons['plaque-pop']} size={game.id === 'clean-tooth' ? 78 : 60} />
       <View style={styles.focusTitleCopy}>
-        <Title size={30}>{game.titleKey ? game.titleKey : 'Game'}</Title>
+        <Text style={styles.focusGameTitle}>{game.titleKey ? game.titleKey : 'Game'}</Text>
       </View>
     </View>
   </View>
 );
 
-const StrongToothGame = ({ onWin }: { onWin: () => void }) => {
+const LimitReachedNote = () => <Text style={[bodyFont, styles.resultLimitText]}>Come back tomorrow to play again.</Text>;
+
+const GameWinResult = ({ message, points, canPlayAgain, onPlayAgain }: { message: string; points: number; canPlayAgain: boolean; onPlayAgain: () => void }) => (
+  <Card style={[styles.gamePanelBorder, styles.winResultCard]}>
+    <Image source={rewardTrophyImage} style={styles.winTrophyImage} resizeMode="contain" />
+    <Text style={styles.winResultTitle}>Congratulations!</Text>
+    <Text style={styles.winResultMessage}>{message}</Text>
+    <View style={styles.resultRewardRow}>
+      <Text style={styles.resultRewardText}>+{points}</Text>
+      <Image source={rewardStarImage} style={styles.resultStarImage} resizeMode="contain" />
+    </View>
+    {canPlayAgain ? <AppButton label="Play again" onPress={onPlayAgain} style={styles.winPlayAgainButton} /> : <LimitReachedNote />}
+  </Card>
+);
+
+const StrongToothGame = ({ canPlayAgain, onReplay, onWin }: { canPlayAgain: boolean; onReplay: () => boolean; onWin: () => void }) => {
   const { theme } = useApp();
   const [selected, setSelected] = useState<number | null>(null);
   const [roundIndex, setRoundIndex] = useState(0);
@@ -164,6 +182,7 @@ const StrongToothGame = ({ onWin }: { onWin: () => void }) => {
   };
 
   const tryAgain = () => {
+    if (!onReplay()) return;
     setSelected(null);
     setRoundIndex(0);
     setCorrectCount(0);
@@ -172,30 +191,37 @@ const StrongToothGame = ({ onWin }: { onWin: () => void }) => {
   };
 
   if (complete) {
+    if (won) {
+      return (
+        <GameWinResult
+          message={`You found ${correctCount} out of ${strongToothRounds.length} strong teeth.`}
+          points={15}
+          canPlayAgain={canPlayAgain}
+          onPlayAgain={tryAgain}
+        />
+      );
+    }
+
     return (
-      <Card style={styles.strongCard}>
-        <View style={[styles.resultBadge, { backgroundColor: won ? '#E9FFF4' : '#FFEAF2' }]}>
-          <Ionicons name={won ? 'trophy' : 'refresh'} size={56} color={won ? '#FFB703' : '#FF5C8A'} />
+      <Card style={[styles.gamePanelBorder, styles.strongCard]}>
+        <View style={[styles.resultBadge, styles.retryBadge]}>
+          <Image source={retryIconImage} style={styles.retryIconImage} resizeMode="contain" />
         </View>
-        <Text style={[headingFont, styles.resultTitle, { color: won ? '#168954' : '#C8447C' }]}>
-          {won ? 'Congratulations!' : 'Try again!'}
-        </Text>
+        <Text style={[headingFont, styles.resultTitle, { color: '#C8447C' }]}>Try again!</Text>
         <Text style={[buttonFont, styles.resultText, { color: theme.text }]}>
           You found {correctCount} out of {strongToothRounds.length} strong teeth.
         </Text>
-        <Text style={[rewardFont, styles.score, { color: won ? theme.primary : '#C8447C' }]}>
-          {won ? '+15 Smile Stars' : 'Score 3 or 4 to win'}
-        </Text>
-        <AppButton label={won ? 'Play again' : 'Try again'} onPress={tryAgain} />
+        <Text style={[rewardFont, styles.score, { color: '#C8447C' }]}>Score 3 or 4 to win</Text>
+        {canPlayAgain ? <AppButton label="Try again" onPress={tryAgain} /> : <LimitReachedNote />}
       </Card>
     );
   }
 
   return (
-    <Card style={styles.strongCard}>
+    <Card style={[styles.gamePanelBorder, styles.strongCard]}>
       <Text style={[buttonFont, styles.playTitle, { color: theme.text }]}>Tap on the cleanest tooth you see!</Text>
       <View style={styles.roundProgressShell}>
-        <View style={[styles.roundProgressFill, { width: `${((roundIndex + 1) / strongToothRounds.length) * 100}%`, backgroundColor: theme.primary }]} />
+        <View style={[styles.roundProgressFill, { width: `${(roundIndex / strongToothRounds.length) * 100}%`, backgroundColor: theme.primary }]} />
       </View>
       <Text style={[buttonFont, styles.roundText, { color: theme.text }]}>Round {roundIndex + 1} / {strongToothRounds.length}</Text>
       <View style={styles.toothChoiceGrid}>
@@ -216,7 +242,7 @@ const StrongToothGame = ({ onWin }: { onWin: () => void }) => {
   );
 };
 
-const HealthyPicksGame = ({ onWin }: { onWin: () => void }) => {
+const HealthyPicksGame = ({ canPlayAgain, onReplay, onWin }: { canPlayAgain: boolean; onReplay: () => boolean; onWin: () => void }) => {
   const { theme } = useApp();
   const [selected, setSelected] = useState<number | null>(null);
   const [roundIndex, setRoundIndex] = useState(0);
@@ -249,6 +275,7 @@ const HealthyPicksGame = ({ onWin }: { onWin: () => void }) => {
   };
 
   const tryAgain = () => {
+    if (!onReplay()) return;
     setSelected(null);
     setRoundIndex(0);
     setCorrectCount(0);
@@ -257,30 +284,37 @@ const HealthyPicksGame = ({ onWin }: { onWin: () => void }) => {
   };
 
   if (complete) {
+    if (won) {
+      return (
+        <GameWinResult
+          message={`You picked ${correctCount} out of ${healthyPickRounds.length} smile-friendly snacks.`}
+          points={20}
+          canPlayAgain={canPlayAgain}
+          onPlayAgain={tryAgain}
+        />
+      );
+    }
+
     return (
-      <Card style={styles.healthyCard}>
-        <View style={[styles.resultBadge, { backgroundColor: won ? '#E9FFF4' : '#FFEAF2' }]}>
-          <Ionicons name={won ? 'trophy' : 'refresh'} size={56} color={won ? '#FFB703' : '#FF5C8A'} />
+      <Card style={[styles.gamePanelBorder, styles.healthyCard]}>
+        <View style={[styles.resultBadge, styles.retryBadge]}>
+          <Image source={retryIconImage} style={styles.retryIconImage} resizeMode="contain" />
         </View>
-        <Text style={[headingFont, styles.resultTitle, { color: won ? '#168954' : '#C8447C' }]}>
-          {won ? 'Congratulations!' : 'Try again!'}
-        </Text>
+        <Text style={[headingFont, styles.resultTitle, { color: '#C8447C' }]}>Try again!</Text>
         <Text style={[buttonFont, styles.resultText, { color: theme.text }]}>
           You picked {correctCount} out of {healthyPickRounds.length} smile-friendly snacks.
         </Text>
-        <Text style={[rewardFont, styles.score, { color: won ? theme.primary : '#C8447C' }]}>
-          {won ? '+20 Smile Stars' : 'Score 3 or 4 to win'}
-        </Text>
-        <AppButton label={won ? 'Play again' : 'Try again'} onPress={tryAgain} />
+        <Text style={[rewardFont, styles.score, { color: '#C8447C' }]}>Score 3 or 4 to win</Text>
+        {canPlayAgain ? <AppButton label="Try again" onPress={tryAgain} /> : <LimitReachedNote />}
       </Card>
     );
   }
 
   return (
-    <Card style={styles.healthyCard}>
+    <Card style={[styles.gamePanelBorder, styles.healthyCard]}>
       <Text style={[buttonFont, styles.playTitle, { color: theme.text }]}>Pick the smile-friendly snack!</Text>
       <View style={styles.roundProgressShell}>
-        <View style={[styles.roundProgressFill, { width: `${((roundIndex + 1) / healthyPickRounds.length) * 100}%`, backgroundColor: theme.primary }]} />
+        <View style={[styles.roundProgressFill, { width: `${(roundIndex / healthyPickRounds.length) * 100}%`, backgroundColor: theme.primary }]} />
       </View>
       <Text style={[buttonFont, styles.roundText, { color: theme.text }]}>Round {roundIndex + 1} / {healthyPickRounds.length}</Text>
       <View style={styles.foodChoiceGrid}>
@@ -296,7 +330,7 @@ const HealthyPicksGame = ({ onWin }: { onWin: () => void }) => {
         })}
       </View>
       {selectedChoice ? <Text style={[buttonFont, styles.feedback, { color: selectedChoice.healthy ? '#168954' : '#C8447C' }]}>{selectedChoice.healthy ? 'Great pick! That snack helps smiles.' : 'That one is sugary. Try to spot the healthy choice next!'}</Text> : null}
-      <Text style={[rewardFont, styles.score, { color: theme.primary }]}>Score: {correctCount}</Text>
+      <Text style={[styles.score, { color: theme.primary }]}>Score: {correctCount}</Text>
       {selected !== null ? <AppButton label={roundIndex === healthyPickRounds.length - 1 ? 'See result' : 'Next round'} onPress={goNext} /> : null}
     </Card>
   );
@@ -307,11 +341,11 @@ const GenericGame = ({ game, score, onScore }: { game: Game; score: number; onSc
   const targets = targetSets[game.id] ?? targetSets['brush-sequence'];
 
   return (
-    <Card style={styles.focusCard}>
+    <Card style={[styles.gamePanelBorder, styles.focusCard]}>
       <Text style={[buttonFont, styles.playTitle, { color: theme.text }]}>{t('tapCorrectItems')}</Text>
       <View style={styles.largeTargetGrid}>
         {targets.map((item, index) => (
-          <Pressable key={`${item.label}-${index}`} onPress={onScore} style={[styles.largeTarget, { borderColor: item.color, backgroundColor: item.background }]}>
+          <Pressable key={`${item.label}-${index}`} onPress={onScore} style={[styles.largeTarget, { backgroundColor: item.background }]}>
             <Ionicons name={item.icon} size={34} color={item.color} />
             <Text style={[buttonFont, styles.targetLabel, { color: theme.text }]}>{item.label}</Text>
           </Pressable>
@@ -329,7 +363,7 @@ const getSugarOptions = (answer: number) => {
   return Array.from(new Set(candidates)).slice(0, 4).sort((a, b) => a - b);
 };
 
-const SugarDetectiveGame = ({ onComplete }: { onComplete: () => void }) => {
+const SugarDetectiveGame = ({ canPlayAgain, onReplay, onComplete }: { canPlayAgain: boolean; onReplay: () => boolean; onComplete: () => void }) => {
   const { theme } = useApp();
   const [questionIndex, setQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
@@ -379,6 +413,7 @@ const SugarDetectiveGame = ({ onComplete }: { onComplete: () => void }) => {
   };
 
   const restart = () => {
+    if (!onReplay()) return;
     setQuestionIndex(0);
     setScore(0);
     setSelected(null);
@@ -389,28 +424,23 @@ const SugarDetectiveGame = ({ onComplete }: { onComplete: () => void }) => {
 
   if (complete) {
     return (
-      <Card style={[styles.sugarCard, styles.sugarCompleteCard]}>
-        <Image source={require('../../assets/images/game-sugar-detective.png')} style={styles.sugarDetectiveImage} resizeMode="contain" />
-        <Text style={[headingFont, styles.sugarCompleteTitle]}>Great job, Sugar Detective!</Text>
-        <Text style={[rewardFont, styles.sugarFinalScore, { color: theme.primary }]}>{score} / {sugarProducts.length}</Text>
-        <View style={styles.sugarReward}>
-          <Ionicons name="star" size={28} color="#FFB703" />
-          <Text style={[rewardFont, styles.sugarRewardText]}>{starsEarned} Stars earned</Text>
-        </View>
-        <AppButton label="Play again" onPress={restart} />
-      </Card>
+      <GameWinResult
+        message={`You solved ${score} out of ${sugarProducts.length} sugar clues.`}
+        points={starsEarned}
+        canPlayAgain={canPlayAgain}
+        onPlayAgain={restart}
+      />
     );
   }
 
   return (
-    <Card style={styles.sugarCard}>
+    <Card style={[styles.gamePanelBorder, styles.sugarCard]}>
       <View style={styles.sugarTopRow}>
-        <Text style={[headingFont, styles.sugarTitle]}>Sugar Cube Challenge</Text>
         <Text style={[rewardFont, styles.sugarScore, { color: theme.primary }]}>Score: {score}</Text>
       </View>
       <Text style={[buttonFont, styles.sugarRule]}>1 sugar cube = 4 grams of sugar</Text>
       <View style={styles.quizProgressShell}>
-        <View style={[styles.quizProgressFill, { width: `${((questionIndex + 1) / sugarProducts.length) * 100}%` }]} />
+        <View style={[styles.quizProgressFill, { width: `${(questionIndex / sugarProducts.length) * 100}%` }]} />
       </View>
       <Text style={[buttonFont, styles.quizSubtitle]}>Question {questionIndex + 1} / {sugarProducts.length}</Text>
 
@@ -445,7 +475,7 @@ const SugarDetectiveGame = ({ onComplete }: { onComplete: () => void }) => {
   );
 };
 
-const CleanToothGame = ({ cleaned, onClean, onComplete }: { cleaned: boolean[]; onClean: (index: number) => void; onComplete: () => void }) => {
+const CleanToothGame = ({ cleaned, canPlayAgain, onReplay, onClean, onReset, onComplete }: { cleaned: boolean[]; canPlayAgain: boolean; onReplay: () => boolean; onClean: (index: number) => void; onReset: () => void; onComplete: () => void }) => {
   const { theme } = useApp();
   const remaining = cleaned.filter((value) => !value).length;
   const cleanedCount = cleanItems.length - remaining;
@@ -467,24 +497,26 @@ const CleanToothGame = ({ cleaned, onClean, onComplete }: { cleaned: boolean[]; 
 
   const starsEarned = 20;
 
+  const restart = () => {
+    if (!onReplay()) return;
+    onReset();
+    setComplete(false);
+    setAwarded(false);
+  };
+
   if (complete) {
     return (
-      <Card style={[styles.cleanCard, styles.rescueCompleteCard]}>
-        <Image source={require('../../assets/images/game-rescue-tooth.png')} style={styles.rescueCompleteTooth} resizeMode="contain" />
-        <Text style={[headingFont, styles.resultTitle, { color: '#168954' }]}>Great Job, Tooth Cleaner!</Text>
-        <Text style={[buttonFont, styles.resultText, { color: theme.text }]}>You cleaned every germ, sweet, and plaque spot.</Text>
-        <Text style={[rewardFont, styles.score, { color: theme.primary }]}>Total score: {cleanedCount} / {cleanItems.length}</Text>
-        <View style={styles.sugarReward}>
-          <Ionicons name="star" size={28} color="#FFB703" />
-          <Text style={[rewardFont, styles.sugarRewardText]}>{starsEarned} Smile Stars earned</Text>
-        </View>
-      </Card>
+      <GameWinResult
+        message="You cleaned every germ, sweet, and plaque spot."
+        points={starsEarned}
+        canPlayAgain={canPlayAgain}
+        onPlayAgain={restart}
+      />
     );
   }
 
   return (
-    <Card style={[styles.cleanCard, { backgroundColor: '#E8FBF5' }]}>
-      <Text style={[headingFont, styles.cleanTitle, { color: '#155B52' }]}>Tooth Rescue</Text>
+    <Card style={[styles.gamePanelBorder, styles.cleanCard, styles.cleanPlayCard]}>
       <Text style={[buttonFont, styles.cleanSubtitle, { color: '#4E7771' }]}>Tap every germ, sweet, and plaque spot.</Text>
       <View style={styles.cleanProgressShell}><View style={[styles.cleanProgressFill, { width: `${(cleanedCount / cleanItems.length) * 100}%` }]} /></View>
       <Text style={[rewardFont, styles.rescueScore, { color: theme.primary }]}>Score: {cleanedCount} / {cleanItems.length}</Text>
@@ -506,7 +538,7 @@ const CleanToothGame = ({ cleaned, onClean, onComplete }: { cleaned: boolean[]; 
   );
 };
 
-const SmileQuizGame = ({ onComplete }: { onComplete: () => void }) => {
+const SmileQuizGame = ({ canPlayAgain, onReplay, onComplete }: { canPlayAgain: boolean; onReplay: () => boolean; onComplete: () => void }) => {
   const { theme } = useApp();
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
@@ -514,15 +546,16 @@ const SmileQuizGame = ({ onComplete }: { onComplete: () => void }) => {
   const [complete, setComplete] = useState(false);
   const [awarded, setAwarded] = useState(false);
   const question = quizQuestions[questionIndex];
-  const progress = complete ? 1 : (questionIndex + 1) / quizQuestions.length;
+  const progress = complete ? 1 : questionIndex / quizQuestions.length;
   const isCorrect = selected === question.answer;
 
   const choose = (index: number) => { if (selected !== null) return; setSelected(index); if (index === question.answer) setCorrectCount((value) => value + 1); };
   const next = () => {
     if (selected === null) return;
     if (questionIndex === quizQuestions.length - 1) {
+      const didWin = correctCount > 2;
       setComplete(true);
-      if (!awarded) {
+      if (didWin && !awarded) {
         setAwarded(true);
         onComplete();
       }
@@ -533,6 +566,7 @@ const SmileQuizGame = ({ onComplete }: { onComplete: () => void }) => {
   };
 
   const restart = () => {
+    if (!onReplay()) return;
     setQuestionIndex(0);
     setSelected(null);
     setCorrectCount(0);
@@ -541,27 +575,36 @@ const SmileQuizGame = ({ onComplete }: { onComplete: () => void }) => {
   };
 
   if (complete) {
+    if (correctCount > 2) {
+      return (
+        <GameWinResult
+          message={`You answered ${correctCount} out of ${quizQuestions.length} tooth questions correctly.`}
+          points={25}
+          canPlayAgain={canPlayAgain}
+          onPlayAgain={restart}
+        />
+      );
+    }
+
     return (
-      <Card style={[styles.quizCard, styles.quizCompleteCard]}>
-        <Image source={require('../../assets/images/game-genius-icon.png')} style={styles.quizCompleteImage} resizeMode="contain" />
-        <Text style={[headingFont, styles.quizCompleteTitle]}>Great Job, Tooth Genius!</Text>
-        <Text style={[rewardFont, styles.quizScore, { color: '#155B52' }]}>{correctCount} / {quizQuestions.length} <Text style={styles.quizScoreSmall}>correct</Text></Text>
-        <View style={styles.quizReward}>
-          <Ionicons name="star" size={28} color="#FFB703" />
-          <Text style={[rewardFont, styles.quizRewardText]}>+25 Smile Stars</Text>
+      <Card style={[styles.gamePanelBorder, styles.quizCard, styles.quizCompleteCard]}>
+        <View style={[styles.resultBadge, styles.retryBadge]}>
+          <Image source={retryIconImage} style={styles.retryIconImage} resizeMode="contain" />
         </View>
-        <View style={styles.quizButtons}>
-          <AppButton label="Play again" onPress={restart} />
-        </View>
+        <Text style={[headingFont, styles.resultTitle, { color: '#C8447C' }]}>Try again!</Text>
+        <Text style={[buttonFont, styles.resultText, { color: theme.text }]}>
+          You answered {correctCount} out of {quizQuestions.length} tooth questions correctly.
+        </Text>
+        <Text style={[rewardFont, styles.score, { color: '#C8447C' }]}>Score 3 or more to win</Text>
+        {canPlayAgain ? <AppButton label="Try again" onPress={restart} /> : <LimitReachedNote />}
       </Card>
     );
   }
 
   return (
-    <Card style={[styles.quizCard, { backgroundColor: '#E8FBF5' }]}>
-      <Text style={[headingFont, styles.quizTitle]}>Tooth Genius</Text>
-      <Text style={[rewardFont, styles.quizLiveScore, { color: theme.primary }]}>Score: {correctCount}</Text>
+    <Card style={[styles.gamePanelBorder, styles.quizCard, styles.quizPlayCard]}>
       <Text style={[buttonFont, styles.quizSubtitle]}>Question {questionIndex + 1} / {quizQuestions.length}</Text>
+      <Text style={[rewardFont, styles.quizLiveScore, { color: theme.primary }]}>Score: {correctCount}</Text>
       <View style={styles.quizProgressShell}><View style={[styles.quizProgressFill, { width: `${progress * 100}%` }]} /></View>
       <View style={styles.questionBox}>
         <Image source={require('../../assets/images/game-genius-icon.png')} style={styles.questionIconImage} resizeMode="contain" />
@@ -590,7 +633,7 @@ const SmileQuizGame = ({ onComplete }: { onComplete: () => void }) => {
 };
 
 export const GamesScreen = () => {
-  const { t, games, child, gamePlays, playGame, theme } = useApp();
+  const { t, games, child, gamePlays, recordGamePlay, awardGame, theme } = useApp();
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [cleaned, setCleaned] = useState<boolean[]>(cleanItems.map(() => false));
@@ -600,25 +643,30 @@ export const GamesScreen = () => {
   const openGame = (game: Game) => {
     const used = gamePlays[game.id] ?? 0;
     if (used >= game.dailyLimit) return;
+    if (!recordGamePlay(game.id)) return;
     setSelectedGameId(game.id);
     setScore(0);
     setCleaned(cleanItems.map(() => false));
-    if (game.id !== 'plaque-pop' && game.id !== 'food-sorter' && game.id !== 'sugar-detective' && game.id !== 'smile-quiz') playGame(game.id);
+    if (game.id === 'brush-sequence') awardGame(game.id);
   };
   const leaveGame = () => { setSelectedGameId(null); setScore(0); };
+  const replaySelectedGame = () => selectedGame ? recordGamePlay(selectedGame.id) : false;
 
   if (selectedGame) {
+    const selectedGamePlays = gamePlays[selectedGame.id] ?? 0;
+    const canPlayAgain = selectedGamePlays < selectedGame.dailyLimit;
+
     return (
-      <Screen>
+      <Screen gradientBackground showDecorations={false}>
         <GameHeader game={{ ...selectedGame, titleKey: t(selectedGame.titleKey) }} onBack={leaveGame} />
-        {selectedGame.id === 'plaque-pop' ? <StrongToothGame onWin={() => playGame(selectedGame.id)} /> : selectedGame.id === 'food-sorter' ? <HealthyPicksGame onWin={() => playGame(selectedGame.id)} /> : selectedGame.id === 'sugar-detective' ? <SugarDetectiveGame onComplete={() => playGame(selectedGame.id)} /> : selectedGame.id === 'clean-tooth' ? <CleanToothGame cleaned={cleaned} onClean={(index) => setCleaned((items) => items.map((item, itemIndex) => itemIndex === index ? true : item))} onComplete={() => playGame(selectedGame.id)} /> : selectedGame.id === 'smile-quiz' ? <SmileQuizGame onComplete={() => playGame(selectedGame.id)} /> : <GenericGame game={selectedGame} score={score} onScore={() => setScore((value) => value + 1)} />}
+        {selectedGame.id === 'plaque-pop' ? <StrongToothGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onWin={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'food-sorter' ? <HealthyPicksGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onWin={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'sugar-detective' ? <SugarDetectiveGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onComplete={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'clean-tooth' ? <CleanToothGame cleaned={cleaned} canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onClean={(index) => setCleaned((items) => items.map((item, itemIndex) => itemIndex === index ? true : item))} onReset={() => setCleaned(cleanItems.map(() => false))} onComplete={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'smile-quiz' ? <SmileQuizGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onComplete={() => awardGame(selectedGame.id)} /> : <GenericGame game={selectedGame} score={score} onScore={() => setScore((value) => value + 1)} />}
       </Screen>
     );
   }
 
   return (
-    <Screen>
-      <Title size={34}>{t('games')}</Title>
+    <Screen gradientBackground showDecorations={false}>
+      <Text style={[headingFont, styles.screenTitle]}>{t('games')}</Text>
       {availableGames.map((game) => {
         const used = gamePlays[game.id] ?? 0;
         const left = Math.max(game.dailyLimit - used, 0);
@@ -628,12 +676,22 @@ export const GamesScreen = () => {
             <View style={styles.row}>
               <IconBubble spec={icon} size={game.id === 'clean-tooth' ? 86 : 64} />
               <View style={styles.copy}>
-                <Title size={23}>{t(game.titleKey)}</Title>
-                <BodyText>{t(game.descriptionKey)}</BodyText>
+                <Text style={styles.gameCardTitle}>{t(game.titleKey)}</Text>
+                <Text style={[bodyFont, styles.gameCardDescription]}>
+                  {t(game.descriptionKey)}
+                </Text>
                 <Text style={[bodyFont, styles.limit, { color: left > 0 ? theme.primary : '#C8447C' }]}>{left > 0 ? `${left} ${t('playsLeft')}` : t('comeBackTomorrow')}</Text>
               </View>
             </View>
-            <AppButton label={left > 0 ? `${t('play')} +${game.points}` : t('limitReachedShort')} onPress={() => openGame(game)} variant={left > 0 ? 'primary' : 'secondary'} style={left <= 0 ? { backgroundColor: '#F8A5C2', borderColor: '#C8447C' } : undefined} />
+            <AppButton
+              label={left > 0 ? `${t('play')} +${game.points}` : t('limitReachedShort')}
+              onPress={() => openGame(game)}
+              variant={left > 0 ? 'primary' : 'secondary'}
+              style={[
+                styles.gamePlayButton,
+                left <= 0 ? { backgroundColor: '#F8A5C2', borderColor: '#C8447C' } : undefined
+              ]}
+            />
           </Card>
         );
       })}
@@ -642,39 +700,75 @@ export const GamesScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  listCard: { gap: 16 },
+  gamePanelBorder: { gap: 14, alignItems: 'center', backgroundColor: '#F7FFFC',borderWidth: 0, borderRadius: 28, shadowColor: '#17324D', shadowOpacity: 0.09, shadowRadius: 9, shadowOffset: { width: 0, height: 5 }, elevation: 3 },
+  listCard: { gap: 14, alignItems: 'center', backgroundColor: '#F7FFFC',borderWidth: 0, borderRadius: 28, shadowColor: '#17324D', shadowOpacity: 0.09, shadowRadius: 9, shadowOffset: { width: 0, height: 5 }, elevation: 3 },
+  screenTitle: {
+    alignSelf: 'center',
+    color: '#41438F',
+    fontSize: 40,
+    lineHeight: 40,
+    textAlign: 'center'
+  },
   row: { flexDirection: 'row', gap: 14, alignItems: 'center' },
   iconBubble: { alignItems: 'center', justifyContent: 'center' },
   iconImage: { borderRadius: 12 },
   copy: { flex: 1, gap: 4 },
+  gameCardTitle: {
+    color: '#41438F',
+    fontFamily: 'Fredoka_700Bold',
+    fontSize: 25,
+    lineHeight: 31
+  },
+  gameCardDescription: {
+    color: '#867f78c6',
+    fontSize: 16,
+    fontStyle: 'italic',
+    fontWeight: '700',
+    lineHeight: 23
+  },
+  gamePlayButton: {
+    alignSelf: 'center',
+    width: 250,
+    height: 40,
+    borderRadius: 24,
+    backgroundColor: '#1D9BF0',
+    borderColor: '#1D9BF0',
+    marginBottom: 10
+  },
   limit: { fontWeight: '900', fontSize: 15 },
   gameHeader: { gap: 12 },
   backButton: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FFFFFF', borderRadius: 18, paddingHorizontal: 12, paddingVertical: 8 },
-  backText: { color: '#17324D', fontSize: 15, fontWeight: '900' },
+  backText: { color: '#000000', fontFamily: 'Fredoka_700Bold', fontSize: 17, fontWeight: '900'},
   focusTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   focusTitleCopy: { flex: 1 },
+  focusGameTitle: {
+    color: '#41438F',
+    fontFamily: 'Fredoka_700Bold',
+    fontSize: 31,
+    lineHeight: 38
+  },
   focusCard: { gap: 18, alignItems: 'center' },
-  playTitle: { fontSize: 20, fontWeight: '900', textAlign: 'center' },
+  playTitle: { fontSize: 20, fontFamily: 'Fredoka_700Bold', textAlign: 'center' },
   largeTargetGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, justifyContent: 'center' },
-  largeTarget: { width: '45%', minHeight: 112, borderRadius: 24, borderWidth: 2, alignItems: 'center', justifyContent: 'center', gap: 8, padding: 10 },
+  largeTarget: { width: '45%', minHeight: 112, borderRadius: 24, borderWidth: 2, borderColor: '#000000', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 10 },
   targetLabel: { fontSize: 16, fontWeight: '900', textAlign: 'center' },
-  score: { textAlign: 'center', fontSize: 22, fontWeight: '900' },
-  sugarCard: { gap: 14, alignItems: 'center', backgroundColor: '#F7FFFC' },
-  sugarTopRow: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-  sugarTitle: { flex: 1, color: '#155B52', fontSize: 25, lineHeight: 31, fontWeight: '900' },
-  sugarScore: { fontSize: 16, fontWeight: '900' },
-  sugarRule: { width: '100%', borderRadius: 18, backgroundColor: '#E8FBF5', color: '#155B52', fontSize: 15, fontWeight: '900', paddingVertical: 10, textAlign: 'center' },
+  score: { textAlign: 'center', fontSize: 22, fontFamily: 'Fredoka_700Bold' },
+  sugarCard: { gap: 14, alignItems: 'center', backgroundColor: '#F7FFFC',borderWidth: 0, borderRadius: 28, shadowColor: '#17324D', shadowOpacity: 0.09, shadowRadius: 9, shadowOffset: { width: 0, height: 5 }, elevation: 3},
+  sugarTopRow: { width: '100%', alignItems: 'center', justifyContent: 'center' },
+  sugarTitle: { flex: 1, color: '#155B52', fontSize: 25, lineHeight: 31, fontFamily: 'Fredoka_700Bold' },
+  sugarScore: { fontSize: 20, fontFamily: 'Fredoka_700Bold', textAlign: 'center' },
+  sugarRule: { width: '100%', borderRadius: 18, backgroundColor: '#E8FBF5', color: '#155B52', fontSize: 15, fontFamily: 'Fredoka_700Bold', paddingVertical: 10, textAlign: 'center' },
   productCard: { width: '100%', minHeight: 150, borderRadius: 28, backgroundColor: '#FFFFFF', flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, shadowColor: '#17324D', shadowOpacity: 0.09, shadowRadius: 9, shadowOffset: { width: 0, height: 5 }, elevation: 3 },
   productImage: { width: 110, height: 110 },
   productCopy: { flex: 1, gap: 8 },
-  productName: { fontSize: 24, lineHeight: 30, fontWeight: '900' },
-  sugarGrams: { alignSelf: 'flex-start', borderRadius: 16, backgroundColor: '#FFF4C7', color: '#9B6500', fontSize: 18, fontWeight: '900', paddingHorizontal: 12, paddingVertical: 7 },
-  sugarQuestion: { fontSize: 18, lineHeight: 24, fontWeight: '900', textAlign: 'center' },
+  productName: { fontSize: 24, lineHeight: 30, fontFamily: 'Fredoka_700Bold' },
+  sugarGrams: { alignSelf: 'flex-start', borderRadius: 16, backgroundColor: '#FFF4C7', color: '#9B6500', fontSize: 18, fontFamily: 'Fredoka_700Bold', paddingHorizontal: 12, paddingVertical: 7 },
+  sugarQuestion: { fontSize: 18, lineHeight: 24, fontFamily: 'Fredoka_700Bold', textAlign: 'center' },
   sugarOptions: { width: '100%', flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
-  sugarOption: { width: '47%', minHeight: 96, borderRadius: 22, borderWidth: 2, borderColor: '#D8E8EF', backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', padding: 8, shadowColor: '#17324D', shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 2 },
+  sugarOption: { width: '47%', minHeight: 96, borderRadius: 28, borderWidth: 0, borderColor: '#c6c0c0da', backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', padding: 8, shadowColor: '#000000', shadowOpacity: 0.09, shadowRadius: 9, shadowOffset: { width: 0, height: 5 }, elevation: 3 },
   sugarCubeImage: { width: 36, height: 36 },
-  sugarOptionText: { fontSize: 27, lineHeight: 32, fontWeight: '900' },
-  sugarOptionLabel: { fontSize: 13, fontWeight: '900', opacity: 0.72 },
+  sugarOptionText: { fontSize: 27, lineHeight: 32, fontFamily: 'Fredoka_700Bold' },
+  sugarOptionLabel: { fontSize: 13, fontFamily: 'Fredoka_700Bold', opacity: 0.72 },
   sugarCompleteCard: { paddingVertical: 28 },
   sugarDetectiveImage: { width: 112, height: 112 },
   sugarCompleteTitle: { color: '#155B52', fontSize: 28, lineHeight: 34, fontWeight: '900', textAlign: 'center' },
@@ -686,28 +780,88 @@ const styles = StyleSheet.create({
   roundProgressFill: { height: '100%', borderRadius: 6 },
   roundText: { fontSize: 15, fontWeight: '900', opacity: 0.72 },
   toothChoiceGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center' },
-  toothChoice: { width: '46%', height: 150, borderRadius: 24, backgroundColor: '#FFFFFF', borderWidth: 2, borderColor: '#D8E8EF', alignItems: 'center', justifyContent: 'center', padding: 8, shadowColor: '#17324D', shadowOpacity: 0.08, shadowRadius: 7, shadowOffset: { width: 0, height: 4 }, elevation: 2 },
+  toothChoice: { width: '46%', height: 150, backgroundColor: '#FFFFFF', borderRadius: 20,  alignItems: 'center', justifyContent: 'center', padding: 8, shadowColor: '#17324D', shadowOpacity: 0.08, shadowRadius: 7, shadowOffset: { width: 0, height: 4 }, elevation: 10 },
   toothChoiceCorrect: { borderColor: '#31C778', backgroundColor: '#E9FFF4' },
   toothChoiceWrong: { borderColor: '#FF5C8A', backgroundColor: '#FFEAF2' },
   toothChoiceImage: { width: '100%', height: 118 },
   choiceBadge: { position: 'absolute', top: 8, right: 8 },
   resultBadge: { width: 104, height: 104, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
-  resultTitle: { fontSize: 30, fontWeight: '900', textAlign: 'center' },
-  resultText: { fontSize: 17, lineHeight: 23, fontWeight: '900', textAlign: 'center' },
-  feedback: { borderRadius: 18, backgroundColor: '#DDF8EE', paddingVertical: 12, paddingHorizontal: 14, textAlign: 'center', fontSize: 16, fontWeight: '900' },
+  resultBadgeImage: { backgroundColor: 'transparent', borderRadius: 0 },
+  resultTrophyImage: { width: 118, height: 118 },
+  winResultCard: {
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    gap: 18,
+    paddingHorizontal: 22,
+    paddingVertical: 30
+  },
+  winTrophyImage: { height: 132, width: 132 },
+  winResultTitle: {
+    color: '#168954',
+    fontFamily: 'Fredoka_700Bold',
+    fontSize: 34,
+    lineHeight: 40,
+    textAlign: 'center'
+  },
+  winResultMessage: {
+    color: '#17324D',
+    fontFamily: 'Fredoka_700Bold',
+    fontSize: 17,
+    lineHeight: 24,
+    textAlign: 'center'
+  },
+  winPlayAgainButton: {
+    borderRadius: 24,
+    minHeight: 72,
+    minWidth: 190,
+    paddingHorizontal: 30
+  },
+  retryBadge: {
+    backgroundColor: '#FFEAF2',
+    shadowColor: '#FF5C8A',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.18,
+    shadowRadius: 9,
+    elevation: 3
+  },
+  retryIconImage: { width: 108, height: 108 },
+  resultTitle: { fontSize: 30, fontFamily: 'Fredoka_700Bold', textAlign: 'center' },
+  resultText: { fontSize: 17, lineHeight: 23, fontFamily: 'Fredoka_700Bold', textAlign: 'center' },
+  resultLimitText: { color: '#6F8184', fontSize: 16, fontFamily: 'Fredoka_700Bold', lineHeight: 22, textAlign: 'center' },
+  resultRewardRow: {
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderColor: '#afaaaaf0',
+    borderRadius: 100,
+    borderWidth: 2,
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'center',
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    shadowColor: '#000000',
+    shadowOffset: { width: 5, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 7
+  },
+  resultRewardText: { color: '#000000', fontSize: 30, fontFamily: 'Fredoka_700Bold', lineHeight: 34 },
+  resultStarImage: { width: 50, height: 40 },
+  feedback: { borderRadius: 18, backgroundColor: '#DDF8EE', paddingVertical: 12, paddingHorizontal: 14, textAlign: 'center', fontSize: 16, fontFamily: 'Fredoka_700Bold' },
   healthyCard: { gap: 16, alignItems: 'center' },
   foodChoiceGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center' },
-  foodChoice: { width: '46%', height: 152, borderRadius: 24, backgroundColor: '#FFFFFF', borderWidth: 2, borderColor: '#D8E8EF', alignItems: 'center', justifyContent: 'center', padding: 8, shadowColor: '#17324D', shadowOpacity: 0.08, shadowRadius: 7, shadowOffset: { width: 0, height: 4 }, elevation: 2 },
+  foodChoice: { width: '46%', height: 152, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', borderRadius: 20, padding: 8, shadowColor: '#17324D', shadowOpacity: 0.08, shadowRadius: 7, shadowOffset: { width: 0, height: 4 }, elevation: 10 },
   foodChoiceCorrect: { borderColor: '#31C778', backgroundColor: '#E9FFF4' },
   foodChoiceWrong: { borderColor: '#FF5C8A', backgroundColor: '#FFEAF2' },
   foodChoiceImage: { width: '100%', height: 96 },
-  foodChoiceLabel: { fontSize: 14, fontWeight: '900', textAlign: 'center', marginTop: 4 },
+  foodChoiceLabel: { fontSize: 14, fontFamily: 'Fredoka_700Bold', textAlign: 'center', marginTop: 4 },
   cleanCard: { gap: 12, alignItems: 'center', overflow: 'hidden' },
-  cleanTitle: { fontSize: 26, fontWeight: '900' },
-  cleanSubtitle: { fontSize: 15, fontWeight: '900' },
+  cleanTitle: { color: '#41438F', fontFamily: 'Fredoka_700Bold', fontSize: 28, lineHeight: 34, textAlign: 'center' },
+  cleanPlayCard: { backgroundColor: '#E8FBF5', paddingTop: 22 },
+  cleanSubtitle: { fontSize: 15, fontFamily: 'Fredoka_700Bold' },
   cleanProgressShell: { width: '92%', height: 12, borderRadius: 6, backgroundColor: '#FFFFFF', overflow: 'hidden' },
   cleanProgressFill: { height: '100%', borderRadius: 6, backgroundColor: '#2BBBAD' },
-  rescueScore: { fontSize: 18, fontWeight: '900' },
+  rescueScore: { fontSize: 18, fontFamily: 'Fredoka_700Bold' },
   toothPlayArea: { width: 290, height: 330, alignItems: 'center', justifyContent: 'center' },
   bigTooth: { width: 224, height: 266, borderRadius: 42, alignItems: 'center', justifyContent: 'center' },
   rescueToothImage: { width: 214, height: 258 },
@@ -722,16 +876,17 @@ const styles = StyleSheet.create({
   rescueCompleteCard: { backgroundColor: '#F7FFFC', paddingVertical: 28 },
   rescueCompleteTooth: { width: 126, height: 136 },
   quizCard: { gap: 14, backgroundColor: '#E8FBF5' },
-  quizTitle: { color: '#155B52', fontSize: 28, fontWeight: '900', textAlign: 'center' },
-  quizLiveScore: { fontSize: 18, fontWeight: '900', textAlign: 'center' },
-  quizSubtitle: { color: '#4E7771', fontSize: 15, fontWeight: '900', textAlign: 'center' },
+  quizPlayCard: { paddingTop: 24 },
+  quizTitle: { color: '#41438F', fontFamily: 'Fredoka_700Bold', fontSize: 28, lineHeight: 34, textAlign: 'center' },
+  quizLiveScore: { fontSize: 18, fontFamily: 'Fredoka_700Bold', textAlign: 'center' },
+  quizSubtitle: { color: '#4E7771', fontSize: 15, fontFamily: 'Fredoka_700Bold', textAlign: 'center' },
   quizProgressShell: { height: 12, borderRadius: 6, backgroundColor: '#FFFFFF', overflow: 'hidden' },
   quizProgressFill: { height: '100%', borderRadius: 6, backgroundColor: '#2BBBAD' },
   questionBox: { minHeight: 122, borderRadius: 26, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 18 },
   questionIconImage: { width: 58, height: 58 },
-  questionText: { fontSize: 18, lineHeight: 24, fontWeight: '900', textAlign: 'center' },
-  answerList: { gap: 12 },
-  answerRow: { minHeight: 70, borderRadius: 18, backgroundColor: '#FFFFFF', flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 2, borderColor: '#FFFFFF', shadowColor: '#17324D', shadowOpacity: 0.08, shadowRadius: 5, shadowOffset: { width: 0, height: 3 }, elevation: 2 },
+  questionText: { fontSize: 18, lineHeight: 24, fontFamily: 'Fredoka_700Bold', textAlign: 'center' },
+  answerList: { gap: 12, width: 300 },
+  answerRow: { minHeight: 70, borderRadius: 18, backgroundColor: '#FFFFFF', flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 8, shadowColor: '#000000', shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 4 },
   answerImageBox: { width: 48, height: 48, borderRadius: 14, backgroundColor: '#F7FBFF', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   answerImage: { width: 42, height: 42 },
   answerCorrect: { borderColor: '#31C778', backgroundColor: '#E9FFF4' },
@@ -741,10 +896,9 @@ const styles = StyleSheet.create({
   quizCompleteCard: { alignItems: 'center', backgroundColor: '#F7FFFC' },
   quizCompleteImage: { width: 124, height: 124 },
   quizCompleteTitle: { color: '#155B52', fontSize: 30, fontWeight: '900', textAlign: 'center' },
-  quizScore: { fontSize: 30, fontWeight: '900' },
-  quizScoreSmall: { color: '#8C9AAA', fontSize: 14 },
+  quizScore: { fontSize: 30, fontFamily: 'Fredoka_700Bold' },
+  quizScoreSmall: { color: '#8C9AAA', fontSize: 14, fontFamily: 'Fredoka_700Bold'},
   quizReward: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FFFFFF', borderRadius: 24, paddingHorizontal: 18, paddingVertical: 12 },
   quizRewardText: { color: '#8C9AAA', fontSize: 16, fontWeight: '900' },
   quizButtons: { width: '100%' }
 });
-

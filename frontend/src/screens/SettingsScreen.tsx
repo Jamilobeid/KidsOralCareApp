@@ -1,10 +1,10 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Alert, Animated, Image, ImageSourcePropType, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { Card } from '../components/Card';
 import { Screen } from '../components/Screen';
-import { Title } from '../components/Typography';
 import { useApp } from '../context/AppContext';
+import { toothBuddies } from '../data/toothBuddies';
 import { LanguageCode, RootScreen } from '../types/app';
 import { bodyFont, buttonFont, headingFont, rewardFont } from '../utils/kidStyle';
 
@@ -19,6 +19,7 @@ type SettingsCardProps = IconArtwork & {
   title: string;
   subtitle: string;
   children?: React.ReactNode;
+  iconSize?: number;
 };
 
 type ToggleRowProps = IconArtwork & {
@@ -62,6 +63,7 @@ const artwork = {
   voice: require('../../assets/images/settings-voice-cutout.png'),
   personalization: require('../../assets/images/settings-personalization-cutout.png'),
   rewards: require('../../assets/images/settings-rewards-cutout.png'),
+  language: require('../../assets/images/settings-language-custom.png'),
   parent: require('../../assets/images/settings-parent-cutout.png'),
   screenTime: require('../../assets/images/settings-screen-time-cutout.png'),
   playLimit: require('../../assets/images/settings-play-limit-cutout.png'),
@@ -95,15 +97,19 @@ export const SettingsScreen = () => {
   }, [floatAnim]);
 
   const avatarLift = floatAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -8] });
+  const selectedBuddy = toothBuddies.find((buddy) => buddy.id === child.selectedCharacter) ?? toothBuddies[0];
   const navigateTo = (screen: RootScreen) => setScreen(screen);
 
   return (
-    <Screen contentContainerStyle={styles.screen}>
-      <Title size={38}>{t('settings')}</Title>
+    <Screen contentContainerStyle={styles.screen} gradientBackground showDecorations={false}>
+      <Text style={styles.pageTitle}>{t('settings')}</Text>
 
       <Card style={styles.profileCard}>
         <Animated.View style={[styles.profileAvatar, { transform: [{ translateY: avatarLift }] }]}>
-          <Image source={require('../../assets/images/home-shining-tooth.png')} style={styles.profileTooth} resizeMode="contain" />
+          <View style={styles.profileBuddyGlow} />
+          <Ionicons name="sparkles" size={18} color="#FFD85A" style={styles.profileSparkleTop} />
+          <Image source={selectedBuddy.image as ImageSourcePropType} style={styles.profileTooth} resizeMode="contain" />
+          <Ionicons name="sparkles" size={15} color="#2EC4B6" style={styles.profileSparkleBottom} />
         </Animated.View>
         <View style={styles.profileCopy}>
           <Text style={[headingFont, styles.profileTitle]}>Hello, Smile Hero!</Text>
@@ -122,7 +128,7 @@ export const SettingsScreen = () => {
         <ToggleRow imageSource={artwork.dailyChallenges} fallbackIcon="flag" label="Daily challenges" value={dailyChallenges} onValueChange={setDailyChallenges} color="#FF6B9A" background="#FFEAF3" />
       </SettingsCard>
 
-      <SettingsCard fallbackIcon="language" color="#2EC4B6" background="#E6FFF8" title="Language" subtitle="Choose your favorite language.">
+      <SettingsCard imageSource={artwork.language} fallbackIcon="language" color="#2EC4B6" background="#E6FFF8" title="Language" subtitle="Choose your favorite language." iconSize={58}>
         <View style={styles.optionGrid}>
           {languageOptions.map((option) => (
             <OptionButton key={option.code} label={`${option.emoji} ${option.label}`} selected={language === option.code} onPress={() => setLanguage(option.code)} color={option.color} />
@@ -169,11 +175,11 @@ const ImageIcon = ({ imageSource, fallbackIcon, color, size = 34 }: IconArtwork 
   return <Ionicons name={fallbackIcon ?? 'ellipse'} size={Math.round(size * 0.74)} color={color} />;
 };
 
-const SettingsCard = ({ imageSource, fallbackIcon, color, background, title, subtitle, children }: SettingsCardProps) => (
+const SettingsCard = ({ imageSource, fallbackIcon, color, background, title, subtitle, children, iconSize = 46 }: SettingsCardProps) => (
   <Card style={styles.settingsCard}>
     <View style={styles.cardHeader}>
       <View style={[styles.cardIcon, { backgroundColor: background }]}>
-        <ImageIcon imageSource={imageSource} fallbackIcon={fallbackIcon} color={color} background={background} size={46} />
+        <ImageIcon imageSource={imageSource} fallbackIcon={fallbackIcon} color={color} background={background} size={iconSize} />
       </View>
       <View style={styles.cardTitleWrap}>
         <Text style={[headingFont, styles.cardTitle]}>{title}</Text>
@@ -199,7 +205,7 @@ const OptionButton = ({ label, selected, onPress, color }: OptionButtonProps) =>
     onPress={onPress}
     style={({ pressed }) => [
       styles.optionButton,
-      { borderColor: selected ? color : '#DCEAF1', backgroundColor: selected ? `${color}22` : '#FFFFFF', transform: [{ scale: pressed ? 0.97 : 1 }] }
+      { borderColor: selected ? color : '#DCEAF1', backgroundColor: selected ? '#EAF7FF' : '#FFFFFF', transform: [{ scale: pressed ? 0.97 : 1 }] }
     ]}
   >
     <Text style={[buttonFont, styles.optionText, { color: selected ? color : '#16324F' }]}>{label}</Text>
@@ -277,46 +283,57 @@ const MiniStat = ({ imageSource, label, value, tint }: MiniStatProps) => (
 );
 
 const styles = StyleSheet.create({
-  screen: { gap: 16, paddingBottom: 30 },
-  profileCard: { flexDirection: 'row', alignItems: 'center', gap: 16, backgroundColor: '#FFFFFF', borderColor: '#8FE9F2' },
-  profileAvatar: { width: 108, height: 108, borderRadius: 32, backgroundColor: '#E8FFF8', alignItems: 'center', justifyContent: 'center' },
-  profileTooth: { width: 94, height: 94 },
+  screen: { gap: 30, paddingBottom: 30 },
+  pageTitle: {
+    fontFamily: 'Fredoka_700Bold',
+    fontSize: 40,
+    lineHeight: 48,
+    color: '#41438F',
+    textAlign: 'center',
+    alignSelf: 'stretch'
+  },
+  profileCard: { flexDirection: 'row', alignItems: 'center', gap: 20, backgroundColor: '#FFFFFF', borderWidth: 0, borderRadius: 28, shadowColor: '#17324D', shadowOpacity: 0.09, shadowRadius: 9, shadowOffset: { width: 0, height: 5 }, elevation: 3 },
+  profileAvatar: { width: 126, height: 126, borderRadius: 32, backgroundColor: '#F1FFFC', alignItems: 'center', justifyContent: 'center', overflow: 'visible', shadowColor: '#18D6C1', shadowOpacity: 0.36, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 8 },
+  profileBuddyGlow: { position: 'absolute', width: 112, height: 112, borderRadius: 56, backgroundColor: 'rgba(255,255,255,0.94)', shadowColor: '#FFD85A', shadowOpacity: 0.45, shadowRadius: 18, shadowOffset: { width: 0, height: 0 }, elevation: 6 },
+  profileSparkleTop: { position: 'absolute', top: 9, right: 9, zIndex: 2 },
+  profileSparkleBottom: { position: 'absolute', bottom: 13, left: 10, zIndex: 2 },
+  profileTooth: { width: 132, height: 132, zIndex: 1 },
   profileCopy: { flex: 1, gap: 8 },
-  profileTitle: { color: '#16324F', fontSize: 27, lineHeight: 31, fontWeight: '900' },
-  profileMessage: { color: '#33546E', fontSize: 16, lineHeight: 21, fontStyle: 'italic' },
+  profileTitle: { color: '#41438F', fontSize: 27, lineHeight: 31, fontFamily: 'Fredoka_700Bold' },
+  profileMessage: { color: '#454f59', fontSize: 13, lineHeight: 21, fontFamily: 'Fredoka_700Bold' },
   profileStats: { gap: 8 },
   miniStat: { minHeight: 54, flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 18, paddingHorizontal: 10, paddingVertical: 8 },
   miniStatImage: { width: 38, height: 38 },
   miniStatCopy: { flex: 1, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 },
-  miniStatLabel: { color: '#54708A', fontSize: 14, fontWeight: '800', fontStyle: 'italic' },
-  miniStatText: { color: '#16324F', fontSize: 19, fontWeight: '900' },
-  settingsCard: { gap: 12, backgroundColor: '#FFFFFF' },
+  miniStatLabel: { color: '#000000', fontSize: 14, fontFamily: 'Fredoka_700Bold' },
+  miniStatText: { color: '#000000', fontSize: 19, fontFamily: 'Fredoka_700Bold' },
+  settingsCard: { gap: 15, backgroundColor: '#ffffff', alignItems: 'center', borderWidth: 0, borderRadius: 28, shadowColor: '#17324D', shadowOpacity: 0.09, shadowRadius: 9, shadowOffset: { width: 0, height: 5 }, elevation: 3 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 13 },
   cardIcon: { width: 64, height: 64, borderRadius: 22, alignItems: 'center', justifyContent: 'center', overflow: 'visible' },
   cardTitleWrap: { flex: 1 },
-  cardTitle: { color: '#16324F', fontSize: 24, lineHeight: 29, fontWeight: '900' },
-  cardSubtitle: { color: '#54708A', fontSize: 16, lineHeight: 21, fontStyle: 'italic' },
-  cardContent: { gap: 10 },
-  toggleRow: { minHeight: 66, borderRadius: 22, backgroundColor: '#F7FBFF', flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 12 },
+  cardTitle: { color: '#41438F', fontSize: 24, lineHeight: 29, fontFamily: 'Fredoka_700Bold' },
+  cardSubtitle: { color: '#454f59', fontSize: 13, lineHeight: 21, fontFamily: 'Fredoka_700Bold' },
+  cardContent: { gap: 30 },
+  toggleRow: { minHeight: 66, width:310, backgroundColor: '#F7FBFF', flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 15, borderWidth: 0, borderRadius: 28, shadowColor: '#17324D', shadowOpacity: 0.09, shadowRadius: 9, shadowOffset: { width: 0, height: 5 }, elevation: 10 },
   smallIcon: { width: 48, height: 48, borderRadius: 17, alignItems: 'center', justifyContent: 'center', overflow: 'visible' },
-  toggleLabel: { flex: 1, color: '#16324F', fontSize: 16, fontWeight: '900' },
-  optionGrid: { gap: 10 },
-  optionButton: { minHeight: 58, borderRadius: 20, borderWidth: 2, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  optionText: { fontSize: 17, fontWeight: '900' },
-  linkCard: { flexDirection: 'row', alignItems: 'center', gap: 13, backgroundColor: '#FFFFFF' },
-  lockedCard: { borderColor: '#FFE0A6', backgroundColor: '#FFF9EA' },
-  lockBox: { gap: 12, borderRadius: 22, backgroundColor: '#FFF9EA', padding: 14 },
-  lockQuestion: { color: '#16324F', fontSize: 20, fontWeight: '900' },
-  lockInputRow: { flexDirection: 'row', gap: 10 },
-  lockInput: { flex: 1, minHeight: 54, borderRadius: 18, backgroundColor: '#FFFFFF', borderWidth: 2, borderColor: '#FFE0A6', paddingHorizontal: 14, color: '#16324F', fontSize: 17 },
-  unlockButton: { minHeight: 54, borderRadius: 18, backgroundColor: '#FFB703', paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center' },
-  unlockText: { color: '#FFFFFF', fontSize: 17, fontWeight: '900' },
+  toggleLabel: { flex: 1, color: '#454f59', fontSize: 16, fontFamily: 'Fredoka_700Bold' },
+  optionGrid: { gap: 20 },
+  optionButton: { minHeight: 58, width:300, backgroundColor: '#F7FBFF', borderRadius: 28, borderWidth: 0, paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', shadowColor: '#17324D', shadowOpacity: 0.09, shadowRadius: 15, shadowOffset: { width: 10, height: 10 }, elevation: 10 },
+  optionText: { fontSize: 17, fontFamily: 'Fredoka_700Bold' },
+  linkCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: '#F7FFFC', borderWidth: 0, borderRadius: 28, shadowColor: '#17324D', shadowOpacity: 0.09, shadowRadius: 9, shadowOffset: { width: 0, height: 5 }, elevation: 3 },
+  lockedCard: { borderColor: '#f9f9f9', backgroundColor: '#97792d' },
+  lockBox: { gap: 20, borderRadius: 22, backgroundColor: '#f8f6f6', padding: 40, borderWidth: 0, shadowColor: '#17324D', shadowOpacity: 0.09, shadowRadius: 9, shadowOffset: { width: 0, height: 5 }, elevation: 7  },
+  lockQuestion: { color: '#41438F', fontSize: 22, fontFamily: 'Fredoka_700Bold' },
+  lockInputRow: { flexDirection: 'row', gap: 8 },
+  lockInput: { flex: 1, minHeight: 54, borderRadius: 10, backgroundColor: '#FFFFFF', borderWidth: 0, paddingHorizontal: 14, color: '#41438F', fontSize: 17, shadowColor: '#17324D', shadowOpacity: 0.09, shadowRadius: 9, shadowOffset: { width: 10, height: 10 }, elevation: 15 },
+  unlockButton: { minHeight: 54, borderRadius: 18, backgroundColor: '#454f59', paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center' },
+  unlockText: { color: '#FFFFFF', fontSize: 17, fontFamily: 'Fredoka_700Bold' },
   resetButton: { minHeight: 58, borderRadius: 20, backgroundColor: '#FF6B9A', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   resetText: { color: '#FFFFFF', fontSize: 18, fontWeight: '900' },
-  aboutRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F7FBFF', borderRadius: 18, padding: 12 },
-  aboutLabel: { color: '#54708A', fontSize: 16, fontStyle: 'italic' },
-  aboutValue: { color: '#16324F', fontSize: 16, fontWeight: '900' },
-  aboutButtons: { flexDirection: 'row', gap: 10 },
-  aboutButton: { flex: 1, minHeight: 50, borderRadius: 18, backgroundColor: '#E9FFF4', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
-  aboutButtonText: { color: '#168954', fontSize: 15, fontWeight: '900' }
+  aboutRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F7FBFF', borderRadius: 18, padding: 12, gap: 65 },
+  aboutLabel: { color: '#54708A', fontSize: 16, fontFamily: 'Fredoka_700Bold' },
+  aboutValue: { color: '#16324F', fontSize: 16, fontFamily: 'Fredoka_700Bold' },
+  aboutButtons: { flexDirection: 'row', gap: 30 },
+  aboutButton: { flex: 1, minHeight: 50, borderRadius: 18, backgroundColor: '#d8f9e8', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
+  aboutButtonText: { color: '#168954', fontSize: 15, fontFamily: 'Fredoka_700Bold' }
 });

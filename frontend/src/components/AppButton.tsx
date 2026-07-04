@@ -29,6 +29,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 5 },
     elevation: 2
   },
-  text: { fontSize: 17, fontWeight: '900' }
+  text: { fontSize: 20, fontFamily: 'Fredoka_700Bold' }
 });
 

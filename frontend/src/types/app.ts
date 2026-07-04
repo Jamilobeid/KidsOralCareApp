@@ -13,7 +13,10 @@ export type ChildProfile = {
   points: number;
   badges: string[];
   unlockedCharacters: string[];
+  selectedCharacter: string;
   level: number;
+  totalBrushes: number;
+  weeklyBrushes: number[];
 };
 
 export type ReminderSettings = {
