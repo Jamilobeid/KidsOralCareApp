@@ -20,6 +20,7 @@ const CHARACTER_LEVEL_REQUIREMENTS: Record<string, number> = {
   Bubbles: 5,
   Sparky: 5
 };
+type BrushingPeriod = 'morning' | 'evening';
 
 type AppContextValue = {
   screen: RootScreen;
@@ -62,7 +63,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [username, setUsername] = useState(demoChild.nickname);
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [reminders, setReminders] = useState<ReminderSettings>({ morning: '07:30', evening: '19:30' });
-  const [brushingCountToday, setBrushingCountToday] = useState(1);
+  const [brushingCountToday, setBrushingCountToday] = useState(0);
+  const [brushedPeriodsToday, setBrushedPeriodsToday] = useState<BrushingPeriod[]>([]);
   const [gamePlays, setGamePlays] = useState<Record<string, number>>({ 'plaque-pop': 1 });
   const [challenges, setChallenges] = useState<Challenge[]>(initialChallenges);
 
@@ -119,22 +121,37 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const completeBrushing = () => {
-    setBrushingCountToday((value) => {
-      const nextValue = Math.min(value + 1, 2);
+    const period: BrushingPeriod = new Date().getHours() < 12 ? 'morning' : 'evening';
+
+    setBrushedPeriodsToday((periods) => {
+      if (periods.includes(period)) {
+        Alert.alert('Already counted', `Your ${period} brush is already complete.`);
+        return periods;
+      }
+
+      const nextPeriods = [...periods, period];
+      const nextCount = Math.min(nextPeriods.length, 2);
+      setBrushingCountToday(nextCount);
       setChallenges((items) => items.map((challenge) => {
-        if (challenge.id === 'daily-two-brushes') return { ...challenge, progress: Math.min(challenge.progress + 1, challenge.target) };
-        if (challenge.id === 'weekly-streak' && value === 0) return { ...challenge, progress: Math.min(challenge.progress + 1, challenge.target) };
+        if (challenge.id === 'daily-two-brushes') return { ...challenge, progress: nextCount };
+        if (challenge.id === 'weekly-streak' && periods.length === 0) return { ...challenge, progress: Math.min(challenge.progress + 1, challenge.target) };
         return challenge;
       }));
-      return nextValue;
+      setChild((current) => {
+        const todayIndex = (new Date().getDay() + 6) % 7;
+        const weeklyBrushes = [...current.weeklyBrushes];
+        weeklyBrushes[todayIndex] = Math.min((weeklyBrushes[todayIndex] ?? 0) + 1, 2);
+        const nextPoints = current.points + 20;
+        return {
+          ...current,
+          points: nextPoints,
+          level: Math.max(current.level, Math.floor(nextPoints / 200) + 1),
+          totalBrushes: current.totalBrushes + 1,
+          weeklyBrushes
+        };
+      });
+      return nextPeriods;
     });
-    setChild((current) => {
-      const todayIndex = (new Date().getDay() + 6) % 7;
-      const weeklyBrushes = [...current.weeklyBrushes];
-      weeklyBrushes[todayIndex] = Math.min((weeklyBrushes[todayIndex] ?? 0) + 1, 2);
-      return { ...current, totalBrushes: current.totalBrushes + 1, weeklyBrushes };
-    });
-    addPoints(20);
   };
 
   const recordGamePlay = (gameId: string) => {
@@ -189,7 +206,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
   const value = useMemo<AppContextValue>(() => ({
     screen, setScreen, language, setLanguage, t, isRtl, child, username, authMode, setAuthMode, signInChild, registerChild, theme: themes[child.theme], reminders, setReminders, saveReminders, brushingCountToday, completeBrushing, gamePlays, recordGamePlay, awardGame, challenges, updateAvatar, updateTheme, chooseCharacter, unlockCharacter, games, leaderboard, avatarOptions
-  }), [screen, language, child, authMode, reminders, brushingCountToday, gamePlays, challenges]);
+  }), [screen, language, child, authMode, reminders, brushingCountToday, gamePlays, challenges, brushedPeriodsToday]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

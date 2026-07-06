@@ -26,11 +26,6 @@ export const RewardsScreen = () => {
   const { child, theme, brushingCountToday, challenges, chooseCharacter } = useApp();
 
   const level = Math.min(Math.floor(child.points / STARS_PER_LEVEL) + 1, LEVEL_COUNT);
-  const levelStart = (level - 1) * STARS_PER_LEVEL;
-  const nextLevelAt = level * STARS_PER_LEVEL;
-  const starsIntoLevel = level === LEVEL_COUNT ? STARS_PER_LEVEL : child.points - levelStart;
-  const starsToNextLevel = level === LEVEL_COUNT ? 0 : Math.max(nextLevelAt - child.points, 0);
-  const progress = level === LEVEL_COUNT ? 1 : Math.min(Math.max(starsIntoLevel / STARS_PER_LEVEL, 0), 1);
   const weeklyStreak = challenges.find((challenge) => challenge.id === 'weekly-streak');
   const weeklyGames = challenges.find((challenge) => challenge.id === 'weekly-games');
   const dailyBrushes = challenges.find((challenge) => challenge.id === 'daily-two-brushes');
@@ -56,22 +51,7 @@ export const RewardsScreen = () => {
   return (
     <Screen contentContainerStyle={styles.screen} gradientBackground showDecorations={false}>
       <View style={styles.header}>
-        <Text style={[rewardFont, styles.pageTitle, { color: theme.text }]}>Rewards</Text>
-      </View>
-
-      <View style={styles.heroCard}>
-        <View style={styles.starHeroWrap}>
-          <Image source={require('../../assets/images/rewards-smile-star-clean-transparent.png')} style={styles.heroStar} resizeMode="contain" />
-          <View style={styles.levelPill}><Text style={styles.levelPillText}>Lv {level}</Text></View>
-        </View>
-        <View style={styles.heroContent}>
-          <Text style={styles.heroLabel}>SMILE STARS</Text>
-          <Text style={styles.heroPoints}>{child.points}</Text>
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
-          </View>
-          <Text style={styles.heroHint}>{level === LEVEL_COUNT ? 'Max level reached' : `${starsToNextLevel} stars to Level ${level + 1}`}</Text>
-        </View>
+        <Text style={[rewardFont, styles.pageTitle]}>Rewards</Text>
       </View>
 
       <View style={styles.sectionHeader}>
@@ -136,32 +116,7 @@ export const RewardsScreen = () => {
 const styles = StyleSheet.create({
   screen: { gap: 16, paddingBottom: 34 },
   header: { minHeight: 46, alignItems: 'center', justifyContent: 'center' },
-  pageTitle: { fontSize: 26, lineHeight: 32, textAlign: 'center', fontFamily: 'Fredoka_700Bold' },
-  heroCard: {
-    minHeight: 200,
-    borderRadius: 30,
-    backgroundColor: 'rgba(239,255,253,0.92)',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 30,
-    paddingVertical: 24,
-    gap: 24,
-    shadowColor: '#173D3B',
-    shadowOpacity: 0.13,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 8
-  },
-  starHeroWrap: { width: 126, height: 138, alignItems: 'center', justifyContent: 'center' },
-  heroStar: { width: 122, height: 122 },
-  levelPill: { position: 'absolute', bottom: 0, right: 7, borderRadius: 999, backgroundColor: '#FFFFFF', paddingHorizontal: 13, paddingVertical: 5, shadowColor: '#173D3B', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 3 },
-  levelPillText: { color: '#087C72', fontFamily: 'Fredoka_700Bold', fontSize: 16, lineHeight: 18 },
-  heroContent: { flex: 1, gap: 7 },
-  heroLabel: { color: '#708C89', fontFamily: 'Fredoka_700Bold', fontSize: 15, letterSpacing: 0 },
-  heroPoints: { color: '#087C72', fontFamily: 'Fredoka_700Bold', fontSize: 44, lineHeight: 50 },
-  progressTrack: { height: 15, borderRadius: 999, backgroundColor: '#CFFBF2', overflow: 'hidden', marginTop: 6 },
-  progressFill: { height: '100%', borderRadius: 999, backgroundColor: '#26C8D9' },
-  heroHint: { color: '#708C89', fontFamily: 'Fredoka_700Bold', fontSize: 15, lineHeight: 20 },
+  pageTitle: { fontSize: 40, lineHeight: 40, textAlign: 'center', fontFamily: 'Fredoka_700Bold', color: '#41438F' },
   sectionHeader: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 8 },
   sectionTitle: { color: '#173D3B', fontFamily: 'Fredoka_700Bold', fontSize: 27, lineHeight: 34 },
   sectionMeta: { color: '#6A8380', fontFamily: 'Fredoka_700Bold', fontSize: 16, lineHeight: 24 },

@@ -31,7 +31,7 @@ const mouthImages = {
 const rewardStarImage = require('../../assets/images/brushing-reward-star.png');
 
 export const BrushingTimerScreen = () => {
-  const { t, completeBrushing } = useApp();
+  const { t, completeBrushing, theme } = useApp();
   const [secondsLeft, setSecondsLeft] = useState(totalSeconds);
   const [running, setRunning] = useState(false);
   const [finished, setFinished] = useState(false);
@@ -74,7 +74,7 @@ export const BrushingTimerScreen = () => {
   };
 
   return (
-    <LinearGradient colors={['#44D0C4', '#E4F8F5', '#FFFFFF']} locations={[0, 0.62, 1]} style={styles.gradient}>
+    <LinearGradient colors={theme.gradient} locations={[0, 0.62, 1]} style={styles.gradient}>
       <SafeAreaView style={styles.safe}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.topArea}>

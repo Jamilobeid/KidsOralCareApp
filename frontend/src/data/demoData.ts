@@ -32,7 +32,7 @@ export const games: Game[] = [
 ];
 
 export const challenges: Challenge[] = [
-  { id: 'daily-two-brushes', titleKey: 'dailyTwoBrushes', descriptionKey: 'dailyTwoBrushesDesc', cadence: 'daily', points: 40, progress: 1, target: 2 },
+  { id: 'daily-two-brushes', titleKey: 'dailyTwoBrushes', descriptionKey: 'dailyTwoBrushesDesc', cadence: 'daily', points: 40, progress: 0, target: 2 },
   { id: 'daily-water', titleKey: 'dailyWater', descriptionKey: 'dailyWaterDesc', cadence: 'daily', points: 15, progress: 2, target: 3 },
   { id: 'weekly-streak', titleKey: 'weeklyStreak', descriptionKey: 'weeklyStreakDesc', cadence: 'weekly', points: 120, progress: 5, target: 7 },
   { id: 'weekly-games', titleKey: 'weeklyGames', descriptionKey: 'weeklyGamesDesc', cadence: 'weekly', points: 80, progress: 4, target: 5 }

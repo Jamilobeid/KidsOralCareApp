@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
   pageTitle: {
     fontFamily: 'Fredoka_700Bold',
     fontSize: 40,
-    lineHeight: 48,
+    lineHeight: 40,
     color: '#41438F',
     textAlign: 'center',
     alignSelf: 'stretch'

@@ -245,7 +245,7 @@ const WeekDay = ({ day, brushCount, active, future }: { day: string; brushCount:
 
 const styles = StyleSheet.create({
   screen: { gap: 18, paddingBottom: 26 },
-  pageTitle: { color: '#17324D', fontFamily: 'Fredoka_700Bold', fontSize: 34, lineHeight: 42, textAlign: 'center' },
+  pageTitle: { color: '#41438F', fontFamily: 'Fredoka_700Bold', fontSize: 35, lineHeight: 40, textAlign: 'center' },
   heroCard: { borderRadius: 32, backgroundColor: '#FFFFFF', padding: 20, gap: 20, shadowColor: '#17324D', shadowOpacity: 0.09, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 5 },
   profileRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   buddyWrap: { width: 98, height: 98, borderRadius: 32, backgroundColor: '#F4F8FF', alignItems: 'center', justifyContent: 'center', shadowColor: '#17324D', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },

@@ -3,10 +3,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Image, ImageSourcePropType, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useApp } from '../context/AppContext';
+import { toothBuddies } from '../data/toothBuddies';
 import { RootScreen } from '../types/app';
 import { bodyFont, headingFont } from '../utils/kidStyle';
 
-const heroToothImage = require('../../assets/images/custom-home-super-tooth.png');
 const brushTimerImage = require('../../assets/images/home-brush-timer.png');
 const starImage = require('../../assets/images/custom-home-star-new.png');
 const badgeImage = require('../../assets/images/custom-home-badge.png');
@@ -15,34 +15,69 @@ const smallStarImage = starImage;
 const tipAlertImage = require('../../assets/images/custom-home-tip-alert.png');
 const tipOneImage = require('../../assets/images/custom-home-one.png');
 const tipTwoImage = require('../../assets/images/custom-home-two.png');
+const LEVEL_COUNT = 5;
+const STARS_PER_LEVEL = 200;
 
-const navTiles: { label: string; target: RootScreen; image: ImageSourcePropType; tooth: ImageSourcePropType; raised?: boolean; toothTilt: string }[] = [
-  { label: 'Games', target: 'games', image: require('../../assets/images/custom-home-games.png'), tooth: require('../../assets/images/custom-home-tile-tooth-games.png'), toothTilt: '-8deg' },
-  { label: 'Challenges', target: 'challenges', image: require('../../assets/images/custom-home-challenges.png'), tooth: require('../../assets/images/custom-home-tile-tooth-challenges.png'), raised: true, toothTilt: '9deg' },
-  { label: 'Leaderboard', target: 'leaderboard', image: require('../../assets/images/custom-home-leaderboard.png'), tooth: require('../../assets/images/custom-home-tile-tooth-leaderboard.png'), toothTilt: '-10deg' },
-  { label: 'Personalization', target: 'personalization', image: require('../../assets/images/custom-home-personalization.png'), tooth: require('../../assets/images/custom-home-tile-tooth-personalization.png'), raised: true, toothTilt: '8deg' }
+const navTiles: { label: string; target: RootScreen; image: ImageSourcePropType }[] = [
+  { label: 'Games', target: 'games', image: require('../../assets/images/custom-home-games.png') },
+  { label: 'Brush', target: 'brushing', image: require('../../assets/images/custom-home-brush-tile.png') },
+  { label: 'Leaderboard', target: 'leaderboard', image: require('../../assets/images/custom-home-leaderboard.png') },
+  { label: 'Personalization', target: 'personalization', image: require('../../assets/images/custom-home-personalization.png') }
 ];
 
 export const ChildHomeScreen = () => {
-  const { child, brushingCountToday, setScreen } = useApp();
+  const { child, brushingCountToday, setScreen, theme } = useApp();
+  const level = Math.min(Math.floor(child.points / STARS_PER_LEVEL) + 1, LEVEL_COUNT);
+  const levelStart = (level - 1) * STARS_PER_LEVEL;
+  const nextLevelAt = level * STARS_PER_LEVEL;
+  const starsIntoLevel = level === LEVEL_COUNT ? STARS_PER_LEVEL : child.points - levelStart;
+  const starsToNextLevel = level === LEVEL_COUNT ? 0 : Math.max(nextLevelAt - child.points, 0);
+  const levelProgress = level === LEVEL_COUNT ? 1 : Math.min(Math.max(starsIntoLevel / STARS_PER_LEVEL, 0), 1);
   const dailyProgress = Math.min(brushingCountToday, 2);
-  const progressPercent = `${Math.max(8, (dailyProgress / 2) * 100)}%` as `${number}%`;
+  const progressPercent = `${(dailyProgress / 2) * 100}%` as `${number}%`;
+  const selectedBuddy = toothBuddies.find((buddy) => buddy.id === child.selectedCharacter) ?? toothBuddies[0];
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <LinearGradient colors={['#44D0C4', '#DDF6F3', '#FFFFFF']} locations={[0, 0.72, 1]} style={styles.heroGradient}>
-          <View pointerEvents="none" style={[styles.cornerLine, styles.cornerLineLeft]} />
-          <View pointerEvents="none" style={[styles.cornerLine, styles.cornerLineRight]} />
+    <LinearGradient colors={theme.gradient} locations={[0, 0.80, 1]} style={styles.rootGradient}>
+      <SafeAreaView style={styles.safe}>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.heroSection}>
+          <View style={styles.topPills}>
+            <View style={styles.topPill}>
+              <Text style={[headingFont, styles.topPillText]}>Level {level}</Text>
+            </View>
+            <View style={styles.topPill}>
+              <Text style={[headingFont, styles.topPillText]}>{child.points} Smile Stars</Text>
+            </View>
+          </View>
 
-          <Text style={[headingFont, styles.welcomeText]}>Welcome {child.nickname}</Text>
-          <Image source={heroToothImage} style={styles.heroTooth} resizeMode="contain" />
+          <View style={styles.progressPanel}>
+            <View style={styles.levelCard}>
+              <View style={[styles.buddyWrap, { backgroundColor: selectedBuddy.tone }]}>
+                <Image source={selectedBuddy.image as ImageSourcePropType} style={styles.buddyImage} resizeMode="contain" />
+                <View style={styles.levelBadge}><Text style={[headingFont, styles.levelBadgeText]}>Lv {level}</Text></View>
+              </View>
+              <View style={styles.levelCopy}>
+                <Text style={[headingFont, styles.buddyName]}>{selectedBuddy.title}</Text>
+                <View style={styles.levelTrack}>
+                  <View style={[styles.levelFill, { width: `${levelProgress * 100}%` }]} />
+                </View>
+                <Text style={[headingFont, styles.levelHint]}>{level === LEVEL_COUNT ? 'Max level reached' : `${starsToNextLevel} stars to Level ${level + 1}`}</Text>
+              </View>
+            </View>
 
-          <View style={styles.questionBlock}>
-            <Text style={[bodyFont, styles.questionText]}>Do You Want Your Teeth</Text>
-            <View style={styles.questionSecondLine}>
-              <Text style={styles.decorativeT}>T</Text>
-              <Text style={[bodyFont, styles.questionText]}>o Look Like This?</Text>
+            <View style={styles.statsRow}>
+              <View style={styles.statBlock}>
+                <Text style={[headingFont, styles.statLabel]}>Smile Stars</Text>
+                <Image source={starImage} style={styles.statImage} resizeMode="contain" />
+                <Text style={[bodyFont, styles.statValue]}>{child.points}</Text>
+              </View>
+
+              <View style={styles.statBlock}>
+                <Text style={[headingFont, styles.statLabel]}>Badges</Text>
+                <Image source={badgeImage} style={styles.statImage} resizeMode="contain" />
+                <Text style={[bodyFont, styles.statValue]}>{child.badges.length}</Text>
+              </View>
             </View>
           </View>
 
@@ -58,22 +93,6 @@ export const ChildHomeScreen = () => {
               <Text style={[headingFont, styles.brushTimeText]}>2:00</Text>
             </View>
           </Pressable>
-        </LinearGradient>
-
-        <View style={styles.statsRow}>
-          <View style={styles.statBlock}>
-            <Text style={[headingFont, styles.statLabel]}>Smile Stars</Text>
-            <Image source={starImage} style={styles.statImage} resizeMode="contain" />
-            <Text style={[bodyFont, styles.statValue]}>{child.points}</Text>
-          </View>
-
-          <View style={styles.statsDivider} />
-
-          <View style={styles.statBlock}>
-            <Text style={[headingFont, styles.statLabel]}>Badges</Text>
-            <Image source={badgeImage} style={styles.statImage} resizeMode="contain" />
-            <Text style={[bodyFont, styles.statValue]}>{child.badges.length}</Text>
-          </View>
         </View>
 
         <View style={styles.challengeCard}>
@@ -114,85 +133,125 @@ export const ChildHomeScreen = () => {
               accessibilityRole="button"
               accessibilityLabel={tile.label}
               onPress={() => setScreen(tile.target)}
-              style={({ pressed }) => [styles.navTile, tile.raised && styles.navTileRaised, pressed && styles.pressed]}
+              style={({ pressed }) => [styles.navTile, pressed && styles.pressed]}
             >
               <Image source={tile.image} style={styles.navTileIcon} resizeMode="contain" />
               <Text style={[headingFont, styles.navTileText]}>{tile.label}</Text>
-              <Image source={tile.tooth} style={[styles.navTileTooth, { transform: [{ rotate: tile.toothTilt }] }]} resizeMode="contain" />
             </Pressable>
           ))}
         </View>
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
+  rootGradient: {
+    flex: 1
+  },
   safe: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
     flex: 1
   },
   scrollContent: {
     paddingBottom: 112
   },
-  heroGradient: {
+  heroSection: {
     alignItems: 'center',
-    paddingBottom: 38,
-    paddingHorizontal: 12,
-    paddingTop: 16
+    paddingBottom: 35,
+    paddingHorizontal: 15,
+    paddingTop: 7
   },
-  cornerLine: {
-    backgroundColor: '#111111',
-    height: 1.2,
-    position: 'absolute',
-    top: 9,
-    width: 105
-  },
-  cornerLineLeft: {
-    left: -20,
-    transform: [{ rotate: '-38deg' }]
-  },
-  cornerLineRight: {
-    right: -20,
-    transform: [{ rotate: '38deg' }]
-  },
-  welcomeText: {
-    color: '#41438F',
-    fontSize: 28,
-    lineHeight: 36,
-    marginBottom: 9,
-    textAlign: 'center'
-  },
-  heroTooth: {
-    height: 188,
-    marginBottom: 12,
-    width: 238
-  },
-  questionBlock: {
+  topPills: {
     alignSelf: 'stretch',
-    marginBottom: 15
-  },
-  questionText: {
-    color: '#111111',
-    fontFamily: 'serif',
-    fontSize: 30,
-    fontStyle: 'italic',
-    fontWeight: '900',
-    lineHeight: 40,
-    textAlign: 'left'
-  },
-  questionSecondLine: {
-    alignItems: 'flex-start',
     flexDirection: 'row',
-    paddingLeft: 42
+    justifyContent: 'space-between',
+    marginBottom: 20
   },
-  decorativeT: {
-    color: '#111111',
-    fontFamily: 'serif',
-    fontSize: 62,
-    fontStyle: 'italic',
-    lineHeight: 60,
-    marginRight: 0
+  topPill: {
+    alignItems: 'center',
+    backgroundColor: '#25363B',
+    borderRadius: 999,
+    justifyContent: 'center',
+    minHeight: 32,
+    paddingHorizontal: 16
+  },
+  topPillText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    lineHeight: 18
+  },
+  progressPanel: {
+    backgroundColor: 'rgba(238, 255, 253, 0.93)',
+    borderRadius: 28,
+    padding: 20,
+    width: '92%',
+    gap: 14, 
+    paddingBottom: 30, 
+    borderWidth: 0,
+    shadowColor: '#17324D',
+    shadowOpacity: 0.09,
+    shadowRadius: 9,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 10
+  },
+  levelCard: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 18,
+    marginBottom: 16
+  },
+  buddyWrap: {
+    alignItems: 'center',
+    borderRadius: 24,
+    height: 130,
+    justifyContent: 'center',
+    width: 118
+  },
+  buddyImage: {
+    height: 108,
+    width: 108
+  },
+  levelBadge: {
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 999,
+    bottom: 6,
+    minHeight: 24,
+    paddingHorizontal: 10,
+    position: 'absolute',
+    right: 8
+  },
+  levelBadgeText: {
+    color: '#087C72',
+    fontSize: 11,
+    lineHeight: 18
+  },
+  levelCopy: {
+    flex: 1,
+    gap: 8
+  },
+  buddyName: {
+    color: '#189989',
+    fontSize: 34,
+    lineHeight: 40
+  },
+  levelTrack: {
+    backgroundColor: '#CFFBF2',
+    borderRadius: 999,
+    height: 14,
+    overflow: 'hidden'
+  },
+  levelFill: {
+    backgroundColor: '#26C8D9',
+    borderRadius: 999,
+    height: '100%'
+  },
+  levelHint: {
+    color: '#6A8380',
+    fontSize: 12,
+    lineHeight: 16
   },
   brushButton: {
     alignItems: 'center',
@@ -200,6 +259,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     height: 86,
     justifyContent: 'center',
+    marginTop: 40,
     width: 264
   },
   brushButtonText: {
@@ -216,13 +276,13 @@ const styles = StyleSheet.create({
     marginTop: 3
   },
   brushTimerIcon: {
-    height: 24,
-    width: 24
+    height: 30,
+    width: 30
   },
   brushTimeText: {
     color: '#111111',
     fontSize: 17,
-    fontStyle: 'italic',
+    fontFamily: 'Fredoka_700Bold',
     lineHeight: 22
   },
   pressed: {
@@ -232,13 +292,24 @@ const styles = StyleSheet.create({
   statsRow: {
     alignItems: 'center',
     flexDirection: 'row',
+    gap: 18,
     justifyContent: 'center',
-    paddingHorizontal: 34,
-    paddingTop: 12
+    paddingHorizontal: 0,
+    paddingTop: 0
   },
   statBlock: {
     alignItems: 'center',
-    flex: 1
+    backgroundColor: '#F7FFFC',
+    borderWidth: 0,
+    borderRadius: 28,
+    shadowColor: '#17324D',
+    flex: 1,
+    minHeight: 126,
+    paddingVertical: 8, 
+    shadowOpacity: 0.09,
+    shadowRadius: 9,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 10
   },
   statLabel: {
     color: '#111111',
@@ -247,32 +318,32 @@ const styles = StyleSheet.create({
     marginBottom: 6
   },
   statImage: {
-    height: 84,
+    height: 58,
     marginBottom: 6,
-    width: 92
+    width: 64
   },
   statValue: {
     color: '#111111',
-    fontFamily: 'serif',
-    fontSize: 31,
-    fontWeight: '900',
+    fontFamily: 'Fredoka_700Bold',
+    fontSize: 27,
     lineHeight: 37
-  },
-  statsDivider: {
-    backgroundColor: '#333333',
-    height: 145,
-    marginHorizontal: 20,
-    width: 1
   },
   challengeCard: {
     alignSelf: 'center',
-    backgroundColor: 'rgba(226, 237, 236, 0.86)',
+    backgroundColor: '#F7FFFC',
     borderRadius: 15,
-    marginTop: 42,
+    marginTop: 10,
     paddingBottom: 14,
-    paddingHorizontal: 33,
-    paddingTop: 15,
-    width: '92%'
+    paddingHorizontal: 10,
+    paddingTop: 12,
+    width: '92%',
+    borderWidth: 0,
+    shadowColor: '#17324D',
+    shadowOpacity: 0.09,
+    shadowRadius: 9,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 15, 
+    gap: 6 
   },
   challengeHeader: {
     alignItems: 'center',
@@ -287,11 +358,11 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 20,
     lineHeight: 26,
-    marginLeft: 9
+    marginLeft: 10
   },
   rewardPill: {
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#a29b9b3e',
     borderRadius: 20,
     flexDirection: 'row',
     gap: 3,
@@ -311,7 +382,7 @@ const styles = StyleSheet.create({
   challengeSubtitle: {
     color: '#777777',
     fontSize: 18,
-    fontWeight: '800',
+    fontFamily: 'Fredoka_700Bold',
     lineHeight: 23,
     marginBottom: 12,
     marginLeft: 80
@@ -337,7 +408,7 @@ const styles = StyleSheet.create({
   },
   tipsSection: {
     paddingHorizontal: 24,
-    paddingTop: 50
+    paddingTop: 40
   },
   tipsHeader: {
     alignItems: 'center',
@@ -381,37 +452,36 @@ const styles = StyleSheet.create({
   tileGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    columnGap: 12,
-    rowGap: 30,
+    columnGap: 30,
+    rowGap: 35,
     justifyContent: 'center',
     paddingHorizontal: 10,
-    paddingTop: 44
+    paddingTop: 40
   },
   navTile: {
     alignItems: 'center',
-    backgroundColor: '#EDEDED',
-    borderRadius: 16,
-    height: 222,
+    backgroundColor: '#fffefe',
+    borderRadius: 25,
+    height: 122,
     justifyContent: 'space-between',
-    paddingBottom: 20,
-    paddingTop: 25,
-    width: 164
-  },
-  navTileRaised: {
-    marginTop: 58
+    paddingBottom: 12,
+    paddingTop: 12,
+    width: 164,
+    borderWidth: 0,
+    shadowColor: '#17324D',
+    shadowOpacity: 1,
+    shadowRadius: 10,
+    shadowOffset: { width: 10, height: 10 },
+    elevation: 10
   },
   navTileIcon: {
-    height: 66,
-    width: 66
+    height: 60,
+    width: 60
   },
   navTileText: {
     color: '#111111',
-    fontSize: 20,
-    lineHeight: 25,
+    fontSize: 17,
+    lineHeight: 40,
     textAlign: 'center'
-  },
-  navTileTooth: {
-    height: 74,
-    width: 84
   }
 });

@@ -36,7 +36,7 @@ export const Screen = ({ children, scroll = true, contentContainerStyle, gradien
 
   if (gradientBackground) {
     return (
-      <LinearGradient colors={['#44D0C4', '#DDF6F3', '#FFFFFF']} locations={[0, 0.55, 1]} style={styles.safe}>
+      <LinearGradient colors={theme.gradient} locations={[0, 0.55, 1]} style={styles.safe}>
         {body}
       </LinearGradient>
     );
