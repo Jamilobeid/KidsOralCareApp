@@ -469,10 +469,10 @@ const styles = StyleSheet.create({
     width: 164,
     borderWidth: 0,
     shadowColor: '#17324D',
-    shadowOpacity: 1,
-    shadowRadius: 10,
-    shadowOffset: { width: 10, height: 10 },
-    elevation: 10
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 5
   },
   navTileIcon: {
     height: 60,
