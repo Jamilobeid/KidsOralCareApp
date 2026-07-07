@@ -9,7 +9,7 @@ import { bodyFont, headingFont } from '../utils/kidStyle';
 const welcomeToothImage = require('../../assets/images/welcome-tooth-cutout.png');
 
 export const WelcomeScreen = () => {
-  const { setAuthMode, setScreen } = useApp();
+  const { setAuthMode, setScreen, t } = useApp();
 
   const openAuth = (mode: AuthMode) => {
     setAuthMode(mode);
@@ -20,24 +20,24 @@ export const WelcomeScreen = () => {
     <LinearGradient colors={['#44D0C4', '#DDF6F3', '#FFFFFF']} locations={[0, 0.55, 1]} style={styles.gradient}>
       <SafeAreaView style={styles.safe}>
         <View style={styles.content}>
-          <Text style={[headingFont, styles.title]}>Welcome!</Text>
+          <Text style={[headingFont, styles.title]}>{t('welcome')}</Text>
           <Image accessibilityLabel="Smiling clean tooth" source={welcomeToothImage} style={styles.tooth} resizeMode="contain" />
           <View style={styles.actions}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Create account"
+              accessibilityLabel={t('createAccount')}
               onPress={() => openAuth('signup')}
               style={({ pressed }) => [styles.button, styles.createButton, pressed && styles.buttonPressed]}
             >
-              <Text style={[bodyFont, styles.createButtonText]}>Create Account</Text>
+              <Text style={[bodyFont, styles.createButtonText]}>{t('createAccount')}</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Login"
+              accessibilityLabel={t('login')}
               onPress={() => openAuth('login')}
               style={({ pressed }) => [styles.button, styles.loginButton, pressed && styles.buttonPressed]}
             >
-              <Text style={[bodyFont, styles.loginButtonText]}>Login</Text>
+              <Text style={[bodyFont, styles.loginButtonText]}>{t('login')}</Text>
             </Pressable>
           </View>
         </View>

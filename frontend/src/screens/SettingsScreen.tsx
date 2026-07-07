@@ -112,23 +112,23 @@ export const SettingsScreen = () => {
           <Ionicons name="sparkles" size={15} color="#2EC4B6" style={styles.profileSparkleBottom} />
         </Animated.View>
         <View style={styles.profileCopy}>
-          <Text style={[headingFont, styles.profileTitle]}>Hello, Smile Hero!</Text>
-          <Text style={[bodyFont, styles.profileMessage]}>Let's make the app perfect for you!</Text>
+          <Text style={[headingFont, styles.profileTitle]}>{t('helloSmileHero')}</Text>
+          <Text style={[bodyFont, styles.profileMessage]}>{t('settingsProfileMessage')}</Text>
           <View style={styles.profileStats}>
-            <MiniStat imageSource={artwork.level} label="Level" value={`${child.level}`} tint="#FFF4D6" />
-            <MiniStat imageSource={artwork.stars} label="Smile Stars" value={`${child.points}`} tint="#FFF8D9" />
-            <MiniStat imageSource={artwork.badge} label="Badges" value={`${child.badges.length}`} tint="#E8F7FF" />
+            <MiniStat imageSource={artwork.level} label={t('level')} value={`${child.level}`} tint="#FFF4D6" />
+            <MiniStat imageSource={artwork.stars} label={t('smileStars')} value={`${child.points}`} tint="#FFF8D9" />
+            <MiniStat imageSource={artwork.badge} label={t('badges')} value={`${child.badges.length}`} tint="#E8F7FF" />
           </View>
         </View>
       </Card>
 
-      <SettingsCard imageSource={artwork.reminders} fallbackIcon="notifications" color="#1D9BF0" background="#E5F6FF" title="Reminders" subtitle="Never miss your brushing time.">
-        <ToggleRow imageSource={artwork.morning} fallbackIcon="sunny" label="Morning brushing reminder" value={morningReminder} onValueChange={setMorningReminder} color="#FFB703" background="#FFF5D6" />
-        <ToggleRow imageSource={artwork.evening} fallbackIcon="moon" label="Evening brushing reminder" value={eveningReminder} onValueChange={setEveningReminder} color="#7B61FF" background="#F0ECFF" />
-        <ToggleRow imageSource={artwork.dailyChallenges} fallbackIcon="flag" label="Daily challenges" value={dailyChallenges} onValueChange={setDailyChallenges} color="#FF6B9A" background="#FFEAF3" />
+      <SettingsCard imageSource={artwork.reminders} fallbackIcon="notifications" color="#1D9BF0" background="#E5F6FF" title={t('reminders')} subtitle={t('remindersSubtitle')}>
+        <ToggleRow imageSource={artwork.morning} fallbackIcon="sunny" label={t('morningReminder')} value={morningReminder} onValueChange={setMorningReminder} color="#FFB703" background="#FFF5D6" />
+        <ToggleRow imageSource={artwork.evening} fallbackIcon="moon" label={t('eveningReminder')} value={eveningReminder} onValueChange={setEveningReminder} color="#7B61FF" background="#F0ECFF" />
+        <ToggleRow imageSource={artwork.dailyChallenges} fallbackIcon="flag" label={t('dailyChallenges')} value={dailyChallenges} onValueChange={setDailyChallenges} color="#FF6B9A" background="#FFEAF3" />
       </SettingsCard>
 
-      <SettingsCard imageSource={artwork.language} fallbackIcon="language" color="#2EC4B6" background="#E6FFF8" title="Language" subtitle="Choose your favorite language." iconSize={58}>
+      <SettingsCard imageSource={artwork.language} fallbackIcon="language" color="#2EC4B6" background="#E6FFF8" title={t('language')} subtitle={t('languageSubtitleSettings')} iconSize={58}>
         <View style={styles.optionGrid}>
           {languageOptions.map((option) => (
             <OptionButton key={option.code} label={`${option.emoji} ${option.label}`} selected={language === option.code} onPress={() => setLanguage(option.code)} color={option.color} />
@@ -136,33 +136,33 @@ export const SettingsScreen = () => {
         </View>
       </SettingsCard>
 
-      <SettingsCard imageSource={artwork.sounds} fallbackIcon="musical-notes" color="#FF6B9A" background="#FFEAF3" title="Sounds & Music" subtitle="Make learning fun with audio.">
-        <ToggleRow imageSource={artwork.effects} fallbackIcon="sparkles" label="Sound effects" value={soundEffects} onValueChange={setSoundEffects} color="#FFB703" background="#FFF4D6" />
-        <ToggleRow imageSource={artwork.music} fallbackIcon="radio" label="Background music" value={backgroundMusic} onValueChange={setBackgroundMusic} color="#7B61FF" background="#F0ECFF" />
-        <ToggleRow imageSource={artwork.voice} fallbackIcon="mic" label="Voice instructions" value={voiceInstructions} onValueChange={setVoiceInstructions} color="#2EC4B6" background="#E6FFF8" />
+      <SettingsCard imageSource={artwork.sounds} fallbackIcon="musical-notes" color="#FF6B9A" background="#FFEAF3" title={t('soundsMusic')} subtitle={t('soundsMusicSubtitle')}>
+        <ToggleRow imageSource={artwork.effects} fallbackIcon="sparkles" label={t('soundEffects')} value={soundEffects} onValueChange={setSoundEffects} color="#FFB703" background="#FFF4D6" />
+        <ToggleRow imageSource={artwork.music} fallbackIcon="radio" label={t('backgroundMusic')} value={backgroundMusic} onValueChange={setBackgroundMusic} color="#7B61FF" background="#F0ECFF" />
+        <ToggleRow imageSource={artwork.voice} fallbackIcon="mic" label={t('voiceInstructions')} value={voiceInstructions} onValueChange={setVoiceInstructions} color="#2EC4B6" background="#E6FFF8" />
       </SettingsCard>
 
-      <LinkCard imageSource={artwork.personalization} fallbackIcon="color-palette" color="#7B61FF" background="#F0ECFF" title="Personalization" subtitle="Customize your avatar, colors, and characters." onPress={() => navigateTo('personalization')} />
+      <LinkCard imageSource={artwork.personalization} fallbackIcon="color-palette" color="#7B61FF" background="#F0ECFF" title={t('personalization')} subtitle={t('personalizationSubtitle')} onPress={() => navigateTo('personalization')} />
 
-      <LinkCard imageSource={artwork.rewards} fallbackIcon="trophy" color="#FFB703" background="#FFF5D6" title="Rewards" subtitle="View your coins, badges, trophies, and progress." onPress={() => navigateTo('rewards')} />
+      <LinkCard imageSource={artwork.rewards} fallbackIcon="trophy" color="#FFB703" background="#FFF5D6" title={t('rewards')} subtitle={t('rewardsSubtitle')} onPress={() => navigateTo('rewards')} />
 
       <ParentLock />
 
-      <SettingsCard imageSource={artwork.about} fallbackIcon="information-circle" color="#2EC4B6" background="#E6FFF8" title="About" subtitle="App information.">
+      <SettingsCard imageSource={artwork.about} fallbackIcon="information-circle" color="#2EC4B6" background="#E6FFF8" title={t('about')} subtitle={t('aboutSubtitle')}>
         <View style={styles.aboutRow}>
-          <Text style={[bodyFont, styles.aboutLabel]}>App name</Text>
+          <Text style={[bodyFont, styles.aboutLabel]}>{t('appNameLabel')}</Text>
           <Text style={[rewardFont, styles.aboutValue]}>Kids Oral Care</Text>
         </View>
         <View style={styles.aboutRow}>
-          <Text style={[bodyFont, styles.aboutLabel]}>Version</Text>
+          <Text style={[bodyFont, styles.aboutLabel]}>{t('version')}</Text>
           <Text style={[rewardFont, styles.aboutValue]}>1.0.0</Text>
         </View>
         <View style={styles.aboutButtons}>
-          <Pressable style={styles.aboutButton} onPress={() => Alert.alert('Privacy Policy', 'Privacy policy link can be added here.')}>
-            <Text style={[buttonFont, styles.aboutButtonText]}>Privacy Policy</Text>
+          <Pressable style={styles.aboutButton} onPress={() => Alert.alert(t('privacyPolicy'), t('privacyPolicyMessage'))}>
+            <Text style={[buttonFont, styles.aboutButtonText]}>{t('privacyPolicy')}</Text>
           </Pressable>
-          <Pressable style={styles.aboutButton} onPress={() => Alert.alert('Terms', 'Terms link can be added here.')}>
-            <Text style={[buttonFont, styles.aboutButtonText]}>Terms</Text>
+          <Pressable style={styles.aboutButton} onPress={() => Alert.alert(t('terms'), t('termsMessage'))}>
+            <Text style={[buttonFont, styles.aboutButtonText]}>{t('terms')}</Text>
           </Pressable>
         </View>
       </SettingsCard>
@@ -229,7 +229,7 @@ const LinkCard = ({ imageSource, fallbackIcon, color, background, title, subtitl
 );
 
 const ParentLock = () => {
-  const { setScreen } = useApp();
+  const { setScreen, t } = useApp();
   const [answer, setAnswer] = useState('');
   const [unlocked, setUnlocked] = useState(false);
   const [screenLimit, setScreenLimit] = useState(true);
@@ -240,18 +240,18 @@ const ParentLock = () => {
       setUnlocked(true);
       return;
     }
-    Alert.alert('Try again', 'That lock is still closed. Hint: count on your fingers!');
+    Alert.alert(t('tryAgain'), t('parentLockWrong'));
   };
 
   if (!unlocked) {
     return (
-      <SettingsCard imageSource={artwork.parent} fallbackIcon="shield-checkmark" color="#31C778" background="#E9FFF4" title="Parent Zone" subtitle="Manage safety and progress.">
+      <SettingsCard imageSource={artwork.parent} fallbackIcon="shield-checkmark" color="#31C778" background="#E9FFF4" title={t('parentZone')} subtitle={t('parentZoneSubtitle')}>
         <View style={styles.lockBox}>
-          <Text style={[headingFont, styles.lockQuestion]}>Parent lock: 3 + 5 = ?</Text>
+          <Text style={[headingFont, styles.lockQuestion]}>{t('parentLockQuestion')}</Text>
           <View style={styles.lockInputRow}>
             <TextInput value={answer} onChangeText={setAnswer} keyboardType="number-pad" placeholder="Answer" placeholderTextColor="#93A6B5" style={[bodyFont, styles.lockInput]} />
             <Pressable onPress={checkAnswer} style={styles.unlockButton}>
-              <Text style={[buttonFont, styles.unlockText]}>Unlock</Text>
+              <Text style={[buttonFont, styles.unlockText]}>{t('unlock')}</Text>
             </Pressable>
           </View>
         </View>
@@ -260,13 +260,13 @@ const ParentLock = () => {
   }
 
   return (
-    <SettingsCard imageSource={artwork.parent} fallbackIcon="shield-checkmark" color="#31C778" background="#E9FFF4" title="Parent Zone" subtitle="Unlocked. Manage safety and progress.">
+    <SettingsCard imageSource={artwork.parent} fallbackIcon="shield-checkmark" color="#31C778" background="#E9FFF4" title={t('parentZone')} subtitle={t('parentZoneUnlockedSubtitle')}>
       <ToggleRow imageSource={artwork.screenTime} fallbackIcon="phone-portrait" label="Screen time limit" value={screenLimit} onValueChange={setScreenLimit} color="#7B61FF" background="#F0ECFF" />
       <ToggleRow imageSource={artwork.playLimit} fallbackIcon="game-controller" label="Daily play limit" value={playLimit} onValueChange={setPlayLimit} color="#1D9BF0" background="#E5F6FF" />
-      <LinkCard imageSource={artwork.parentDashboard} fallbackIcon="clipboard" color="#1D9BF0" background="#E5F6FF" title="Open Parent Dashboard" subtitle="See brushing progress and reminders." onPress={() => setScreen('parentDashboard')} />
-      <Pressable style={styles.resetButton} onPress={() => Alert.alert('Reset rewards', 'Reward reset can be connected when parent accounts are ready.')}>
+      <LinkCard imageSource={artwork.parentDashboard} fallbackIcon="clipboard" color="#1D9BF0" background="#E5F6FF" title={t('openParentDashboard')} subtitle={t('openParentDashboardSubtitle')} onPress={() => setScreen('parentDashboard')} />
+      <Pressable style={styles.resetButton} onPress={() => Alert.alert(t('resetRewards'), t('resetRewardsMessage'))}>
         <Ionicons name="refresh" size={22} color="#FFFFFF" />
-        <Text style={[buttonFont, styles.resetText]}>Reset rewards</Text>
+        <Text style={[buttonFont, styles.resetText]}>{t('resetRewards')}</Text>
       </Pressable>
     </SettingsCard>
   );

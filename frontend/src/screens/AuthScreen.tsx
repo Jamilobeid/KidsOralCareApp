@@ -38,22 +38,22 @@ export const AuthScreen = () => {
     const cleanPassword = password.trim();
 
     if (cleanUsername.length > 15) {
-      Alert.alert('Tiny name check!', 'Keep your sparkle name to 15 characters or less.');
+      Alert.alert(t('tinyNameCheck'), t('tinyNameMessage'));
       return;
     }
 
     if (cleanPassword.length < 4 || cleanPassword.length > 7) {
-      Alert.alert('Password sparkle check!', 'Your password should be 4 to 7 characters long.');
+      Alert.alert(t('passwordSparkleCheck'), t('passwordSparkleMessage'));
       return;
     }
 
     if (confirmPassword !== password) {
-      Alert.alert('Oops, smile twins!', 'Both passwords need to match before we can make your account.');
+      Alert.alert(t('passwordMatchCheck'), t('passwordMatchMessage'));
       return;
     }
 
     if (age < 4 || age > 12) {
-      Alert.alert('Age adventure check!', 'Smile explorers should be ages 4 to 12.');
+      Alert.alert(t('ageCheck'), t('ageMessage'));
       return;
     }
 
@@ -66,17 +66,17 @@ export const AuthScreen = () => {
         <SafeAreaView style={styles.safe}>
           <View style={styles.signupContent}>
             <View style={styles.signupHeaderRow}>
-              <Text style={[headingFont, styles.signupTitle]}>New to us?</Text>
+              <Text style={[headingFont, styles.signupTitle]}>{t('newToUs')}</Text>
             </View>
             <View style={styles.signupMascots}>
               <Image source={signupSparkleToothImage} style={[styles.signupMascot, styles.signupSparkleMascot]} resizeMode="contain" />
               <Image source={signupBrushToothImage} style={[styles.signupMascot, styles.signupBrushMascot]} resizeMode="contain" />
             </View>
-            <Text style={[headingFont, styles.signupSubtitle]}>Create an Account to Discover our{'\n'}Fun Games and Smile stars!</Text>
+            <Text style={[headingFont, styles.signupSubtitle]}>{t('signupSubtitle')}</Text>
 
             <View style={styles.signupPanel}>
               <View style={styles.signupField}>
-                <Text style={[headingFont, styles.signupLabel]}>Username:</Text>
+                <Text style={[headingFont, styles.signupLabel]}>{t('username')}:</Text>
                 <TextInput
                   value={username}
                   onChangeText={setUsername}
@@ -87,7 +87,7 @@ export const AuthScreen = () => {
               </View>
 
               <View style={styles.signupField}>
-                <Text style={[headingFont, styles.signupLabel]}>Password:</Text>
+                <Text style={[headingFont, styles.signupLabel]}>{t('password')}:</Text>
                 <View style={styles.signupPasswordRow}>
                   <TextInput
                     value={password}
@@ -99,7 +99,7 @@ export const AuthScreen = () => {
                   />
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={passwordVisible ? 'Hide password' : 'Show password'}
+                    accessibilityLabel={passwordVisible ? t('hidePassword') : t('showPassword')}
                     onPress={() => setPasswordVisible((visible) => !visible)}
                     hitSlop={10}
                     style={styles.eyeButton}
@@ -110,7 +110,7 @@ export const AuthScreen = () => {
               </View>
 
               <View style={styles.signupField}>
-                <Text style={[headingFont, styles.signupLabel]}>Confirm Password:</Text>
+                <Text style={[headingFont, styles.signupLabel]}>{t('confirmPassword')}:</Text>
                 <View style={styles.signupPasswordRow}>
                   <TextInput
                     value={confirmPassword}
@@ -122,7 +122,7 @@ export const AuthScreen = () => {
                   />
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={confirmPasswordVisible ? 'Hide confirm password' : 'Show confirm password'}
+                    accessibilityLabel={confirmPasswordVisible ? t('hideConfirmPassword') : t('showConfirmPassword')}
                     onPress={() => setConfirmPasswordVisible((visible) => !visible)}
                     hitSlop={10}
                     style={styles.eyeButton}
@@ -133,11 +133,11 @@ export const AuthScreen = () => {
               </View>
 
               <View style={styles.signupField}>
-                <Text style={[headingFont, styles.signupLabel]}>Enter your age:</Text>
+                <Text style={[headingFont, styles.signupLabel]}>{t('enterAge')}:</Text>
                 <View style={styles.agePicker}>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Decrease age"
+                    accessibilityLabel={t('decreaseAge')}
                     onPress={() => setAge((value) => Math.max(4, value - 1))}
                     style={styles.ageButton}
                   >
@@ -146,7 +146,7 @@ export const AuthScreen = () => {
                   <Text style={[headingFont, styles.ageValue]}>{age}</Text>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Increase age"
+                    accessibilityLabel={t('increaseAge')}
                     onPress={() => setAge((value) => Math.min(12, value + 1))}
                     style={styles.ageButton}
                   >
@@ -157,11 +157,11 @@ export const AuthScreen = () => {
 
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Create account"
+                accessibilityLabel={t('createAccount')}
                 onPress={validateSignup}
                 style={({ pressed }) => [styles.signupCreateButton, pressed && styles.loginButtonPressed]}
               >
-                <Text style={[headingFont, styles.signupCreateButtonText]}>Create Account</Text>
+                <Text style={[headingFont, styles.signupCreateButtonText]}>{t('createAccount')}</Text>
               </Pressable>
             </View>
           </View>
@@ -183,7 +183,7 @@ export const AuthScreen = () => {
 
           <View style={styles.formPanel}>
             <View style={styles.fieldBlock}>
-              <Text style={[headingFont, styles.label]}>Username:</Text>
+              <Text style={[headingFont, styles.label]}>{t('username')}:</Text>
               <TextInput
                 value={username}
                 onChangeText={setUsername}
@@ -195,7 +195,7 @@ export const AuthScreen = () => {
             </View>
 
             <View style={styles.fieldBlock}>
-              <Text style={[headingFont, styles.label]}>Password:</Text>
+              <Text style={[headingFont, styles.label]}>{t('password')}:</Text>
               <View style={styles.passwordRow}>
                 <TextInput
                   value={password}
@@ -208,7 +208,7 @@ export const AuthScreen = () => {
                 />
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={passwordVisible ? 'Hide password' : 'Show password'}
+                  accessibilityLabel={passwordVisible ? t('hidePassword') : t('showPassword')}
                   onPress={() => setPasswordVisible((visible) => !visible)}
                   hitSlop={10}
                   style={styles.eyeButton}
@@ -227,16 +227,16 @@ export const AuthScreen = () => {
               <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
                 {rememberMe ? <Ionicons name="checkmark" size={14} color="#FFFFFF" /> : null}
               </View>
-              <Text style={[bodyFont, styles.rememberText]}>Remember me</Text>
+              <Text style={[bodyFont, styles.rememberText]}>{t('rememberMe')}</Text>
             </Pressable>
 
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Login"
+              accessibilityLabel={t('login')}
               onPress={() => signInChild(username, password, rememberMe)}
               style={({ pressed }) => [styles.loginButton, pressed && styles.loginButtonPressed]}
             >
-              <Text style={[headingFont, styles.loginButtonText]}>Login</Text>
+              <Text style={[headingFont, styles.loginButtonText]}>{t('login')}</Text>
             </Pressable>
           </View>
         </View>

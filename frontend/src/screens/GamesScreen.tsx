@@ -118,38 +118,47 @@ const IconBubble = ({ spec, size = 48 }: { spec: IconSpec; size?: number }) => (
   </View>
 );
 
-const GameHeader = ({ game, onBack }: { game: Game; onBack: () => void }) => (
-  <View style={styles.gameHeader}>
-    <Pressable accessibilityRole="button" onPress={onBack} style={styles.backButton}>
-      <Ionicons name="arrow-back" size={20} color="#17324D" />
-      <Text style={[buttonFont, styles.backText]}>Games</Text>
-    </Pressable>
-    <View style={styles.focusTitleRow}>
-      <IconBubble spec={gameIcons[game.id] ?? gameIcons['plaque-pop']} size={game.id === 'clean-tooth' ? 78 : 60} />
-      <View style={styles.focusTitleCopy}>
-        <Text style={styles.focusGameTitle}>{game.titleKey ? game.titleKey : 'Game'}</Text>
+const GameHeader = ({ game, onBack }: { game: Game; onBack: () => void }) => {
+  const { t } = useApp();
+  return (
+    <View style={styles.gameHeader}>
+      <Pressable accessibilityRole="button" onPress={onBack} style={styles.backButton}>
+        <Ionicons name="arrow-back" size={20} color="#17324D" />
+        <Text style={[buttonFont, styles.backText]}>{t('games')}</Text>
+      </Pressable>
+      <View style={styles.focusTitleRow}>
+        <IconBubble spec={gameIcons[game.id] ?? gameIcons['plaque-pop']} size={game.id === 'clean-tooth' ? 78 : 60} />
+        <View style={styles.focusTitleCopy}>
+          <Text style={styles.focusGameTitle}>{game.titleKey ? t(game.titleKey) : t('games')}</Text>
+        </View>
       </View>
     </View>
-  </View>
-);
+  );
+};
 
-const LimitReachedNote = () => <Text style={[bodyFont, styles.resultLimitText]}>Come back tomorrow to play again.</Text>;
+const LimitReachedNote = () => {
+  const { t } = useApp();
+  return <Text style={[bodyFont, styles.resultLimitText]}>{t('comeBackTomorrowPlay')}</Text>;
+};
 
-const GameWinResult = ({ message, points, canPlayAgain, onPlayAgain }: { message: string; points: number; canPlayAgain: boolean; onPlayAgain: () => void }) => (
-  <Card style={[styles.gamePanelBorder, styles.winResultCard]}>
-    <Image source={rewardTrophyImage} style={styles.winTrophyImage} resizeMode="contain" />
-    <Text style={styles.winResultTitle}>Congratulations!</Text>
-    <Text style={styles.winResultMessage}>{message}</Text>
-    <View style={styles.resultRewardRow}>
-      <Text style={styles.resultRewardText}>+{points}</Text>
-      <Image source={rewardStarImage} style={styles.resultStarImage} resizeMode="contain" />
-    </View>
-    {canPlayAgain ? <AppButton label="Play again" onPress={onPlayAgain} style={styles.winPlayAgainButton} /> : <LimitReachedNote />}
-  </Card>
-);
+const GameWinResult = ({ message, points, canPlayAgain, onPlayAgain }: { message: string; points: number; canPlayAgain: boolean; onPlayAgain: () => void }) => {
+  const { t } = useApp();
+  return (
+    <Card style={[styles.gamePanelBorder, styles.winResultCard]}>
+      <Image source={rewardTrophyImage} style={styles.winTrophyImage} resizeMode="contain" />
+      <Text style={styles.winResultTitle}>{t('congratulations')}</Text>
+      <Text style={styles.winResultMessage}>{message}</Text>
+      <View style={styles.resultRewardRow}>
+        <Text style={styles.resultRewardText}>+{points}</Text>
+        <Image source={rewardStarImage} style={styles.resultStarImage} resizeMode="contain" />
+      </View>
+      {canPlayAgain ? <AppButton label={t('playAgain')} onPress={onPlayAgain} style={styles.winPlayAgainButton} /> : <LimitReachedNote />}
+    </Card>
+  );
+};
 
 const StrongToothGame = ({ canPlayAgain, onReplay, onWin }: { canPlayAgain: boolean; onReplay: () => boolean; onWin: () => void }) => {
-  const { theme } = useApp();
+  const { theme, t } = useApp();
   const [selected, setSelected] = useState<number | null>(null);
   const [roundIndex, setRoundIndex] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
@@ -194,7 +203,7 @@ const StrongToothGame = ({ canPlayAgain, onReplay, onWin }: { canPlayAgain: bool
     if (won) {
       return (
         <GameWinResult
-          message={`You found ${correctCount} out of ${strongToothRounds.length} strong teeth.`}
+          message={t('strongFound').replace('{{count}}', `${correctCount}`).replace('{{total}}', `${strongToothRounds.length}`)}
           points={15}
           canPlayAgain={canPlayAgain}
           onPlayAgain={tryAgain}
@@ -207,23 +216,23 @@ const StrongToothGame = ({ canPlayAgain, onReplay, onWin }: { canPlayAgain: bool
         <View style={[styles.resultBadge, styles.retryBadge]}>
           <Image source={retryIconImage} style={styles.retryIconImage} resizeMode="contain" />
         </View>
-        <Text style={[headingFont, styles.resultTitle, { color: '#C8447C' }]}>Try again!</Text>
+        <Text style={[headingFont, styles.resultTitle, { color: '#C8447C' }]}>{t('tryAgainGame')}</Text>
         <Text style={[buttonFont, styles.resultText, { color: theme.text }]}>
-          You found {correctCount} out of {strongToothRounds.length} strong teeth.
+          {t('strongFound').replace('{{count}}', `${correctCount}`).replace('{{total}}', `${strongToothRounds.length}`)}
         </Text>
-        <Text style={[rewardFont, styles.score, { color: '#C8447C' }]}>Score 3 or 4 to win</Text>
-        {canPlayAgain ? <AppButton label="Try again" onPress={tryAgain} /> : <LimitReachedNote />}
+        <Text style={[rewardFont, styles.score, { color: '#C8447C' }]}>{t('scoreToWin34')}</Text>
+        {canPlayAgain ? <AppButton label={t('tryAgainGame')} onPress={tryAgain} /> : <LimitReachedNote />}
       </Card>
     );
   }
 
   return (
     <Card style={[styles.gamePanelBorder, styles.strongCard]}>
-      <Text style={[buttonFont, styles.playTitle, { color: theme.text }]}>Tap on the cleanest tooth you see!</Text>
+      <Text style={[buttonFont, styles.playTitle, { color: theme.text }]}>{t('gamePlaquePopDesc')}</Text>
       <View style={styles.roundProgressShell}>
         <View style={[styles.roundProgressFill, { width: `${(roundIndex / strongToothRounds.length) * 100}%`, backgroundColor: theme.primary }]} />
       </View>
-      <Text style={[buttonFont, styles.roundText, { color: theme.text }]}>Round {roundIndex + 1} / {strongToothRounds.length}</Text>
+      <Text style={[buttonFont, styles.roundText, { color: theme.text }]}>{t('round')} {roundIndex + 1} / {strongToothRounds.length}</Text>
       <View style={styles.toothChoiceGrid}>
         {roundChoices.map((choice, index) => {
           const chosen = selected === index;
@@ -235,15 +244,15 @@ const StrongToothGame = ({ canPlayAgain, onReplay, onWin }: { canPlayAgain: bool
           );
         })}
       </View>
-      {selectedChoice ? <Text style={[buttonFont, styles.feedback, { color: selectedChoice.clean ? '#168954' : '#C8447C' }]}>{selectedChoice.clean ? 'Great eye! That tooth is strong and clean.' : 'Almost! Look for the shiny clean tooth.'}</Text> : null}
-      <Text style={[rewardFont, styles.score, { color: theme.primary }]}>Score: {correctCount}</Text>
-      {selected !== null ? <AppButton label={roundIndex === strongToothRounds.length - 1 ? 'See result' : 'Next round'} onPress={goNext} /> : null}
+      {selectedChoice ? <Text style={[buttonFont, styles.feedback, { color: selectedChoice.clean ? '#168954' : '#C8447C' }]}>{selectedChoice.clean ? t('strongFeedbackGood') : t('strongFeedbackBad')}</Text> : null}
+      <Text style={[rewardFont, styles.score, { color: theme.primary }]}>{t('score')}: {correctCount}</Text>
+      {selected !== null ? <AppButton label={roundIndex === strongToothRounds.length - 1 ? t('seeResult') : t('nextRound')} onPress={goNext} /> : null}
     </Card>
   );
 };
 
 const HealthyPicksGame = ({ canPlayAgain, onReplay, onWin }: { canPlayAgain: boolean; onReplay: () => boolean; onWin: () => void }) => {
-  const { theme } = useApp();
+  const { theme, t } = useApp();
   const [selected, setSelected] = useState<number | null>(null);
   const [roundIndex, setRoundIndex] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
@@ -287,7 +296,7 @@ const HealthyPicksGame = ({ canPlayAgain, onReplay, onWin }: { canPlayAgain: boo
     if (won) {
       return (
         <GameWinResult
-          message={`You picked ${correctCount} out of ${healthyPickRounds.length} smile-friendly snacks.`}
+          message={t('healthyPicked').replace('{{count}}', `${correctCount}`).replace('{{total}}', `${healthyPickRounds.length}`)}
           points={20}
           canPlayAgain={canPlayAgain}
           onPlayAgain={tryAgain}
@@ -300,23 +309,23 @@ const HealthyPicksGame = ({ canPlayAgain, onReplay, onWin }: { canPlayAgain: boo
         <View style={[styles.resultBadge, styles.retryBadge]}>
           <Image source={retryIconImage} style={styles.retryIconImage} resizeMode="contain" />
         </View>
-        <Text style={[headingFont, styles.resultTitle, { color: '#C8447C' }]}>Try again!</Text>
+        <Text style={[headingFont, styles.resultTitle, { color: '#C8447C' }]}>{t('tryAgainGame')}</Text>
         <Text style={[buttonFont, styles.resultText, { color: theme.text }]}>
-          You picked {correctCount} out of {healthyPickRounds.length} smile-friendly snacks.
+          {t('healthyPicked').replace('{{count}}', `${correctCount}`).replace('{{total}}', `${healthyPickRounds.length}`)}
         </Text>
-        <Text style={[rewardFont, styles.score, { color: '#C8447C' }]}>Score 3 or 4 to win</Text>
-        {canPlayAgain ? <AppButton label="Try again" onPress={tryAgain} /> : <LimitReachedNote />}
+        <Text style={[rewardFont, styles.score, { color: '#C8447C' }]}>{t('scoreToWin34')}</Text>
+        {canPlayAgain ? <AppButton label={t('tryAgainGame')} onPress={tryAgain} /> : <LimitReachedNote />}
       </Card>
     );
   }
 
   return (
     <Card style={[styles.gamePanelBorder, styles.healthyCard]}>
-      <Text style={[buttonFont, styles.playTitle, { color: theme.text }]}>Pick the smile-friendly snack!</Text>
+      <Text style={[buttonFont, styles.playTitle, { color: theme.text }]}>{t('pickHealthySnack')}</Text>
       <View style={styles.roundProgressShell}>
         <View style={[styles.roundProgressFill, { width: `${(roundIndex / healthyPickRounds.length) * 100}%`, backgroundColor: theme.primary }]} />
       </View>
-      <Text style={[buttonFont, styles.roundText, { color: theme.text }]}>Round {roundIndex + 1} / {healthyPickRounds.length}</Text>
+      <Text style={[buttonFont, styles.roundText, { color: theme.text }]}>{t('round')} {roundIndex + 1} / {healthyPickRounds.length}</Text>
       <View style={styles.foodChoiceGrid}>
         {roundChoices.map((choice, index) => {
           const chosen = selected === index;
@@ -329,9 +338,9 @@ const HealthyPicksGame = ({ canPlayAgain, onReplay, onWin }: { canPlayAgain: boo
           );
         })}
       </View>
-      {selectedChoice ? <Text style={[buttonFont, styles.feedback, { color: selectedChoice.healthy ? '#168954' : '#C8447C' }]}>{selectedChoice.healthy ? 'Great pick! That snack helps smiles.' : 'That one is sugary. Try to spot the healthy choice next!'}</Text> : null}
-      <Text style={[styles.score, { color: theme.primary }]}>Score: {correctCount}</Text>
-      {selected !== null ? <AppButton label={roundIndex === healthyPickRounds.length - 1 ? 'See result' : 'Next round'} onPress={goNext} /> : null}
+      {selectedChoice ? <Text style={[buttonFont, styles.feedback, { color: selectedChoice.healthy ? '#168954' : '#C8447C' }]}>{selectedChoice.healthy ? t('healthyFeedbackGood') : t('healthyFeedbackBad')}</Text> : null}
+      <Text style={[styles.score, { color: theme.primary }]}>{t('score')}: {correctCount}</Text>
+      {selected !== null ? <AppButton label={roundIndex === healthyPickRounds.length - 1 ? t('seeResult') : t('nextRound')} onPress={goNext} /> : null}
     </Card>
   );
 };
@@ -364,7 +373,7 @@ const getSugarOptions = (answer: number) => {
 };
 
 const SugarDetectiveGame = ({ canPlayAgain, onReplay, onComplete }: { canPlayAgain: boolean; onReplay: () => boolean; onComplete: () => void }) => {
-  const { theme } = useApp();
+  const { theme, t } = useApp();
   const [questionIndex, setQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
@@ -389,13 +398,13 @@ const SugarDetectiveGame = ({ canPlayAgain, onReplay, onComplete }: { canPlayAga
     setSelected(choice);
     animateCard();
     if (choice !== answer) {
-      setMessage('Good detective work! Try again and count by 4 grams.');
+      setMessage(t('sugarTryAgain'));
       return;
     }
 
     const nextScore = score + 1;
     setScore(nextScore);
-    setMessage('Sweet solve! You found the hidden sugar cubes.');
+    setMessage(t('sugarSolved'));
 
     setTimeout(() => {
       if (questionIndex === sugarProducts.length - 1) {
@@ -476,7 +485,7 @@ const SugarDetectiveGame = ({ canPlayAgain, onReplay, onComplete }: { canPlayAga
 };
 
 const CleanToothGame = ({ cleaned, canPlayAgain, onReplay, onClean, onReset, onComplete }: { cleaned: boolean[]; canPlayAgain: boolean; onReplay: () => boolean; onClean: (index: number) => void; onReset: () => void; onComplete: () => void }) => {
-  const { theme } = useApp();
+  const { theme, t } = useApp();
   const remaining = cleaned.filter((value) => !value).length;
   const cleanedCount = cleanItems.length - remaining;
   const [complete, setComplete] = useState(false);
@@ -539,7 +548,7 @@ const CleanToothGame = ({ cleaned, canPlayAgain, onReplay, onClean, onReset, onC
 };
 
 const SmileQuizGame = ({ canPlayAgain, onReplay, onComplete }: { canPlayAgain: boolean; onReplay: () => boolean; onComplete: () => void }) => {
-  const { theme } = useApp();
+  const { theme, t } = useApp();
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [correctCount, setCorrectCount] = useState(0);
@@ -578,7 +587,7 @@ const SmileQuizGame = ({ canPlayAgain, onReplay, onComplete }: { canPlayAgain: b
     if (correctCount > 2) {
       return (
         <GameWinResult
-          message={`You answered ${correctCount} out of ${quizQuestions.length} tooth questions correctly.`}
+          message={t('quizAnswered').replace('{{count}}', `${correctCount}`).replace('{{total}}', `${quizQuestions.length}`)}
           points={25}
           canPlayAgain={canPlayAgain}
           onPlayAgain={restart}
@@ -591,12 +600,12 @@ const SmileQuizGame = ({ canPlayAgain, onReplay, onComplete }: { canPlayAgain: b
         <View style={[styles.resultBadge, styles.retryBadge]}>
           <Image source={retryIconImage} style={styles.retryIconImage} resizeMode="contain" />
         </View>
-        <Text style={[headingFont, styles.resultTitle, { color: '#C8447C' }]}>Try again!</Text>
+        <Text style={[headingFont, styles.resultTitle, { color: '#C8447C' }]}>{t('tryAgainGame')}</Text>
         <Text style={[buttonFont, styles.resultText, { color: theme.text }]}>
-          You answered {correctCount} out of {quizQuestions.length} tooth questions correctly.
+          {t('quizAnswered').replace('{{count}}', `${correctCount}`).replace('{{total}}', `${quizQuestions.length}`)}
         </Text>
-        <Text style={[rewardFont, styles.score, { color: '#C8447C' }]}>Score 3 or more to win</Text>
-        {canPlayAgain ? <AppButton label="Try again" onPress={restart} /> : <LimitReachedNote />}
+        <Text style={[rewardFont, styles.score, { color: '#C8447C' }]}>{t('scoreToWin3')}</Text>
+        {canPlayAgain ? <AppButton label={t('tryAgainGame')} onPress={restart} /> : <LimitReachedNote />}
       </Card>
     );
   }

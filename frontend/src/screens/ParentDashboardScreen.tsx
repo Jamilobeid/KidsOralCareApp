@@ -62,36 +62,36 @@ export const ParentDashboardScreen = () => {
 
   return (
     <Screen contentContainerStyle={styles.screen} gradientBackground showDecorations={false}>
-      <Text style={styles.pageTitle}>Parent Dashboard</Text>
+      <Text style={styles.pageTitle}>{t('parentDashboardTitle')}</Text>
 
       <View style={styles.heroCard}>
         <View style={styles.profileRow}>
           <View style={styles.buddyWrap}>
             <Image source={selectedBuddy.image} style={styles.buddyImage} resizeMode="contain" />
-            <View style={styles.levelBadge}><Text style={styles.levelBadgeText}>LVL {child.level}</Text></View>
+            <View style={styles.levelBadge}><Text style={styles.levelBadgeText}>{t('level').toUpperCase()} {child.level}</Text></View>
           </View>
           <View style={styles.profileCopy}>
-            <Text style={styles.dashboardTitle}>{child.nickname}'s Dashboard</Text>
-            <Text style={styles.encouragement}>Keep up the great work!</Text>
+            <Text style={styles.dashboardTitle}>{t('childDashboard').replace('{{name}}', child.nickname)}</Text>
+            <Text style={styles.encouragement}>{t('keepGreatWork')}</Text>
           </View>
         </View>
 
         <View style={styles.topStats}>
-          <MetricCard image={artwork.smileStars} value={child.points} label="Smile Stars" color="#FF9F1C" background="#FFF7DF" />
-          <MetricCard image={artwork.badges} value={child.badges.length} label="Badges" color="#8B35FF" background="#F7EEFF" />
-          <MetricCard image={artwork.streak} value={weeklyBrushDays} label="Day Streak" color="#FF315E" background="#FFF0F1" />
+          <MetricCard image={artwork.smileStars} value={child.points} label={t('smileStars')} color="#FF9F1C" background="#FFF7DF" />
+          <MetricCard image={artwork.badges} value={child.badges.length} label={t('badges')} color="#8B35FF" background="#F7EEFF" />
+          <MetricCard image={artwork.streak} value={weeklyBrushDays} label={t('weeklyStreak')} color="#FF315E" background="#FFF0F1" />
         </View>
 
         <View style={styles.brushStats}>
-          <SmallBrushStat image={artwork.totalBrushes} value={child.totalBrushes} label="Brushes" />
-          <SmallBrushStat image={artwork.weekBrushes} value={`${weeklyBrushDays}/7`} label="This week" />
+          <SmallBrushStat image={artwork.totalBrushes} value={child.totalBrushes} label={t('brushing')} />
+          <SmallBrushStat image={artwork.weekBrushes} value={`${weeklyBrushDays}/7`} label={t('thisWeek')} />
         </View>
 
         <View style={styles.todayCard}>
-          <Text style={styles.sectionTitle}>Today's Brushing</Text>
+          <Text style={styles.sectionTitle}>{t('todaysBrushing')}</Text>
           <View style={styles.brushingChecks}>
-            <BrushCheck complete={morningDone} label="Morning" />
-            <BrushCheck complete={eveningDone} label="Evening" />
+            <BrushCheck complete={morningDone} label={t('morningReminder').replace(' reminder', '').replace('Rappel du ', '')} />
+            <BrushCheck complete={eveningDone} label={t('eveningReminder').replace(' reminder', '').replace('Rappel du ', '')} />
           </View>
         </View>
       </View>
@@ -99,7 +99,7 @@ export const ParentDashboardScreen = () => {
       <View style={styles.reminderStack}>
         <ReminderRow
           image={artwork.morning}
-          title="Morning Reminder"
+          title={t('morningReminder')}
           value={reminders.morning}
           onDecrease={() => updateReminderTime('morning', -15)}
           onIncrease={() => updateReminderTime('morning', 15)}
@@ -111,7 +111,7 @@ export const ParentDashboardScreen = () => {
         />
         <ReminderRow
           image={artwork.evening}
-          title="Evening Reminder"
+          title={t('eveningReminder')}
           value={reminders.evening}
           onDecrease={() => updateReminderTime('evening', -15)}
           onIncrease={() => updateReminderTime('evening', 15)}
@@ -124,7 +124,7 @@ export const ParentDashboardScreen = () => {
       </View>
 
       <View style={styles.weekSection}>
-        <Text style={styles.weekTitle}>This week</Text>
+        <Text style={styles.weekTitle}>{t('thisWeek')}</Text>
         <View style={styles.weekCard}>
           {WEEK_DAYS.map((day, index) => {
             const brushCount = weeklyBrushes[index] ?? 0;
@@ -138,18 +138,18 @@ export const ParentDashboardScreen = () => {
       <View style={styles.gameTimeCard}>
         <View style={styles.gameHeader}>
           <View>
-            <Text style={styles.gameTitle}>Game Time</Text>
+            <Text style={styles.gameTitle}>{t('gameTime')}</Text>
           </View>
           <View style={styles.gameUsedBox}>
             <Text style={styles.gameUsedValue}>{totalPlaysToday}</Text>
-            <Text style={styles.gameUsedLabel}>PLAYS</Text>
+            <Text style={styles.gameUsedLabel}>{t('plays')}</Text>
           </View>
         </View>
         <View style={styles.progressTrack}>
           <View style={[styles.progressFill, { width: `${gameUsagePercent * 100}%` }]} />
-          <Text style={styles.progressLabel}>{Math.round(gameUsagePercent * 100)}% USED</Text>
+          <Text style={styles.progressLabel}>{Math.round(gameUsagePercent * 100)}% {t('used')}</Text>
         </View>
-        <Text style={styles.gameMinutesText}>{usedGameMinutes} minutes used today. {totalPlaysToday}/{totalDailyGamePlays} plays used today.</Text>
+        <Text style={styles.gameMinutesText}>{t('minutesUsedToday').replace('{{minutes}}', `${usedGameMinutes}`).replace('{{plays}}', `${totalPlaysToday}`).replace('{{total}}', `${totalDailyGamePlays}`)}</Text>
       </View>
 
       <View style={styles.limitCard}>
@@ -158,9 +158,9 @@ export const ParentDashboardScreen = () => {
           <Image source={artwork.game} style={styles.limitGameIcon} resizeMode="contain" />
         </View>
         <Text style={styles.limitText}>
-          Each child can only play the same game three times for day, and with that we can create inspiration and motivation for the following days!
+          {t('parentGameLimitText')}
         </Text>
-        <Text style={styles.thanks}>Thank you for using our application!</Text>
+        <Text style={styles.thanks}>{t('thanksUsingApp')}</Text>
       </View>
     </Screen>
   );

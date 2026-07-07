@@ -17,14 +17,14 @@ export const PersonalizationScreen = () => {
       chooseCharacter(buddy.id);
       return;
     }
-    Alert.alert('Keep leveling up', `${buddy.title} unlocks at Level ${buddy.requiredLevel}.`);
+    Alert.alert(t('keepLeveling'), t('unlocksAtLevel').replace('{{name}}', buddy.title).replace('{{level}}', `${buddy.requiredLevel}`));
   };
 
   return (
     <Screen gradientBackground showDecorations={false}>
       <Text style={styles.pageTitle}>{t('personalization')}</Text>
       <Card style={styles.buddySection}>
-        <Text style={styles.sectionTitle}>My Tooth Buddy</Text>
+        <Text style={styles.sectionTitle}>{t('myToothBuddy')}</Text>
         <View style={styles.buddyGrid}>
           {toothBuddies.map((buddy) => {
             const unlocked = child.level >= buddy.requiredLevel;
@@ -37,7 +37,7 @@ export const PersonalizationScreen = () => {
                   {!unlocked ? (
                     <View style={styles.lockBadge}>
                       <Ionicons name="lock-closed" size={12} color="#FFFFFF" />
-                      <Text style={styles.lockText}>Level {buddy.requiredLevel}</Text>
+                      <Text style={styles.lockText}>{t('chooseLevel').replace('{{level}}', `${buddy.requiredLevel}`)}</Text>
                     </View>
                   ) : null}
                 </View>
@@ -45,7 +45,7 @@ export const PersonalizationScreen = () => {
                 {selected ? (
                   <View style={styles.selectedPill}>
                     <Ionicons name="checkmark-circle" size={15} color="#087C72" />
-                    <Text style={styles.selectedText}>Active</Text>
+                    <Text style={styles.selectedText}>{t('active')}</Text>
                   </View>
                 ) : null}
               </Pressable>
@@ -54,7 +54,7 @@ export const PersonalizationScreen = () => {
         </View>
       </Card>
       <Card style={styles.themeSection}>
-        <Text style={styles.sectionTitle}>Theme</Text>
+        <Text style={styles.sectionTitle}>{t('theme')}</Text>
         <View style={styles.themeGrid}>
           {(Object.keys(themes) as ThemeName[]).map((name) => {
             const selected = child.theme === name;
@@ -63,7 +63,7 @@ export const PersonalizationScreen = () => {
               <Pressable key={name} onPress={() => updateTheme(name)} style={[styles.swatch, { backgroundColor: themes[name].primary, borderColor: selected ? '#111827' : 'transparent' }]}>
                 <View style={styles.swatchContent}>
                   <Text style={styles.themeName}>{name}</Text>
-                  {name === 'ocean' ? <Text style={styles.defaultLabel}>Default</Text> : null}
+                  {name === 'ocean' ? <Text style={styles.defaultLabel}>{t('default')}</Text> : null}
                 </View>
                 {selected ? <Ionicons name="checkmark-circle" size={22} color="#111827" style={styles.themeCheck} /> : null}
               </Pressable>

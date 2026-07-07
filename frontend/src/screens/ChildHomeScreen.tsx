@@ -18,15 +18,15 @@ const tipTwoImage = require('../../assets/images/custom-home-two.png');
 const LEVEL_COUNT = 5;
 const STARS_PER_LEVEL = 200;
 
-const navTiles: { label: string; target: RootScreen; image: ImageSourcePropType }[] = [
-  { label: 'Games', target: 'games', image: require('../../assets/images/custom-home-games.png') },
-  { label: 'Brush', target: 'brushing', image: require('../../assets/images/custom-home-brush-tile.png') },
-  { label: 'Leaderboard', target: 'leaderboard', image: require('../../assets/images/custom-home-leaderboard.png') },
-  { label: 'Personalization', target: 'personalization', image: require('../../assets/images/custom-home-personalization.png') }
+const navTiles: { labelKey: string; target: RootScreen; image: ImageSourcePropType }[] = [
+  { labelKey: 'games', target: 'games', image: require('../../assets/images/custom-home-games.png') },
+  { labelKey: 'brushing', target: 'brushing', image: require('../../assets/images/custom-home-brush-tile.png') },
+  { labelKey: 'leaderboard', target: 'leaderboard', image: require('../../assets/images/custom-home-leaderboard.png') },
+  { labelKey: 'personalization', target: 'personalization', image: require('../../assets/images/custom-home-personalization.png') }
 ];
 
 export const ChildHomeScreen = () => {
-  const { child, brushingCountToday, setScreen, theme } = useApp();
+  const { child, brushingCountToday, setScreen, theme, t } = useApp();
   const level = Math.min(Math.floor(child.points / STARS_PER_LEVEL) + 1, LEVEL_COUNT);
   const levelStart = (level - 1) * STARS_PER_LEVEL;
   const nextLevelAt = level * STARS_PER_LEVEL;
@@ -55,26 +55,26 @@ export const ChildHomeScreen = () => {
             <View style={styles.levelCard}>
               <View style={[styles.buddyWrap, { backgroundColor: selectedBuddy.tone }]}>
                 <Image source={selectedBuddy.image as ImageSourcePropType} style={styles.buddyImage} resizeMode="contain" />
-                <View style={styles.levelBadge}><Text style={[headingFont, styles.levelBadgeText]}>Lv {level}</Text></View>
+                <View style={styles.levelBadge}><Text style={[headingFont, styles.levelBadgeText]}>{t('levelShort')} {level}</Text></View>
               </View>
               <View style={styles.levelCopy}>
                 <Text style={[headingFont, styles.buddyName]}>{selectedBuddy.title}</Text>
                 <View style={styles.levelTrack}>
                   <View style={[styles.levelFill, { width: `${levelProgress * 100}%` }]} />
                 </View>
-                <Text style={[headingFont, styles.levelHint]}>{level === LEVEL_COUNT ? 'Max level reached' : `${starsToNextLevel} stars to Level ${level + 1}`}</Text>
+                <Text style={[headingFont, styles.levelHint]}>{level === LEVEL_COUNT ? t('maxLevelReached') : t('starsToLevel').replace('{{count}}', `${starsToNextLevel}`).replace('{{level}}', `${level + 1}`)}</Text>
               </View>
             </View>
 
             <View style={styles.statsRow}>
               <View style={styles.statBlock}>
-                <Text style={[headingFont, styles.statLabel]}>Smile Stars</Text>
+                <Text style={[headingFont, styles.statLabel]}>{t('smileStars')}</Text>
                 <Image source={starImage} style={styles.statImage} resizeMode="contain" />
                 <Text style={[bodyFont, styles.statValue]}>{child.points}</Text>
               </View>
 
               <View style={styles.statBlock}>
-                <Text style={[headingFont, styles.statLabel]}>Badges</Text>
+                <Text style={[headingFont, styles.statLabel]}>{t('badges')}</Text>
                 <Image source={badgeImage} style={styles.statImage} resizeMode="contain" />
                 <Text style={[bodyFont, styles.statValue]}>{child.badges.length}</Text>
               </View>
@@ -87,7 +87,7 @@ export const ChildHomeScreen = () => {
             onPress={() => setScreen('brushing')}
             style={({ pressed }) => [styles.brushButton, pressed && styles.pressed]}
           >
-            <Text style={[headingFont, styles.brushButtonText]}>Brush Now</Text>
+            <Text style={[headingFont, styles.brushButtonText]}>{t('brushNow')}</Text>
             <View style={styles.brushTimerRow}>
               <Image source={brushTimerImage} style={styles.brushTimerIcon} resizeMode="contain" />
               <Text style={[headingFont, styles.brushTimeText]}>2:00</Text>
@@ -98,13 +98,13 @@ export const ChildHomeScreen = () => {
         <View style={styles.challengeCard}>
           <View style={styles.challengeHeader}>
             <Image source={targetImage} style={styles.targetIcon} resizeMode="contain" />
-            <Text style={[headingFont, styles.challengeTitle]}>My Daily Challenge</Text>
+            <Text style={[headingFont, styles.challengeTitle]}>{t('myDailyChallenge')}</Text>
             <View style={styles.rewardPill}>
               <Image source={smallStarImage} style={styles.rewardStar} resizeMode="contain" />
               <Text style={[headingFont, styles.rewardText]}>+20</Text>
             </View>
           </View>
-          <Text style={[bodyFont, styles.challengeSubtitle]}>Brush Twice a Day</Text>
+          <Text style={[bodyFont, styles.challengeSubtitle]}>{t('brushTwiceDay')}</Text>
           <View style={styles.progressTrack}>
             <View style={[styles.progressFill, { width: progressPercent }]} />
           </View>
@@ -114,15 +114,15 @@ export const ChildHomeScreen = () => {
         <View style={styles.tipsSection}>
           <View style={styles.tipsHeader}>
             <Image source={tipAlertImage} style={styles.tipAlert} resizeMode="contain" />
-            <Text style={[headingFont, styles.tipsTitle]}>Hygiene Tips:</Text>
+            <Text style={[headingFont, styles.tipsTitle]}>{t('hygieneTips')}</Text>
           </View>
           <View style={styles.tipRow}>
             <Image source={tipOneImage} style={styles.tipNumberImage} resizeMode="contain" />
-            <Text style={[headingFont, styles.tipText]}>Brush Circles on Each Tooth Zone</Text>
+            <Text style={[headingFont, styles.tipText]}>{t('tipBrushCircles')}</Text>
           </View>
           <View style={styles.tipRow}>
             <Image source={tipTwoImage} style={styles.tipNumberImage} resizeMode="contain" />
-            <Text style={[headingFont, styles.tipText]}>Spit After Brushing and Avoid{'\n'}Rinsing Too Much</Text>
+            <Text style={[headingFont, styles.tipText]}>{t('tipSpit')}</Text>
           </View>
         </View>
 
@@ -131,12 +131,12 @@ export const ChildHomeScreen = () => {
             <Pressable
               key={tile.target}
               accessibilityRole="button"
-              accessibilityLabel={tile.label}
+              accessibilityLabel={t(tile.labelKey)}
               onPress={() => setScreen(tile.target)}
               style={({ pressed }) => [styles.navTile, pressed && styles.pressed]}
             >
               <Image source={tile.image} style={styles.navTileIcon} resizeMode="contain" />
-              <Text style={[headingFont, styles.navTileText]}>{tile.label}</Text>
+              <Text style={[headingFont, styles.navTileText]}>{t(tile.labelKey)}</Text>
             </Pressable>
           ))}
         </View>

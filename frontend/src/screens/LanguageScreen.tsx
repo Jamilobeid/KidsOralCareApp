@@ -11,14 +11,14 @@ const ukFlagImage = require('../../assets/images/language-flag-uk.png');
 const frenchFlagImage = require('../../assets/images/language-flag-france.png');
 const lebaneseFlagImage = require('../../assets/images/language-flag-lebanon.png');
 
-const languageOptions: { code: LanguageCode; label: string; flag: ImageSourcePropType }[] = [
-  { code: 'en', label: 'English', flag: ukFlagImage },
-  { code: 'fr', label: 'French', flag: frenchFlagImage },
-  { code: 'ar', label: 'Arabic', flag: lebaneseFlagImage }
+const languageOptions: { code: LanguageCode; labelKey: string; flag: ImageSourcePropType }[] = [
+  { code: 'en', labelKey: 'english', flag: ukFlagImage },
+  { code: 'fr', labelKey: 'french', flag: frenchFlagImage },
+  { code: 'ar', labelKey: 'arabic', flag: lebaneseFlagImage }
 ];
 
 export const LanguageScreen = () => {
-  const { setLanguage, setScreen } = useApp();
+  const { setLanguage, setScreen, t } = useApp();
 
   const chooseLanguage = (code: LanguageCode) => {
     setLanguage(code);
@@ -30,24 +30,24 @@ export const LanguageScreen = () => {
       <SafeAreaView style={styles.safe}>
         <View style={styles.content}>
           <View style={styles.titleRow}>
-            <Text style={[headingFont, styles.title]}>Language</Text>
+            <Text style={[headingFont, styles.title]}>{t('languageHeading')}</Text>
             <Image accessibilityLabel="Smiling earth globe" source={globeImage} style={styles.globe} resizeMode="contain" />
           </View>
 
           <View style={styles.languagePanel}>
-            <Text style={[bodyFont, styles.subtitle]}>Choose a language</Text>
+            <Text style={[bodyFont, styles.subtitle]}>{t('chooseLanguage')}</Text>
 
             <View style={styles.buttonGroup}>
               {languageOptions.map((option) => (
                 <Pressable
                   key={option.code}
                   accessibilityRole="button"
-                  accessibilityLabel={`Choose ${option.label}`}
+                  accessibilityLabel={`${t('choose')} ${t(option.labelKey)}`}
                   onPress={() => chooseLanguage(option.code)}
                   style={({ pressed }) => [styles.languageButton, pressed && styles.languageButtonPressed]}
                 >
                   <Image source={option.flag} style={styles.flagImage} resizeMode="contain" />
-                  <Text style={[headingFont, styles.languageLabel]}>{option.label}</Text>
+                  <Text style={[headingFont, styles.languageLabel]}>{t(option.labelKey)}</Text>
                 </Pressable>
               ))}
             </View>

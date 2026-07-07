@@ -8,12 +8,12 @@ import { headingFont } from '../utils/kidStyle';
 const totalSeconds = 120;
 const steps = ['upperLeft', 'upperRight', 'lowerLeft', 'lowerRight', 'frontTeeth', 'tongue'];
 const encouragements = [
-  'Great!\nKeep Going!',
-  'Sparkly smiles\nare coming!',
-  'Brush like\na champion!',
-  'Tiny circles,\nbig shine!',
-  'You are doing\namazing!',
-  'Almost there,\nsmile hero!'
+  'encouragement1',
+  'encouragement2',
+  'encouragement3',
+  'encouragement4',
+  'encouragement5',
+  'encouragement6'
 ];
 
 const pasteToothImage = require('../../assets/images/brushing-tooth-paste.png');
@@ -42,7 +42,7 @@ export const BrushingTimerScreen = () => {
   const progress = useMemo(() => elapsed / totalSeconds, [elapsed]);
   const stepIndex = Math.min(steps.length - 1, Math.floor(elapsed / (totalSeconds / steps.length)));
   const activeStep = steps[stepIndex];
-  const message = elapsed < 20 ? '' : encouragements[Math.min(encouragements.length - 1, Math.floor(elapsed / 20) - 1)];
+  const messageKey = elapsed < 20 ? '' : encouragements[Math.min(encouragements.length - 1, Math.floor(elapsed / 20) - 1)];
   const minutes = Math.floor(secondsLeft / 60);
   const seconds = (secondsLeft % 60).toString().padStart(2, '0');
   const currentMouthImage = hasStarted ? mouthImages[activeStep as keyof typeof mouthImages] : originalMouthImage;
@@ -79,9 +79,9 @@ export const BrushingTimerScreen = () => {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.topArea}>
             <View style={styles.titleBlock}>
-              <Text style={[headingFont, styles.titleLeft]}>New Mission</Text>
-              <Text style={[headingFont, styles.titleRight]}>Brush Time!</Text>
-              <Text style={[headingFont, styles.subtitleLeft]}>Brush your teeth according to the teeth in the mouth below!</Text>
+              <Text style={[headingFont, styles.titleLeft]}>{t('newMission')}</Text>
+              <Text style={[headingFont, styles.titleRight]}>{t('brushTime')}</Text>
+              <Text style={[headingFont, styles.subtitleLeft]}>{t('brushInstructionFull')}</Text>
             </View>
             <View style={styles.toothRow}>
               <Image source={pasteToothImage} style={[styles.topTooth, styles.topToothOne]} resizeMode="contain" />
@@ -100,13 +100,13 @@ export const BrushingTimerScreen = () => {
               <Text style={styles.timerSeparator}>:</Text>
               <Text style={styles.timerPart}>{seconds}</Text>
             </View>
-            <Text style={styles.encouragement}>{message}</Text>
+            <Text style={styles.encouragement}>{messageKey ? t(messageKey) : ''}</Text>
 
             {hasStarted ? (
               <Text style={[headingFont, styles.instruction]}>{t(activeStep)}</Text>
             ) : (
               <View style={styles.startPrompt}>
-                <Text style={[headingFont, styles.startPromptText]}>Start the Timer</Text>
+                <Text style={[headingFont, styles.startPromptText]}>{t('startTheTimer')}</Text>
                 <Text style={styles.startArrow}>↓</Text>
               </View>
             )}
@@ -115,28 +115,28 @@ export const BrushingTimerScreen = () => {
               <View style={[styles.progressFill, { width: `${progress * 100}%` as `${number}%` }]} />
             </View>
 
-            {finished ? <CelebrationCard /> : null}
+            {finished ? <CelebrationCard t={t} /> : null}
           </View>
 
           <View style={styles.buttons}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={running ? 'Pause timer' : 'Start timer'}
+              accessibilityLabel={running ? t('pauseTimer') : t('startTimerFull')}
               onPress={() => {
                 if (finished) return;
                 setRunning((value) => !value);
               }}
               style={({ pressed }) => [styles.actionButton, styles.startButton, pressed && styles.pressed]}
             >
-              <Text style={[headingFont, styles.startButtonText]}>{running ? 'Pause' : 'Start Timer'}</Text>
+              <Text style={[headingFont, styles.startButtonText]}>{running ? t('pauseTimer') : t('startTimerFull')}</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Reset timer"
+              accessibilityLabel={t('resetTimer')}
               onPress={resetTimer}
               style={({ pressed }) => [styles.actionButton, styles.resetButton, pressed && styles.pressed]}
             >
-              <Text style={[headingFont, styles.resetButtonText]}>Reset Timer</Text>
+              <Text style={[headingFont, styles.resetButtonText]}>{t('resetTimer')}</Text>
             </Pressable>
           </View>
         </ScrollView>
@@ -145,17 +145,17 @@ export const BrushingTimerScreen = () => {
   );
 };
 
-const CelebrationCard = () => (
+const CelebrationCard = ({ t }: { t: (key: string) => string }) => (
   <View style={styles.celebrationCard}>
     <Text style={styles.partyIcon}>🎉</Text>
-    <Text style={[headingFont, styles.celebrationTitle]}>You did it!</Text>
-    <Text style={[headingFont, styles.celebrationCopy]}>Two whole minutes of super brushing. Your teeth are sparkling!</Text>
+    <Text style={[headingFont, styles.celebrationTitle]}>{t('youDidIt')}</Text>
+    <Text style={[headingFont, styles.celebrationCopy]}>{t('celebrationCopy')}</Text>
     <View style={styles.celebrationStars}>
       <Image source={rewardStarImage} style={styles.celebrationStar} resizeMode="contain" />
       <Image source={rewardStarImage} style={styles.celebrationStar} resizeMode="contain" />
       <Image source={rewardStarImage} style={styles.celebrationStar} resizeMode="contain" />
     </View>
-    <Text style={[headingFont, styles.celebrationReward]}>+20 SMILE STARS</Text>
+    <Text style={[headingFont, styles.celebrationReward]}>{t('smileStarsReward')}</Text>
   </View>
 );
 

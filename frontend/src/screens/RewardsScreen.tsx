@@ -10,20 +10,20 @@ const LEVEL_COUNT = 5;
 const STARS_PER_LEVEL = 200;
 
 const badgeDefinitions = [
-  { id: 'first-brush', title: 'First Brush', image: require('../../assets/images/rewards-badge-first-brush-custom.png'), isNew: false },
-  { id: 'three-day-streak', title: '3-Day Streak', image: require('../../assets/images/rewards-badge-three-day-custom.png'), isNew: false },
-  { id: 'week-warrior', title: 'Week Warrior', image: require('../../assets/images/rewards-badge-week-warrior-custom.png'), isNew: false },
-  { id: 'morning-hero', title: 'Morning Hero', image: require('../../assets/images/rewards-badge-morning-hero-custom.png'), isNew: true },
-  { id: 'night-owl', title: 'Night Owl', image: require('../../assets/images/rewards-badge-night-owl-custom.png'), isNew: false },
-  { id: 'perfect-timer', title: 'Perfect Timer', image: require('../../assets/images/rewards-badge-perfect-timer-custom.png'), isNew: false },
-  { id: 'cavity-crusher', title: 'Cavity Crusher', image: require('../../assets/images/rewards-badge-cavity-crusher-custom.png'), isNew: false },
-  { id: 'sparkle-master', title: 'Sparkle Master', image: require('../../assets/images/rewards-badge-sparkle-master-custom.png'), isNew: false }
+  { id: 'first-brush', titleKey: 'badgeFirstBrush', image: require('../../assets/images/rewards-badge-first-brush-custom.png'), isNew: false },
+  { id: 'three-day-streak', titleKey: 'badgeThreeDay', image: require('../../assets/images/rewards-badge-three-day-custom.png'), isNew: false },
+  { id: 'week-warrior', titleKey: 'badgeWeekWarrior', image: require('../../assets/images/rewards-badge-week-warrior-custom.png'), isNew: false },
+  { id: 'morning-hero', titleKey: 'badgeMorningHero', image: require('../../assets/images/rewards-badge-morning-hero-custom.png'), isNew: true },
+  { id: 'night-owl', titleKey: 'badgeNightOwl', image: require('../../assets/images/rewards-badge-night-owl-custom.png'), isNew: false },
+  { id: 'perfect-timer', titleKey: 'badgePerfectTimer', image: require('../../assets/images/rewards-badge-perfect-timer-custom.png'), isNew: false },
+  { id: 'cavity-crusher', titleKey: 'badgeCavityCrusher', image: require('../../assets/images/rewards-badge-cavity-crusher-custom.png'), isNew: false },
+  { id: 'sparkle-master', titleKey: 'badgeSparkleMaster', image: require('../../assets/images/rewards-badge-sparkle-master-custom.png'), isNew: false }
 ];
 
 const getProgress = (progress: number, target: number) => Math.min(progress / target, 1);
 
 export const RewardsScreen = () => {
-  const { child, theme, brushingCountToday, challenges, chooseCharacter } = useApp();
+  const { child, theme, brushingCountToday, challenges, chooseCharacter, t } = useApp();
 
   const level = Math.min(Math.floor(child.points / STARS_PER_LEVEL) + 1, LEVEL_COUNT);
   const weeklyStreak = challenges.find((challenge) => challenge.id === 'weekly-streak');
@@ -45,17 +45,17 @@ export const RewardsScreen = () => {
       chooseCharacter(buddy.id);
       return;
     }
-    Alert.alert('Keep leveling up', `${buddy.title} unlocks at Level ${buddy.requiredLevel}.`);
+    Alert.alert(t('keepLeveling'), t('unlocksAtLevel').replace('{{name}}', buddy.title).replace('{{level}}', `${buddy.requiredLevel}`));
   };
 
   return (
     <Screen contentContainerStyle={styles.screen} gradientBackground showDecorations={false}>
       <View style={styles.header}>
-        <Text style={[rewardFont, styles.pageTitle]}>Rewards</Text>
+        <Text style={[rewardFont, styles.pageTitle]}>{t('rewards')}</Text>
       </View>
 
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>My Badges</Text>
+        <Text style={styles.sectionTitle}>{t('myBadges')}</Text>
         <Text style={styles.sectionMeta}>{unlockedBadges.size} / {badgeDefinitions.length}</Text>
       </View>
 
@@ -66,21 +66,21 @@ export const RewardsScreen = () => {
             <View key={badge.id} style={[styles.badgeRow, !unlocked && styles.badgeRowLocked]}>
               <View style={[styles.badgeIcon, !unlocked && styles.lockedIcon]}>
                 <Image source={badge.image as ImageSourcePropType} style={[styles.badgeImage, !unlocked && styles.lockedImage]} resizeMode="contain" />
-                {!unlocked ? <View style={styles.lockOverlay}><Text style={styles.lockText}>LOCKED</Text></View> : null}
+                {!unlocked ? <View style={styles.lockOverlay}><Text style={styles.lockText}>{t('locked')}</Text></View> : null}
               </View>
               <View style={styles.badgeCopy}>
-                <Text style={[styles.badgeName, !unlocked && styles.lockedText]}>{badge.title}</Text>
-                <Text style={[styles.badgeStatus, !unlocked && styles.lockedText]}>{unlocked ? 'Unlocked' : 'Keep brushing to unlock'}</Text>
+                <Text style={[styles.badgeName, !unlocked && styles.lockedText]}>{t(badge.titleKey)}</Text>
+                <Text style={[styles.badgeStatus, !unlocked && styles.lockedText]}>{unlocked ? t('unlocked') : t('keepBrushingUnlock')}</Text>
               </View>
-              {unlocked && badge.isNew ? <Text style={styles.newPill}>NEW</Text> : null}
+              {unlocked && badge.isNew ? <Text style={styles.newPill}>{t('new')}</Text> : null}
             </View>
           );
         })}
       </View>
 
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>My Tooth Buddies</Text>
-        <Text style={styles.sectionMeta}>Unlock by level</Text>
+        <Text style={styles.sectionTitle}>{t('myToothBuddies')}</Text>
+        <Text style={styles.sectionMeta}>{t('unlockByLevel')}</Text>
       </View>
 
       <View style={styles.buddyGrid}>
@@ -91,18 +91,18 @@ export const RewardsScreen = () => {
             <Pressable key={buddy.id} style={[styles.buddyCard, !unlocked && styles.buddyCardLocked, active && styles.buddyCardActive]} onPress={() => handleBuddyPress(buddy, unlocked)}>
               <View style={[styles.buddyAvatar, { backgroundColor: buddy.tone }]}>
                 <Image source={buddy.image as ImageSourcePropType} style={[styles.buddyImage, !unlocked && styles.lockedBuddyImage]} resizeMode="contain" />
-                {!unlocked ? <View style={styles.buddyLockOverlay}><Ionicons name="lock-closed" size={14} color="#FFFFFF" /><Text style={styles.lockText}>LEVEL {buddy.requiredLevel}</Text></View> : null}
+                {!unlocked ? <View style={styles.buddyLockOverlay}><Ionicons name="lock-closed" size={14} color="#FFFFFF" /><Text style={styles.lockText}>{t('level').toUpperCase()} {buddy.requiredLevel}</Text></View> : null}
               </View>
               <Text style={styles.buddyName}>{buddy.title}</Text>
               <Text style={styles.buddySubtitle}>{buddy.subtitle}</Text>
               {unlocked ? (
                 <View style={[styles.chooseButton, active && styles.activeButton]}>
-                  <Text style={[styles.chooseText, active && styles.activeText]}>{active ? 'Active' : 'Choose'}</Text>
+                  <Text style={[styles.chooseText, active && styles.activeText]}>{active ? t('active') : t('choose')}</Text>
                 </View>
               ) : (
                 <View style={styles.levelLockButton}>
                   <Ionicons name="lock-closed" size={17} color="#8A6A1D" />
-                  <Text style={styles.levelLockText}>Level {buddy.requiredLevel}</Text>
+                  <Text style={styles.levelLockText}>{t('chooseLevel').replace('{{level}}', `${buddy.requiredLevel}`)}</Text>
                 </View>
               )}
             </Pressable>
