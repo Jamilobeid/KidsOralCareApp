@@ -3,10 +3,12 @@
     "name": "Kids Oral Care",
     "slug": "kids-oral-care",
     "version": "1.0.0",
+    "scheme": "kidsoralcare",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
+      "image": "./assets/images/icon.png",
       "backgroundColor": "#7BDFF2",
       "resizeMode": "contain"
     },
@@ -15,22 +17,54 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.example.kidsoralcare"
+      "bundleIdentifier": "com.example.kidsoralcare",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.example.kidsoralcare",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#7BDFF2"
       },
       "permissions": [
         "POST_NOTIFICATIONS"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
       ]
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     },
     "plugins": [
       "expo-localization",
       "expo-notifications",
       "expo-av",
+      [
+        "expo-font",
+        {
+          "android": {
+            "fonts": [
+              "./assets/fonts/Fredoka_700Bold.ttf",
+              "./assets/fonts/Baloo2_600SemiBold.ttf",
+              "./assets/fonts/Nunito_400Regular.ttf"
+            ]
+          }
+        }
+      ],
       "expo-asset"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "7ae24376-7c03-46d8-8551-111539818a7b"
+      }
+    },
+    "owner": "jamilops-team"
   }
 }

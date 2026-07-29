@@ -50,7 +50,13 @@ type MiniStatProps = {
 };
 
 const artwork = {
-  level: require('../../assets/images/settings-level-cutout.png'),
+  levels: [
+    require('../../assets/images/settings-level-1.png'),
+    require('../../assets/images/settings-level-2.png'),
+    require('../../assets/images/settings-level-3.png'),
+    require('../../assets/images/settings-level-4.png'),
+    require('../../assets/images/settings-level-5.png')
+  ],
   stars: require('../../assets/images/settings-stars-cutout.png'),
   badge: require('../../assets/images/settings-badge-cutout.png'),
   reminders: require('../../assets/images/settings-reminders-cutout.png'),
@@ -78,7 +84,7 @@ const languageOptions: { code: LanguageCode; label: string; emoji: string; color
 ];
 
 export const SettingsScreen = () => {
-  const { t, child, language, setLanguage, setScreen } = useApp();
+  const { t, child, isAdmin, language, setLanguage, setScreen } = useApp();
   const [morningReminder, setMorningReminder] = useState(true);
   const [eveningReminder, setEveningReminder] = useState(true);
   const [dailyChallenges, setDailyChallenges] = useState(true);
@@ -103,7 +109,6 @@ export const SettingsScreen = () => {
   return (
     <Screen contentContainerStyle={styles.screen} gradientBackground showDecorations={false}>
       <Text style={styles.pageTitle}>{t('settings')}</Text>
-
       <Card style={styles.profileCard}>
         <Animated.View style={[styles.profileAvatar, { transform: [{ translateY: avatarLift }] }]}>
           <View style={styles.profileBuddyGlow} />
@@ -112,10 +117,10 @@ export const SettingsScreen = () => {
           <Ionicons name="sparkles" size={15} color="#2EC4B6" style={styles.profileSparkleBottom} />
         </Animated.View>
         <View style={styles.profileCopy}>
-          <Text style={[headingFont, styles.profileTitle]}>{t('helloSmileHero')}</Text>
+          <Text style={[headingFont, styles.profileTitle]}>Hello {child.nickname}</Text>
           <Text style={[bodyFont, styles.profileMessage]}>{t('settingsProfileMessage')}</Text>
           <View style={styles.profileStats}>
-            <MiniStat imageSource={artwork.level} label={t('level')} value={`${child.level}`} tint="#FFF4D6" />
+            <MiniStat imageSource={artwork.levels[Math.min(Math.max(child.level, 1), 5) - 1]} label={t('level')} value={`${child.level}`} tint="#FFF4D6" />
             <MiniStat imageSource={artwork.stars} label={t('smileStars')} value={`${child.points}`} tint="#FFF8D9" />
             <MiniStat imageSource={artwork.badge} label={t('badges')} value={`${child.badges.length}`} tint="#E8F7FF" />
           </View>
@@ -157,14 +162,11 @@ export const SettingsScreen = () => {
           <Text style={[bodyFont, styles.aboutLabel]}>{t('version')}</Text>
           <Text style={[rewardFont, styles.aboutValue]}>1.0.0</Text>
         </View>
-        <View style={styles.aboutButtons}>
-          <Pressable style={styles.aboutButton} onPress={() => Alert.alert(t('privacyPolicy'), t('privacyPolicyMessage'))}>
-            <Text style={[buttonFont, styles.aboutButtonText]}>{t('privacyPolicy')}</Text>
-          </Pressable>
-          <Pressable style={styles.aboutButton} onPress={() => Alert.alert(t('terms'), t('termsMessage'))}>
-            <Text style={[buttonFont, styles.aboutButtonText]}>{t('terms')}</Text>
-          </Pressable>
-        </View>
+        <Pressable accessibilityRole="button" onPress={() => navigateTo('legalInformation')} style={styles.legalButton}>
+          <Ionicons name="document-text-outline" size={22} color="#FFFFFF" />
+          <Text style={[buttonFont, styles.legalButtonText]}>Open Legal Information</Text>
+          <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+        </Pressable>
       </SettingsCard>
     </Screen>
   );
@@ -229,25 +231,44 @@ const LinkCard = ({ imageSource, fallbackIcon, color, background, title, subtitl
 );
 
 const ParentLock = () => {
-  const { setScreen, t } = useApp();
+  const { deleteAccountAndData, isAdmin, isFirebaseReady, setScreen, t } = useApp();
   const [answer, setAnswer] = useState('');
   const [unlocked, setUnlocked] = useState(false);
   const [screenLimit, setScreenLimit] = useState(true);
   const [playLimit, setPlayLimit] = useState(true);
+  const [showDeletion, setShowDeletion] = useState(false);
+  const [deletionPassword, setDeletionPassword] = useState('');
+  const [deletionConfirmation, setDeletionConfirmation] = useState('');
+  const [showDeletionPassword, setShowDeletionPassword] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const zoneTitle = isAdmin ? 'Admin Zone' : t('parentZone');
+  const lockQuestion = isAdmin ? 'Admin lock: 3 + 5 = ?' : t('parentLockQuestion');
 
   const checkAnswer = () => {
     if (answer.trim() === '8') {
       setUnlocked(true);
       return;
     }
-    Alert.alert(t('tryAgain'), t('parentLockWrong'));
+    Alert.alert(t('tryAgain'), isAdmin ? 'That admin lock is still closed. Hint: count on your fingers!' : t('parentLockWrong'));
+  };
+
+  const submitDeletion = async () => {
+    if (deleting) return;
+    setDeleting(true);
+    const deleted = await deleteAccountAndData(deletionPassword, deletionConfirmation);
+    setDeleting(false);
+    if (deleted) {
+      setDeletionPassword('');
+      setDeletionConfirmation('');
+      setShowDeletion(false);
+    }
   };
 
   if (!unlocked) {
     return (
-      <SettingsCard imageSource={artwork.parent} fallbackIcon="shield-checkmark" color="#31C778" background="#E9FFF4" title={t('parentZone')} subtitle={t('parentZoneSubtitle')}>
+      <SettingsCard imageSource={artwork.parent} fallbackIcon="shield-checkmark" color="#31C778" background="#E9FFF4" title={zoneTitle} subtitle={t('parentZoneSubtitle')}>
         <View style={styles.lockBox}>
-          <Text style={[headingFont, styles.lockQuestion]}>{t('parentLockQuestion')}</Text>
+          <Text style={[headingFont, styles.lockQuestion]}>{lockQuestion}</Text>
           <View style={styles.lockInputRow}>
             <TextInput value={answer} onChangeText={setAnswer} keyboardType="number-pad" placeholder="Answer" placeholderTextColor="#93A6B5" style={[bodyFont, styles.lockInput]} />
             <Pressable onPress={checkAnswer} style={styles.unlockButton}>
@@ -260,10 +281,96 @@ const ParentLock = () => {
   }
 
   return (
-    <SettingsCard imageSource={artwork.parent} fallbackIcon="shield-checkmark" color="#31C778" background="#E9FFF4" title={t('parentZone')} subtitle={t('parentZoneUnlockedSubtitle')}>
+    <SettingsCard imageSource={artwork.parent} fallbackIcon="shield-checkmark" color="#31C778" background="#E9FFF4" title={zoneTitle} subtitle={t('parentZoneUnlockedSubtitle')}>
       <ToggleRow imageSource={artwork.screenTime} fallbackIcon="phone-portrait" label="Screen time limit" value={screenLimit} onValueChange={setScreenLimit} color="#7B61FF" background="#F0ECFF" />
       <ToggleRow imageSource={artwork.playLimit} fallbackIcon="game-controller" label="Daily play limit" value={playLimit} onValueChange={setPlayLimit} color="#1D9BF0" background="#E5F6FF" />
-      <LinkCard imageSource={artwork.parentDashboard} fallbackIcon="clipboard" color="#1D9BF0" background="#E5F6FF" title={t('openParentDashboard')} subtitle={t('openParentDashboardSubtitle')} onPress={() => setScreen('parentDashboard')} />
+      <LinkCard
+        imageSource={artwork.parentDashboard}
+        fallbackIcon="clipboard"
+        color="#1D9BF0"
+        background="#E5F6FF"
+        title={isAdmin ? t('adminDashboard') : t('openParentDashboard')}
+        subtitle={isAdmin ? 'View users, brushing, app time, and activity.' : t('openParentDashboardSubtitle')}
+        onPress={() => setScreen(isAdmin ? 'adminDashboard' : 'parentDashboard')}
+      />
+      {!isAdmin ? (
+        <View style={styles.dangerZone}>
+          <View style={styles.dangerHeader}>
+            <Ionicons name="warning" size={24} color="#B4233A" />
+            <View style={styles.dangerCopy}>
+              <Text style={[headingFont, styles.dangerTitle]}>Delete account and data</Text>
+              <Text style={[bodyFont, styles.dangerDescription]}>Permanently removes the parent account, child profile, progress, username reservation, activity records, and reminders.</Text>
+            </View>
+          </View>
+
+          {!showDeletion ? (
+            <Pressable
+              accessibilityRole="button"
+              disabled={!isFirebaseReady}
+              onPress={() => setShowDeletion(true)}
+              style={[styles.openDeleteButton, !isFirebaseReady && styles.disabledButton]}
+            >
+              <Text style={[buttonFont, styles.openDeleteText]}>{isFirebaseReady ? 'Start account deletion' : 'Account deletion requires Firebase'}</Text>
+            </Pressable>
+          ) : (
+            <View style={styles.deleteForm}>
+              <Text style={[bodyFont, styles.deleteWarning]}>This cannot be undone. Enter the parent password and type DELETE exactly.</Text>
+              <View style={styles.deletePasswordRow}>
+                <TextInput
+                  value={deletionPassword}
+                  onChangeText={setDeletionPassword}
+                  editable={!deleting}
+                  secureTextEntry={!showDeletionPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  placeholder="Parent password"
+                  placeholderTextColor="#8A96A8"
+                  style={[bodyFont, styles.deletePasswordInput]}
+                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={showDeletionPassword ? 'Hide password' : 'Show password'}
+                  onPress={() => setShowDeletionPassword((current) => !current)}
+                  hitSlop={10}
+                  style={styles.deleteEyeButton}
+                >
+                  <Ionicons name={showDeletionPassword ? 'eye-off' : 'eye'} size={21} color="#41438F" />
+                </Pressable>
+              </View>
+              <TextInput
+                value={deletionConfirmation}
+                onChangeText={setDeletionConfirmation}
+                editable={!deleting}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                placeholder="Type DELETE"
+                placeholderTextColor="#8A96A8"
+                style={[bodyFont, styles.deleteConfirmInput]}
+              />
+              <View style={styles.deleteActions}>
+                <Pressable
+                  disabled={deleting}
+                  onPress={() => {
+                    setShowDeletion(false);
+                    setDeletionPassword('');
+                    setDeletionConfirmation('');
+                  }}
+                  style={styles.cancelDeleteButton}
+                >
+                  <Text style={[buttonFont, styles.cancelDeleteText]}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  disabled={deleting || !deletionPassword || deletionConfirmation !== 'DELETE'}
+                  onPress={submitDeletion}
+                  style={[styles.confirmDeleteButton, (deleting || !deletionPassword || deletionConfirmation !== 'DELETE') && styles.disabledButton]}
+                >
+                  <Text style={[buttonFont, styles.confirmDeleteText]}>{deleting ? 'Deleting…' : 'Delete permanently'}</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
+        </View>
+      ) : null}
       <Pressable style={styles.resetButton} onPress={() => Alert.alert(t('resetRewards'), t('resetRewardsMessage'))}>
         <Ionicons name="refresh" size={22} color="#FFFFFF" />
         <Text style={[buttonFont, styles.resetText]}>{t('resetRewards')}</Text>
@@ -305,18 +412,18 @@ const styles = StyleSheet.create({
   miniStat: { minHeight: 54, flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 18, paddingHorizontal: 10, paddingVertical: 8 },
   miniStatImage: { width: 38, height: 38 },
   miniStatCopy: { flex: 1, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 },
-  miniStatLabel: { color: '#000000', fontSize: 14, fontFamily: 'Fredoka_700Bold' },
-  miniStatText: { color: '#000000', fontSize: 19, fontFamily: 'Fredoka_700Bold' },
+  miniStatLabel: { color: '#000000', fontSize: 12, fontFamily: 'Fredoka_700Bold' },
+  miniStatText: { color: '#000000', fontSize: 17, fontFamily: 'Fredoka_700Bold' },
   settingsCard: { gap: 15, backgroundColor: '#ffffff', alignItems: 'center', borderWidth: 0, borderRadius: 28, shadowColor: '#17324D', shadowOpacity: 0.09, shadowRadius: 9, shadowOffset: { width: 0, height: 5 }, elevation: 3 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 13 },
   cardIcon: { width: 64, height: 64, borderRadius: 22, alignItems: 'center', justifyContent: 'center', overflow: 'visible' },
   cardTitleWrap: { flex: 1 },
   cardTitle: { color: '#41438F', fontSize: 24, lineHeight: 29, fontFamily: 'Fredoka_700Bold' },
-  cardSubtitle: { color: '#454f59', fontSize: 13, lineHeight: 21, fontFamily: 'Fredoka_700Bold' },
+  cardSubtitle: { color: '#454f59', fontSize: 11, lineHeight: 21, fontFamily: 'Fredoka_700Bold' },
   cardContent: { gap: 30 },
   toggleRow: { minHeight: 66, width:310, backgroundColor: '#F7FBFF', flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 15, borderWidth: 0, borderRadius: 28, shadowColor: '#17324D', shadowOpacity: 0.09, shadowRadius: 9, shadowOffset: { width: 0, height: 5 }, elevation: 10 },
   smallIcon: { width: 48, height: 48, borderRadius: 17, alignItems: 'center', justifyContent: 'center', overflow: 'visible' },
-  toggleLabel: { flex: 1, color: '#454f59', fontSize: 16, fontFamily: 'Fredoka_700Bold' },
+  toggleLabel: { flex: 1, color: '#454f59', fontSize: 13, fontFamily: 'Fredoka_700Bold' },
   optionGrid: { gap: 20 },
   optionButton: { minHeight: 58, width:300, backgroundColor: '#F7FBFF', borderRadius: 28, borderWidth: 0, paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', shadowColor: '#17324D', shadowOpacity: 0.09, shadowRadius: 15, shadowOffset: { width: 10, height: 10 }, elevation: 10 },
   optionText: { fontSize: 17, fontFamily: 'Fredoka_700Bold' },
@@ -328,12 +435,30 @@ const styles = StyleSheet.create({
   lockInput: { flex: 1, minHeight: 48, borderRadius: 10, backgroundColor: '#FFFFFF', borderWidth: 0, paddingHorizontal: 13, color: '#41438F', fontSize: 16, shadowColor: '#17324D', shadowOpacity: 0.09, shadowRadius: 9, shadowOffset: { width: 10, height: 10 }, elevation: 15 },
   unlockButton: { minHeight: 48, width: 76, borderRadius: 16, backgroundColor: '#454f59', alignItems: 'center', justifyContent: 'center' },
   unlockText: { color: '#FFFFFF', fontSize: 15, fontFamily: 'Fredoka_700Bold' },
+  dangerZone: { width: 310, gap: 15, borderRadius: 24, backgroundColor: '#FFF2F4', borderWidth: 2, borderColor: '#FFC7D0', padding: 18 },
+  dangerHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  dangerCopy: { flex: 1, gap: 5 },
+  dangerTitle: { color: '#9B1C31', fontSize: 19, lineHeight: 24 },
+  dangerDescription: { color: '#67313A', fontSize: 12, lineHeight: 18 },
+  openDeleteButton: { minHeight: 48, borderRadius: 16, backgroundColor: '#B4233A', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
+  openDeleteText: { color: '#FFFFFF', fontSize: 14, lineHeight: 19, textAlign: 'center' },
+  deleteForm: { gap: 13 },
+  deleteWarning: { color: '#7A2332', fontSize: 13, lineHeight: 19 },
+  deletePasswordRow: { minHeight: 50, borderRadius: 15, borderWidth: 1.5, borderColor: '#D796A2', backgroundColor: '#FFFFFF', flexDirection: 'row', alignItems: 'center', paddingLeft: 13 },
+  deletePasswordInput: { flex: 1, color: '#17324D', fontSize: 15, paddingVertical: 10 },
+  deleteEyeButton: { width: 44, minHeight: 48, alignItems: 'center', justifyContent: 'center' },
+  deleteConfirmInput: { minHeight: 50, borderRadius: 15, borderWidth: 1.5, borderColor: '#D796A2', backgroundColor: '#FFFFFF', color: '#17324D', fontSize: 15, paddingHorizontal: 13 },
+  deleteActions: { flexDirection: 'row', gap: 10 },
+  cancelDeleteButton: { flex: 1, minHeight: 48, borderRadius: 16, borderWidth: 1.5, borderColor: '#AAB8C2', backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
+  cancelDeleteText: { color: '#455A68', fontSize: 14 },
+  confirmDeleteButton: { flex: 1.45, minHeight: 48, borderRadius: 16, backgroundColor: '#B4233A', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
+  confirmDeleteText: { color: '#FFFFFF', fontSize: 13, textAlign: 'center' },
+  disabledButton: { opacity: 0.48 },
   resetButton: { minHeight: 58, borderRadius: 20, backgroundColor: '#FF6B9A', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   resetText: { color: '#FFFFFF', fontSize: 18, fontWeight: '900' },
   aboutRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F7FBFF', borderRadius: 18, padding: 12, gap: 65 },
   aboutLabel: { color: '#54708A', fontSize: 16, fontFamily: 'Fredoka_700Bold' },
   aboutValue: { color: '#16324F', fontSize: 16, fontFamily: 'Fredoka_700Bold' },
-  aboutButtons: { flexDirection: 'row', gap: 30 },
-  aboutButton: { flex: 1, minHeight: 50, borderRadius: 18, backgroundColor: '#d8f9e8', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
-  aboutButtonText: { color: '#168954', fontSize: 15, fontFamily: 'Fredoka_700Bold' }
+  legalButton: { alignItems: 'center', backgroundColor: '#41438F', borderRadius: 18, flexDirection: 'row', gap: 9, justifyContent: 'center', minHeight: 52, paddingHorizontal: 14 },
+  legalButtonText: { color: '#FFFFFF', flex: 1, fontSize: 15, lineHeight: 20, textAlign: 'center' }
 });

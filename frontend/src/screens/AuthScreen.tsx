@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LegalDocumentModal } from '../components/LegalDocumentModal';
 import { useApp } from '../context/AppContext';
+import { LegalDocumentId } from '../data/legalDocuments';
 import { bodyFont, headingFont } from '../utils/kidStyle';
+import { appAlert as Alert } from '../utils/appAlert';
 
 const bubbleToothImage = require('../../assets/images/login-tooth-bubbles-cutout.png');
 const bowToothImage = require('../../assets/images/login-tooth-bow-cutout.png');
@@ -12,14 +15,26 @@ const signupSparkleToothImage = require('../../assets/images/signup-tooth-sparkl
 const signupBrushToothImage = require('../../assets/images/signup-tooth-brush-cutout.png');
 
 export const AuthScreen = () => {
-  const { t, authMode, signInChild, registerChild } = useApp();
-  const [username, setUsername] = useState('Sparkle');
-  const [password, setPassword] = useState('1234');
+  const {
+    t, authMode, signInChild, registerParent,
+    verificationPending, verificationEmailMasked, consentPending, childSetupPending, checkParentEmailVerification,
+    submitParentalConsent, checkParentalConsentApproval, completeChildSetup,
+    resendVerificationEmail, cancelVerification, requestPasswordReset
+  } = useApp();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [parentEmail, setParentEmail] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [age, setAge] = useState(6);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [parentLegalName, setParentLegalName] = useState('');
+  const [consentSignature, setConsentSignature] = useState('');
+  const [leaderboardRequested, setLeaderboardRequested] = useState(true);
+  const [legalAccepted, setLegalAccepted] = useState(false);
+  const [openLegalDocument, setOpenLegalDocument] = useState<LegalDocumentId | null>(null);
   const isSignup = authMode === 'signup';
 
   React.useEffect(() => {
@@ -27,6 +42,7 @@ export const AuthScreen = () => {
       setUsername('');
       setPassword('');
       setConfirmPassword('');
+      setParentEmail('');
       setAge(4);
       setPasswordVisible(false);
       setConfirmPasswordVisible(false);
@@ -34,15 +50,9 @@ export const AuthScreen = () => {
   }, [isSignup]);
 
   const validateSignup = () => {
-    const cleanUsername = username.trim();
     const cleanPassword = password.trim();
 
-    if (cleanUsername.length > 15) {
-      Alert.alert(t('tinyNameCheck'), t('tinyNameMessage'));
-      return;
-    }
-
-    if (cleanPassword.length < 4 || cleanPassword.length > 7) {
+    if (cleanPassword.length < 6 || cleanPassword.length > 20) {
       Alert.alert(t('passwordSparkleCheck'), t('passwordSparkleMessage'));
       return;
     }
@@ -52,19 +62,140 @@ export const AuthScreen = () => {
       return;
     }
 
-    if (age < 4 || age > 12) {
-      Alert.alert(t('ageCheck'), t('ageMessage'));
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parentEmail.trim())) {
+      Alert.alert('Parent email needed', 'Enter a valid parent or guardian email address.');
       return;
     }
 
-    registerChild(cleanUsername, cleanPassword, age);
+    if (!legalAccepted) {
+      Alert.alert('Review required', 'Please review and accept the Privacy Policy and Terms of Use before creating the parent account.');
+      return;
+    }
+
+    registerParent(cleanPassword, parentEmail.trim());
   };
+
+  if (verificationPending) {
+    return (
+      <LinearGradient colors={['#44D0C4', '#DDF6F3', '#FFFFFF']} locations={[0, 0.55, 1]} style={styles.gradient}>
+        <SafeAreaView style={styles.safe}>
+          <View style={styles.centeredContent}>
+            <Ionicons name="mail-unread-outline" size={72} color="#6155F6" />
+            <Text style={[headingFont, styles.recoveryTitle]}>Verify the parent email</Text>
+            <Text style={[bodyFont, styles.recoveryMessage]}>
+              {`We sent a Firebase verification link to ${verificationEmailMasked}. Open the link, then come back and continue.`}
+            </Text>
+            <Pressable accessibilityRole="button" onPress={checkParentEmailVerification} style={styles.loginButton}>
+              <Text style={[headingFont, styles.loginButtonText]}>I've verified my email</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={resendVerificationEmail} style={styles.secondaryButton}>
+              <Text style={[headingFont, styles.secondaryButtonText]}>Resend verification email</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={cancelVerification} style={styles.textButton}>
+              <Text style={[bodyFont, styles.textButtonLabel]}>Back to sign in</Text>
+            </Pressable>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+    );
+  }
+
+  if (consentPending) {
+    return (
+      <LinearGradient colors={['#44D0C4', '#DDF6F3', '#FFFFFF']} locations={[0, 0.55, 1]} style={styles.gradient}>
+        <SafeAreaView style={styles.safe}>
+          <ScrollView contentContainerStyle={styles.consentContent} showsVerticalScrollIndicator={false}>
+            <Ionicons name="shield-checkmark-outline" size={64} color="#31C778" />
+            <Text style={[headingFont, styles.recoveryTitle]}>Parent consent</Text>
+            <View style={styles.noticeCard}>
+              <Text style={[headingFont, styles.noticeTitle]}>Please review before creating the child profile</Text>
+              <Text style={[bodyFont, styles.noticeText]}>Kids Oral Care will collect the child’s chosen username, age, avatar, brushing progress, game activity, rewards, usage, and reminder-following to provide the application and parent dashboard.</Text>
+              <Text style={[bodyFont, styles.noticeText]}>We use Firebase for authentication and storage and Netlify for secure deletion. We do not sell child information or use targeted advertising, location, camera, or microphone recordings.</Text>
+              <Text style={[bodyFont, styles.noticeText]}>You may review, correct, withdraw consent, or request deletion by using Parent Zone or contacting jamilworkinfo@gmail.com. Account-linked data is removed from active systems within 30 days of a verified request.</Text>
+              <Text style={[bodyFont, styles.noticeContact]}>Jamil Obeid · Beirut, Lebanon · +961 81 343 191</Text>
+            </View>
+            <View style={styles.consentForm}>
+              <Text style={[headingFont, styles.signupLabel]}>Parent’s full legal name:</Text>
+              <TextInput value={parentLegalName} onChangeText={setParentLegalName} autoCapitalize="words" style={[bodyFont, styles.consentInput]} />
+              <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: leaderboardRequested }} onPress={() => setLeaderboardRequested((value) => !value)} style={styles.consentChoice}>
+                <View style={[styles.checkbox, leaderboardRequested && styles.checkboxChecked]}>{leaderboardRequested ? <Ionicons name="checkmark" size={14} color="#FFFFFF" /> : null}</View>
+                <Text style={[bodyFont, styles.consentChoiceText]}>I also approve showing only the child’s username, avatar, points, and level on the leaderboard.</Text>
+              </Pressable>
+              <Text style={[headingFont, styles.signupLabel]}>Type I CONSENT:</Text>
+              <TextInput value={consentSignature} onChangeText={setConsentSignature} autoCapitalize="characters" style={[bodyFont, styles.consentInput]} />
+              <Pressable accessibilityRole="button" onPress={() => submitParentalConsent(parentLegalName, leaderboardRequested, consentSignature)} style={styles.loginButton}>
+                <Text style={[headingFont, styles.loginButtonText]}>Submit signed request</Text>
+              </Pressable>
+              <Pressable accessibilityRole="button" onPress={checkParentalConsentApproval} style={styles.secondaryButton}>
+                <Text style={[headingFont, styles.secondaryButtonText]}>Check approval</Text>
+              </Pressable>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </LinearGradient>
+    );
+  }
+
+  if (childSetupPending) {
+    return (
+      <LinearGradient colors={['#44D0C4', '#DDF6F3', '#FFFFFF']} locations={[0, 0.55, 1]} style={styles.gradient}>
+        <SafeAreaView style={styles.safe}>
+          <View style={styles.centeredContent}>
+            <Ionicons name="happy-outline" size={68} color="#6155F6" />
+            <Text style={[headingFont, styles.recoveryTitle]}>Create the child profile</Text>
+            <Text style={[bodyFont, styles.recoveryMessage]}>Parental consent is approved. Now choose the child’s username and age.</Text>
+            <View style={styles.recoveryPanel}>
+              <Text style={[headingFont, styles.signupLabel]}>Username:</Text>
+              <TextInput value={username} onChangeText={setUsername} autoCapitalize="none" autoCorrect={false} style={[bodyFont, styles.consentInput]} />
+              <Text style={[headingFont, styles.recoveryFieldLabel]}>Age:</Text>
+              <View style={styles.agePicker}>
+                <Pressable onPress={() => setAge((value) => Math.max(4, value - 1))} style={styles.ageButton}><Ionicons name="remove" size={18} color="#41438F" /></Pressable>
+                <Text style={[headingFont, styles.ageValue]}>{age}</Text>
+                <Pressable onPress={() => setAge((value) => Math.min(12, value + 1))} style={styles.ageButton}><Ionicons name="add" size={18} color="#41438F" /></Pressable>
+              </View>
+              <Pressable accessibilityRole="button" onPress={() => completeChildSetup(username, age)} style={[styles.loginButton, styles.recoverySubmit]}>
+                <Text style={[headingFont, styles.loginButtonText]}>Create child profile</Text>
+              </Pressable>
+            </View>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+    );
+  }
+
+  if (showForgotPassword) {
+    return (
+      <LinearGradient colors={['#44D0C4', '#DDF6F3', '#FFFFFF']} locations={[0, 0.55, 1]} style={styles.gradient}>
+        <SafeAreaView style={styles.safe}>
+          <View style={styles.centeredContent}>
+            <Ionicons name="key-outline" size={66} color="#6155F6" />
+            <Text style={[headingFont, styles.recoveryTitle]}>Reset password</Text>
+            <Text style={[bodyFont, styles.recoveryMessage]}>Enter the parent email used to create the account.</Text>
+            <View style={styles.recoveryPanel}>
+              <Text style={[headingFont, styles.label]}>Parent email:</Text>
+              <TextInput value={parentEmail} onChangeText={setParentEmail} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} style={[bodyFont, styles.underlineInput]} />
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => requestPasswordReset(parentEmail)}
+                style={[styles.loginButton, styles.recoverySubmit]}
+              >
+                <Text style={[headingFont, styles.loginButtonText]}>Send reset link</Text>
+              </Pressable>
+            </View>
+            <Pressable accessibilityRole="button" onPress={() => setShowForgotPassword(false)} style={styles.textButton}>
+              <Text style={[bodyFont, styles.textButtonLabel]}>Back to sign in</Text>
+            </Pressable>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+    );
+  }
 
   if (isSignup) {
     return (
       <LinearGradient colors={['#44D0C4', '#DDF6F3', '#FFFFFF']} locations={[0, 0.55, 1]} style={styles.gradient}>
         <SafeAreaView style={styles.safe}>
-          <View style={styles.signupContent}>
+          <ScrollView contentContainerStyle={styles.signupContent} showsVerticalScrollIndicator={false}>
             <View style={styles.signupHeaderRow}>
               <Text style={[headingFont, styles.signupTitle]}>{t('newToUs')}</Text>
             </View>
@@ -73,13 +204,13 @@ export const AuthScreen = () => {
               <Image source={signupBrushToothImage} style={[styles.signupMascot, styles.signupBrushMascot]} resizeMode="contain" />
             </View>
             <Text style={[headingFont, styles.signupSubtitle]}>{t('signupSubtitle')}</Text>
-
             <View style={styles.signupPanel}>
               <View style={styles.signupField}>
-                <Text style={[headingFont, styles.signupLabel]}>{t('username')}:</Text>
+                <Text style={[headingFont, styles.signupLabel]}>Parent email:</Text>
                 <TextInput
-                  value={username}
-                  onChangeText={setUsername}
+                  value={parentEmail}
+                  onChangeText={setParentEmail}
+                  keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
                   style={[bodyFont, styles.signupUnderlineInput]}
@@ -132,27 +263,23 @@ export const AuthScreen = () => {
                 </View>
               </View>
 
-              <View style={styles.signupField}>
-                <Text style={[headingFont, styles.signupLabel]}>{t('enterAge')}:</Text>
-                <View style={styles.agePicker}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={t('decreaseAge')}
-                    onPress={() => setAge((value) => Math.max(4, value - 1))}
-                    style={styles.ageButton}
-                  >
-                    <Ionicons name="remove" size={18} color="#41438F" />
+              <View style={styles.legalAgreement}>
+                <Text style={[bodyFont, styles.legalIntro]}>Before creating the parent account, please review:</Text>
+                <View style={styles.legalLinksRow}>
+                  <Pressable accessibilityRole="link" onPress={() => setOpenLegalDocument('privacy')} hitSlop={6}>
+                    <Text style={[headingFont, styles.legalLink]}>Privacy Policy</Text>
                   </Pressable>
-                  <Text style={[headingFont, styles.ageValue]}>{age}</Text>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={t('increaseAge')}
-                    onPress={() => setAge((value) => Math.min(12, value + 1))}
-                    style={styles.ageButton}
-                  >
-                    <Ionicons name="add" size={18} color="#41438F" />
+                  <Text style={[bodyFont, styles.legalSeparator]}>and</Text>
+                  <Pressable accessibilityRole="link" onPress={() => setOpenLegalDocument('terms')} hitSlop={6}>
+                    <Text style={[headingFont, styles.legalLink]}>Terms of Use</Text>
                   </Pressable>
                 </View>
+                <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: legalAccepted }} onPress={() => setLegalAccepted((value) => !value)} style={styles.legalAcceptRow}>
+                  <View style={[styles.checkbox, legalAccepted && styles.checkboxChecked]}>
+                    {legalAccepted ? <Ionicons name="checkmark" size={14} color="#FFFFFF" /> : null}
+                  </View>
+                  <Text style={[bodyFont, styles.legalAcceptText]}>I am the parent or legal guardian, and I accept the Privacy Policy and Terms of Use.</Text>
+                </Pressable>
               </View>
 
               <Pressable
@@ -161,10 +288,11 @@ export const AuthScreen = () => {
                 onPress={validateSignup}
                 style={({ pressed }) => [styles.signupCreateButton, pressed && styles.loginButtonPressed]}
               >
-                <Text style={[headingFont, styles.signupCreateButtonText]}>{t('createAccount')}</Text>
+                <Text style={[headingFont, styles.signupCreateButtonText]}>Create parent account</Text>
               </Pressable>
             </View>
-          </View>
+            <LegalDocumentModal documentId={openLegalDocument} onClose={() => setOpenLegalDocument(null)} />
+          </ScrollView>
         </SafeAreaView>
       </LinearGradient>
     );
@@ -175,7 +303,6 @@ export const AuthScreen = () => {
       <SafeAreaView style={styles.safe}>
         <View style={styles.content}>
           <Text style={[headingFont, styles.title]}>{t('enterProgress')}</Text>
-
           <View style={styles.mascotRow}>
             <Image source={bubbleToothImage} style={[styles.mascot, styles.bubbleMascot]} resizeMode="contain" />
             <Image source={bowToothImage} style={[styles.mascot, styles.bowMascot]} resizeMode="contain" />
@@ -183,10 +310,11 @@ export const AuthScreen = () => {
 
           <View style={styles.formPanel}>
             <View style={styles.fieldBlock}>
-              <Text style={[headingFont, styles.label]}>{t('username')}:</Text>
+              <Text style={[headingFont, styles.label]}>Parent email:</Text>
               <TextInput
-                value={username}
-                onChangeText={setUsername}
+                value={parentEmail}
+                onChangeText={setParentEmail}
+                keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
                 placeholder=""
@@ -229,11 +357,14 @@ export const AuthScreen = () => {
               </View>
               <Text style={[bodyFont, styles.rememberText]}>{t('rememberMe')}</Text>
             </Pressable>
+            <Pressable accessibilityRole="button" onPress={() => setShowForgotPassword(true)} style={styles.forgotButton}>
+              <Text style={[bodyFont, styles.forgotButtonText]}>Forgot password?</Text>
+            </Pressable>
 
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t('login')}
-              onPress={() => signInChild(username, password, rememberMe)}
+              onPress={() => signInChild(parentEmail, password, rememberMe)}
               style={({ pressed }) => [styles.loginButton, pressed && styles.loginButtonPressed]}
             >
               <Text style={[headingFont, styles.loginButtonText]}>{t('login')}</Text>
@@ -389,9 +520,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 22
   },
+  forgotButton: {
+    alignSelf: 'center',
+    marginTop: 17,
+    padding: 6
+  },
+  forgotButtonText: {
+    color: '#41438F',
+    fontSize: 14,
+    fontWeight: '900',
+    textDecorationLine: 'underline'
+  },
   signupContent: {
     alignItems: 'center',
-    flex: 1,
+    flexGrow: 1,
+    paddingBottom: 34,
     paddingHorizontal: 35,
     paddingTop: 22
   },
@@ -449,7 +592,7 @@ const styles = StyleSheet.create({
     shadowRadius: 9,
     shadowOffset: { width: 0, height: 5 },
     elevation: 12,
-    height: 450,
+    minHeight: 530,
     paddingHorizontal: 70,
     paddingTop: 29,
     width: '100%', 
@@ -530,5 +673,117 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 15,
     lineHeight: 21
-  }
+  },
+  centeredContent: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 34
+  },
+  recoveryTitle: {
+    color: '#41438F',
+    fontSize: 29,
+    lineHeight: 36,
+    marginTop: 16,
+    textAlign: 'center'
+  },
+  recoveryMessage: {
+    color: '#17324D',
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 26,
+    marginTop: 12,
+    maxWidth: 340,
+    textAlign: 'center'
+  },
+  recoveryPanel: {
+    alignSelf: 'stretch',
+    backgroundColor: '#F7FBFF',
+    borderRadius: 28,
+    paddingHorizontal: 32,
+    paddingVertical: 28,
+    shadowColor: '#17324D',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 10
+  },
+  recoveryFieldLabel: {
+    color: '#080808',
+    fontSize: 16,
+    lineHeight: 22,
+    marginBottom: 13,
+    marginTop: 25
+  },
+  recoverySubmit: {
+    marginTop: 30
+  },
+  secondaryButton: {
+    alignItems: 'center',
+    backgroundColor: '#E6FFF8',
+    borderColor: '#2EC4B6',
+    borderRadius: 22,
+    borderWidth: 1.5,
+    height: 45,
+    justifyContent: 'center',
+    marginTop: 14,
+    width: 260
+  },
+  secondaryButtonText: {
+    color: '#168954',
+    fontSize: 14
+  },
+  textButton: {
+    marginTop: 13,
+    padding: 8
+  },
+  textButtonLabel: {
+    color: '#41438F',
+    fontSize: 14,
+    fontWeight: '900'
+  },
+  consentContent: {
+    alignItems: 'center',
+    paddingBottom: 40,
+    paddingHorizontal: 24,
+    paddingTop: 24
+  },
+  noticeCard: {
+    backgroundColor: '#F7FFFC',
+    borderRadius: 24,
+    marginTop: 18,
+    padding: 20,
+    shadowColor: '#17324D',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 4
+  },
+  noticeTitle: { color: '#41438F', fontSize: 19, lineHeight: 25, marginBottom: 10 },
+  noticeText: { color: '#17324D', fontSize: 14, lineHeight: 20, marginBottom: 9 },
+  noticeContact: { color: '#087C72', fontSize: 13, lineHeight: 19, fontWeight: '800' },
+  consentForm: {
+    alignSelf: 'stretch',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    marginTop: 16,
+    padding: 20
+  },
+  consentInput: {
+    borderBottomColor: '#41438F',
+    borderBottomWidth: 1.4,
+    color: '#111111',
+    fontSize: 16,
+    height: 38,
+    marginBottom: 20
+  },
+  consentChoice: { alignItems: 'flex-start', flexDirection: 'row', gap: 10, marginBottom: 20 },
+  consentChoiceText: { color: '#17324D', flex: 1, fontSize: 13, lineHeight: 19 },
+  legalAgreement: { backgroundColor: '#F0FAF8', borderColor: '#CDE9E3', borderRadius: 16, borderWidth: 1, gap: 9, marginBottom: 22, padding: 13 },
+  legalIntro: { color: '#455A68', fontSize: 12, lineHeight: 17 },
+  legalLinksRow: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  legalLink: { color: '#41438F', fontSize: 13, lineHeight: 19, textDecorationLine: 'underline' },
+  legalSeparator: { color: '#526A68', fontSize: 12, lineHeight: 18 },
+  legalAcceptRow: { alignItems: 'flex-start', flexDirection: 'row', gap: 9 },
+  legalAcceptText: { color: '#17324D', flex: 1, fontSize: 12, lineHeight: 18 }
 });

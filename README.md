@@ -7,7 +7,7 @@ A cross-platform Expo + React Native mobile application for children's oral hygi
 ```text
 KidsOralCareApp/
   frontend/   Expo React Native application
-  backend/    Firebase rules, indexes, Cloud Functions scaffold, demo seed data
+  backend/    Firebase rules, optional legacy Functions scaffold, demo seed data
 ```
 
 ## Requirements
@@ -40,6 +40,21 @@ The app includes local demo data and works without Firebase credentials. Add Fir
 3. Create a Firestore database.
 4. Copy your web app Firebase config into `.env` or directly into `frontend/src/services/firebase.ts`.
 5. Deploy backend rules from the `backend` folder.
+
+The production account flow uses a real parent email with Firebase Authentication's
+built-in email verification and password reset. It does not require Cloud Functions or
+the Blaze plan.
+
+Daily and weekly progress uses persisted calendar keys. Daily brushing, brushing
+periods, game limits, and daily challenges reset when the local date changes. Weekly
+brushing and weekly challenges reset every Monday. The app checks on login, when it
+returns to the foreground, once per minute while active, and before counting a brush
+or game. Lifetime totals are preserved.
+
+Unexpected rendering failures show a recovery screen instead of a blank page.
+Firebase failures are translated into useful messages, failed activity
+synchronization is reported to the user, and notification setup failures do not
+crash the application.
 
 Environment variables supported by the frontend:
 
@@ -86,7 +101,7 @@ Suggested files:
 cd backend
 firebase login
 firebase use your-project-id
-firebase deploy --only firestore:rules,firestore:indexes,functions
+firebase deploy --only firestore:rules,firestore:indexes
 ```
 
 ## Prototype

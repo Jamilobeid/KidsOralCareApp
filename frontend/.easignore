@@ -1,0 +1,8 @@
+node_modules/
+.expo/
+dist-web/
+*.log
+.env
+.env.*
+!.env.example
+backend/

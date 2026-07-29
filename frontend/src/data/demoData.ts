@@ -45,6 +45,77 @@ export const leaderboard: LeaderboardEntry[] = [
   { id: '4', nickname: 'MintyHero', avatar: 'leaf', points: 680, level: 3 }
 ];
 
+export const demoAdminUsers = [
+  {
+    id: 'demo-child-1',
+    nickname: 'Sparkle',
+    age: 7,
+    todayBrushes: 0,
+    weeklyBrushes: 8,
+    totalBrushes: 87,
+    timeSpentMinutes: 142,
+    gamesPlayed: 12,
+    rewardsEarned: 3,
+    engagementScore: 82,
+    totalUsageSeconds: 0,
+    loginCount: 0,
+    activitiesCompleted: 0,
+    remindersFollowed: 0,
+    lastActive: 'Today'
+  },
+  {
+    id: 'demo-child-2',
+    nickname: 'SunnySmile',
+    age: 6,
+    todayBrushes: 2,
+    weeklyBrushes: 11,
+    totalBrushes: 104,
+    timeSpentMinutes: 188,
+    gamesPlayed: 18,
+    rewardsEarned: 5,
+    engagementScore: 91,
+    totalUsageSeconds: 0,
+    loginCount: 0,
+    activitiesCompleted: 0,
+    remindersFollowed: 0,
+    lastActive: 'Today'
+  },
+  {
+    id: 'demo-child-3',
+    nickname: 'BrushBoss',
+    age: 9,
+    todayBrushes: 1,
+    weeklyBrushes: 7,
+    totalBrushes: 73,
+    timeSpentMinutes: 96,
+    gamesPlayed: 9,
+    rewardsEarned: 2,
+    engagementScore: 68,
+    totalUsageSeconds: 0,
+    loginCount: 0,
+    activitiesCompleted: 0,
+    remindersFollowed: 0,
+    lastActive: 'Yesterday'
+  },
+  {
+    id: 'demo-child-4',
+    nickname: 'MintyHero',
+    age: 5,
+    todayBrushes: 2,
+    weeklyBrushes: 9,
+    totalBrushes: 61,
+    timeSpentMinutes: 121,
+    gamesPlayed: 14,
+    rewardsEarned: 4,
+    engagementScore: 77,
+    totalUsageSeconds: 0,
+    loginCount: 0,
+    activitiesCompleted: 0,
+    remindersFollowed: 0,
+    lastActive: 'Today'
+  }
+];
+
 export const avatarOptions = ['star', 'sun', 'rocket', 'leaf', 'rainbow', 'tooth'];
 export const characterOptions = ['Mina Molar', 'Captain Brush', 'Floss Fox', 'Professor Pearl'];
 

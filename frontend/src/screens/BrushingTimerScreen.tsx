@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     flex: 1
   },
   scrollContent: {
-    paddingBottom: 98,
+    paddingBottom: 115,
     paddingHorizontal: 10,
     paddingTop: 0
   },
@@ -198,10 +198,11 @@ const styles = StyleSheet.create({
   },
   subtitleLeft: {
     color: '#454f59',
-    fontSize: 16,
+    fontSize: 18,
     lineHeight: 22,
     marginLeft: 0,
-    marginTop: 86,
+    marginTop: 88,
+    marginBottom: 15,
     textAlign: 'center',
     width: '100%'
   },

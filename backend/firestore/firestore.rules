@@ -1,54 +1,136 @@
-﻿rules_version = '2';
+rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() {
       return request.auth != null;
     }
 
-    function isParentOf(childId) {
-      return signedIn() && exists(/databases/$(database)/documents/children/$(childId)) &&
-        get(/databases/$(database)/documents/children/$(childId)).data.parentId == request.auth.uid;
+    function emailVerified() {
+      return signedIn() && request.auth.token.email_verified == true;
     }
 
     function isAdmin() {
       return signedIn() && request.auth.token.admin == true;
     }
 
-    match /users/{userId} {
-      allow read, update, delete: if signedIn() && request.auth.uid == userId;
-      allow create: if signedIn() && request.auth.uid == userId;
+    function isParent(parentId) {
+      return emailVerified() && request.auth.uid == parentId;
+    }
+
+    function hasActiveParentalConsent(parentId) {
+      return emailVerified()
+        && request.auth.uid == parentId
+        && exists(/databases/$(database)/documents/parentalConsents/$(parentId))
+        && get(/databases/$(database)/documents/parentalConsents/$(parentId)).data.status == 'granted'
+        && get(/databases/$(database)/documents/parentalConsents/$(parentId)).data.internalUseGranted == true;
+    }
+
+    function hasLeaderboardConsent(parentId) {
+      return hasActiveParentalConsent(parentId)
+        && get(/databases/$(database)/documents/parentalConsents/$(parentId)).data.leaderboardDisclosureGranted == true;
+    }
+
+    function ownsChild(childId) {
+      return emailVerified()
+        && exists(/databases/$(database)/documents/children/$(childId))
+        && get(/databases/$(database)/documents/children/$(childId)).data.parentId == request.auth.uid
+        && (!("consentRequired" in get(/databases/$(database)/documents/children/$(childId)).data)
+          || get(/databases/$(database)/documents/children/$(childId)).data.consentRequired != true
+          || hasActiveParentalConsent(request.auth.uid))
+        && (!("deletionPending" in get(/databases/$(database)/documents/children/$(childId)).data)
+          || get(/databases/$(database)/documents/children/$(childId)).data.deletionPending != true);
+    }
+
+    match /parents/{parentId} {
+      allow create: if signedIn()
+        && request.auth.uid == parentId
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.role == 'parent';
+
+      allow read: if isParent(parentId) || isAdmin();
+
+      allow update: if isParent(parentId)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.role == resource.data.role;
+
+      allow delete: if isParent(parentId) || isAdmin();
     }
 
     match /children/{childId} {
-      allow create: if signedIn() && request.resource.data.parentId == request.auth.uid;
-      allow read, update, delete: if isParentOf(childId) || isAdmin();
+      allow create: if signedIn()
+        && request.resource.data.id == childId
+        && request.resource.data.parentId == request.auth.uid
+        && hasActiveParentalConsent(request.auth.uid)
+        && !("deletionPending" in request.resource.data)
+        && request.resource.data.normalizedUsername is string
+        && request.resource.data.usernameKey is string
+        && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.usernameKey)).data.uid == request.auth.uid
+        && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.usernameKey)).data.normalizedUsername == request.resource.data.normalizedUsername;
+
+      allow read: if ownsChild(childId) || isAdmin();
+
+      allow update: if ownsChild(childId)
+        && !("deletionPending" in request.resource.data)
+        && request.resource.data.id == resource.data.id
+        && request.resource.data.parentId == resource.data.parentId
+        && request.resource.data.normalizedUsername == resource.data.normalizedUsername
+        && request.resource.data.usernameKey == resource.data.usernameKey;
+
+      allow delete: if ownsChild(childId) || isAdmin();
+    }
+
+    match /usernames/{usernameKey} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['uid', 'usernameKey', 'normalizedUsername', 'createdAt'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.usernameKey == usernameKey
+        && request.resource.data.normalizedUsername is string
+        && getAfter(/databases/$(database)/documents/children/$(request.auth.uid)).data.usernameKey == usernameKey
+        && getAfter(/databases/$(database)/documents/children/$(request.auth.uid)).data.normalizedUsername == request.resource.data.normalizedUsername;
+      allow update: if false;
+      allow delete: if isAdmin()
+        || (signedIn()
+          && resource.data.uid == request.auth.uid
+          && !existsAfter(/databases/$(database)/documents/children/$(request.auth.uid)));
     }
 
     match /brushingSessions/{sessionId} {
-      allow create: if signedIn() && request.resource.data.childId is string && isParentOf(request.resource.data.childId);
-      allow read: if isAdmin() || isParentOf(resource.data.childId);
+      allow create: if signedIn()
+        && request.resource.data.childId is string
+        && ownsChild(request.resource.data.childId);
+      allow read: if isAdmin() || ownsChild(resource.data.childId);
       allow update, delete: if false;
     }
 
     match /gameSessions/{sessionId} {
-      allow create: if signedIn() && request.resource.data.childId is string && isParentOf(request.resource.data.childId);
-      allow read: if isAdmin() || isParentOf(resource.data.childId);
+      allow create: if signedIn()
+        && request.resource.data.childId is string
+        && ownsChild(request.resource.data.childId);
+      allow read: if isAdmin() || ownsChild(resource.data.childId);
       allow update, delete: if false;
     }
 
     match /rewards/{rewardId} {
-      allow read: if signedIn();
+      allow read: if emailVerified();
       allow write: if isAdmin();
     }
 
     match /challenges/{challengeId} {
-      allow read: if signedIn();
+      allow read: if emailVerified();
       allow write: if isAdmin();
     }
 
     match /leaderboard/{entryId} {
-      allow read: if signedIn();
-      allow create, update: if signedIn() && request.resource.data.keys().hasOnly(['childId', 'nickname', 'avatar', 'points', 'level', 'updatedAt']) && isParentOf(request.resource.data.childId);
+      allow read: if emailVerified();
+      allow create, update: if emailVerified()
+        && request.resource.data.keys().hasOnly([
+          'childId', 'nickname', 'avatar', 'points', 'level', 'updatedAt'
+        ])
+        && ownsChild(request.resource.data.childId)
+        && hasLeaderboardConsent(request.auth.uid);
       allow delete: if isAdmin();
     }
 
@@ -56,6 +138,54 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow write: if false;
     }
+
+    // Legacy collections are intentionally inaccessible to the redesigned client.
+    match /users/{userId} {
+      allow read, write: if false;
+    }
+
+    match /recoveryProfiles/{userId} {
+      allow read, write: if false;
+    }
+
+    match /mail/{mailId} {
+      allow read, write: if false;
+    }
+
+    match /deletionJobs/{jobId} {
+      allow read, write: if false;
+    }
+
+    match /deletionAudits/{auditId} {
+      allow read, write: if false;
+    }
+
+    match /parentalConsents/{parentId} {
+      allow get: if isParent(parentId) || isAdmin();
+      allow list, create, update, delete: if false;
+    }
+
+    match /consentAudits/{auditId} {
+      allow read, write: if false;
+    }
+
+    match /consentRequests/{parentId} {
+      allow get: if isParent(parentId) || isAdmin();
+      allow create: if isParent(parentId)
+        && request.resource.data.keys().hasOnly([
+          'uid', 'parentLegalName', 'signatureAcknowledgement', 'internalUseRequested',
+          'leaderboardRequested', 'status', 'noticeVersion', 'privacyPolicyVersion',
+          'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.parentLegalName is string
+        && request.resource.data.parentLegalName.size() >= 2
+        && request.resource.data.parentLegalName.size() <= 120
+        && request.resource.data.signatureAcknowledgement == 'I CONSENT'
+        && request.resource.data.internalUseRequested == true
+        && request.resource.data.leaderboardRequested is bool
+        && request.resource.data.status == 'pending-review';
+      allow update, delete, list: if false;
+    }
   }
 }
-

@@ -656,7 +656,6 @@ export const GamesScreen = () => {
     setSelectedGameId(game.id);
     setScore(0);
     setCleaned(cleanItems.map(() => false));
-    if (game.id === 'brush-sequence') awardGame(game.id);
   };
   const leaveGame = () => { setSelectedGameId(null); setScore(0); };
   const replaySelectedGame = () => selectedGame ? recordGamePlay(selectedGame.id) : false;

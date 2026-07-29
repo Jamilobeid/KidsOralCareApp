@@ -1,0 +1,12 @@
+{
+  "name": "kids-oral-care-secure-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Secure serverless endpoints and public legal pages for Kids Oral Care.",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "firebase-admin": "^14.2.0"
+  }
+}

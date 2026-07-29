@@ -26,14 +26,19 @@ export const RewardsScreen = () => {
   const { child, theme, brushingCountToday, challenges, chooseCharacter, t } = useApp();
 
   const level = Math.min(Math.floor(child.points / STARS_PER_LEVEL) + 1, LEVEL_COUNT);
-  const weeklyStreak = challenges.find((challenge) => challenge.id === 'weekly-streak');
   const weeklyGames = challenges.find((challenge) => challenge.id === 'weekly-games');
   const dailyBrushes = challenges.find((challenge) => challenge.id === 'daily-two-brushes');
+  const completedBrushDays = child.weeklyBrushes.map((brushes) => brushes >= 2);
+  const hasThreeDayStreak = completedBrushDays.some((_, startIndex) =>
+    completedBrushDays.slice(startIndex, startIndex + 3).length === 3
+      && completedBrushDays.slice(startIndex, startIndex + 3).every(Boolean)
+  );
+  const hasPerfectWeek = completedBrushDays.length >= 7 && completedBrushDays.every(Boolean);
 
   const unlockedBadges = new Set<string>();
   if (brushingCountToday >= 1 || child.points >= 20) unlockedBadges.add('first-brush');
-  if ((weeklyStreak?.progress ?? 0) >= 3) unlockedBadges.add('three-day-streak');
-  if ((weeklyStreak?.progress ?? 0) >= 5) unlockedBadges.add('week-warrior');
+  if (hasThreeDayStreak) unlockedBadges.add('three-day-streak');
+  if (hasPerfectWeek) unlockedBadges.add('week-warrior');
   if (child.badges.includes('morning-hero') || brushingCountToday >= 1) unlockedBadges.add('morning-hero');
   if (brushingCountToday >= 2) unlockedBadges.add('night-owl');
   if (dailyBrushes && getProgress(dailyBrushes.progress, dailyBrushes.target) >= 1) unlockedBadges.add('perfect-timer');
@@ -119,7 +124,7 @@ const styles = StyleSheet.create({
   pageTitle: { fontSize: 40, lineHeight: 40, textAlign: 'center', fontFamily: 'Fredoka_700Bold', color: '#41438F' },
   sectionHeader: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 8 },
   sectionTitle: { color: '#173D3B', fontFamily: 'Fredoka_700Bold', fontSize: 27, lineHeight: 34 },
-  sectionMeta: { color: '#6A8380', fontFamily: 'Fredoka_700Bold', fontSize: 16, lineHeight: 24 },
+  sectionMeta: { color: '#6A8380', fontFamily: 'Fredoka_700Bold', fontSize: 12, lineHeight: 24 },
   badgeList: { gap: 12 },
   badgeRow: {
     minHeight: 110,
@@ -145,12 +150,12 @@ const styles = StyleSheet.create({
   lockText: { color: '#FFFFFF', fontFamily: 'Fredoka_700Bold', fontSize: 8, lineHeight: 11 },
   badgeCopy: { flex: 1, gap: 4, backgroundColor: 'transparent' },
   badgeName: { color: '#173D3B', fontFamily: 'Fredoka_700Bold', fontSize: 20, lineHeight: 25, backgroundColor: 'transparent' },
-  badgeStatus: { color: '#6E8582', fontFamily: 'Fredoka_700Bold', fontSize: 15, lineHeight: 20, backgroundColor: 'transparent' },
+  badgeStatus: { color: '#6E8582', fontFamily: 'Fredoka_700Bold', fontSize: 11, lineHeight: 16, backgroundColor: 'transparent' },
   lockedText: { color: '#7A9995', opacity: 0.68 },
   newPill: { overflow: 'hidden', borderRadius: 999, backgroundColor: '#DCF9F3', color: '#087C72', fontFamily: 'Fredoka_700Bold', fontSize: 13, lineHeight: 18, paddingHorizontal: 12, paddingVertical: 8 },
-  buddyGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
+  buddyGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 16 },
   buddyCard: {
-    width: '47.8%',
+    width: '47%',
     minHeight: 236,
     borderRadius: 28,
     backgroundColor: '#FFFFFF',
@@ -173,7 +178,7 @@ const styles = StyleSheet.create({
   lockedBuddyImage: { opacity: 0.34 },
   buddyLockOverlay: { position: 'absolute', left: 12, right: 12, bottom: 10, minHeight: 26, borderRadius: 999, backgroundColor: 'rgba(30,54,69,0.82)', paddingVertical: 4, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 5 },
   buddyName: { color: '#173D3B', fontFamily: 'Fredoka_700Bold', fontSize: 19, lineHeight: 24, textAlign: 'center' },
-  buddySubtitle: { color: '#6E8582', fontFamily: 'Fredoka_700Bold', fontSize: 14, lineHeight: 19, textAlign: 'center', minHeight: 20 },
+  buddySubtitle: { color: '#6E8582', fontFamily: 'Fredoka_700Bold', fontSize: 11, lineHeight: 19, textAlign: 'center', minHeight: 20 },
   chooseButton: { alignSelf: 'stretch', minHeight: 42, borderRadius: 999, backgroundColor: '#26C8D9', alignItems: 'center', justifyContent: 'center', marginTop: 'auto' },
   activeButton: { backgroundColor: '#D9F7F2' },
   chooseText: { color: '#FFFFFF', fontFamily: 'Fredoka_700Bold', fontSize: 16, lineHeight: 22 },

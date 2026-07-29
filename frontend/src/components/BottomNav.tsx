@@ -29,7 +29,12 @@ export const BottomNav = () => {
               style={[styles.item, active ? styles.activeItem : undefined]}
             >
               <Image source={item.image} style={[styles.icon, item.iconStyle]} resizeMode="contain" />
-              <Text numberOfLines={1} style={[buttonFont, styles.label, { color: active ? theme.primary : '#7B8CA0' }]}>
+              <Text
+                adjustsFontSizeToFit
+                minimumFontScale={0.85}
+                numberOfLines={1}
+                style={[buttonFont, styles.label, { color: active ? theme.primary : '#7B8CA0' }]}
+              >
                 {item.label}
               </Text>
             </Pressable>
@@ -64,7 +69,7 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 9 },
     elevation: 9,
-    gap: 10
+    gap: 6
   },
   item: {
     flex: 1,
@@ -82,10 +87,11 @@ const styles = StyleSheet.create({
     height: 35
   },
   label: {
-    fontSize: 12,
-    lineHeight: 15,
+    fontSize: 11,
+    lineHeight: 14,
     fontFamily: 'Fredoka_700Bold',
-    textAlign: 'center'
+    paddingHorizontal: 1,
+    textAlign: 'center',
+    width: '100%'
   }
 });
-

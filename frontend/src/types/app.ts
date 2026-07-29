@@ -1,5 +1,6 @@
 ﻿export type LanguageCode = 'en' | 'fr' | 'ar';
 export type AuthMode = 'login' | 'signup';
+export type UserRole = 'user' | 'admin';
 export type AgeGroup = '3-5' | '6-8' | '9-12';
 export type ThemeName = 'ocean' | 'sunny' | 'mint' | 'berry';
 
@@ -60,6 +61,24 @@ export type LeaderboardEntry = {
   level: number;
 };
 
+export type AdminUserSummary = {
+  id: string;
+  nickname: string;
+  age: number;
+  todayBrushes: number;
+  weeklyBrushes: number;
+  totalBrushes: number;
+  timeSpentMinutes: number;
+  gamesPlayed: number;
+  rewardsEarned: number;
+  engagementScore: number;
+  lastActive: string;
+  totalUsageSeconds: number;
+  loginCount: number;
+  activitiesCompleted: number;
+  remindersFollowed: number;
+};
+
 export type RootScreen =
   | 'welcome'
   | 'auth'
@@ -72,5 +91,6 @@ export type RootScreen =
   | 'personalization'
   | 'parentDashboard'
   | 'adminDashboard'
+  | 'legalInformation'
   | 'settings'
   | 'language';

@@ -8,10 +8,10 @@ import { RootScreen } from '../types/app';
 import { bodyFont, headingFont } from '../utils/kidStyle';
 
 const brushTimerImage = require('../../assets/images/home-brush-timer.png');
-const starImage = require('../../assets/images/custom-home-star-new.png');
+const starImage = require('../../assets/images/home-smile-stars.png');
 const badgeImage = require('../../assets/images/custom-home-badge.png');
 const targetImage = require('../../assets/images/custom-home-target.png');
-const smallStarImage = starImage;
+const smallStarImage = require('../../assets/images/custom-home-star-new.png');
 const tipAlertImage = require('../../assets/images/custom-home-tip-alert.png');
 const tipOneImage = require('../../assets/images/custom-home-one.png');
 const tipTwoImage = require('../../assets/images/custom-home-two.png');
@@ -58,7 +58,7 @@ export const ChildHomeScreen = () => {
                 <View style={styles.levelBadge}><Text style={[headingFont, styles.levelBadgeText]}>{t('levelShort')} {level}</Text></View>
               </View>
               <View style={styles.levelCopy}>
-                <Text style={[headingFont, styles.buddyName]}>{selectedBuddy.title}</Text>
+                <Text style={[headingFont, styles.buddyName]}>{child.nickname}</Text>
                 <View style={styles.levelTrack}>
                   <View style={[styles.levelFill, { width: `${levelProgress * 100}%` }]} />
                 </View>
@@ -136,7 +136,14 @@ export const ChildHomeScreen = () => {
               style={({ pressed }) => [styles.navTile, pressed && styles.pressed]}
             >
               <Image source={tile.image} style={styles.navTileIcon} resizeMode="contain" />
-              <Text style={[headingFont, styles.navTileText]}>{t(tile.labelKey)}</Text>
+              <Text
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}
+                numberOfLines={1}
+                style={[headingFont, styles.navTileText]}
+              >
+                {t(tile.labelKey)}
+              </Text>
             </Pressable>
           ))}
         </View>
@@ -482,6 +489,8 @@ const styles = StyleSheet.create({
     color: '#111111',
     fontSize: 17,
     lineHeight: 40,
-    textAlign: 'center'
+    paddingHorizontal: 4,
+    textAlign: 'center',
+    width: '100%'
   }
 });

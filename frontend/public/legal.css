@@ -1,0 +1,35 @@
+@font-face { font-family:"Fredoka"; src:url("/fonts/Fredoka_700Bold.ttf") format("truetype"); font-weight:700; font-display:swap; }
+@font-face { font-family:"Nunito"; src:url("/fonts/Nunito_400Regular.ttf") format("truetype"); font-weight:400; font-display:swap; }
+@font-face { font-family:"Baloo 2"; src:url("/fonts/Baloo2_600SemiBold.ttf") format("truetype"); font-weight:600; font-display:swap; }
+
+:root { color-scheme: light; --ink:#17324d; --purple:#41438f; --teal:#44d0c4; --mint:#ddf6f3; --line:#d7ece8; --gold:#8a6412; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin:0; min-height:100vh; color:var(--ink); background:linear-gradient(180deg,var(--teal) 0,var(--mint) 30rem,#fff 55rem); font-family:"Nunito",Arial,sans-serif; }
+a { color:#34368b; text-underline-offset:3px; }
+a:focus-visible { outline:3px solid #ffb703; outline-offset:3px; border-radius:4px; }
+.skip { position:absolute; left:-9999px; top:8px; background:#fff; padding:10px 14px; z-index:10; }
+.skip:focus { left:8px; }
+.site-header { max-width:1120px; margin:auto; padding:24px clamp(16px,4vw,44px) 12px; }
+.brand { display:flex; align-items:center; gap:12px; color:var(--purple); text-decoration:none; font:700 clamp(1.25rem,3vw,1.65rem) "Fredoka",sans-serif; }
+.brand-mark { display:grid; place-items:center; width:46px; height:46px; border-radius:16px; background:#fff; box-shadow:0 6px 18px #17324d1f; font-size:26px; }
+nav ul { display:flex; flex-wrap:wrap; gap:8px; padding:16px 0 0; margin:0; list-style:none; }
+nav a { display:block; padding:9px 13px; border-radius:999px; background:#ffffffd9; text-decoration:none; font-weight:700; font-size:.9rem; }
+nav a[aria-current="page"] { background:var(--purple); color:#fff; }
+main { width:min(900px,calc(100% - 28px)); margin:14px auto 48px; background:#fff; border-radius:clamp(22px,4vw,34px); padding:clamp(22px,5vw,54px); box-shadow:0 16px 45px #17324d24; }
+.draft { display:flex; gap:12px; align-items:flex-start; padding:14px 16px; border:1px solid #f5d77b; border-radius:16px; background:#fff5d6; color:#6e551b; }
+.draft strong { display:block; font-family:"Fredoka",sans-serif; }
+.eyebrow { color:var(--purple); font-weight:700; letter-spacing:.04em; text-transform:uppercase; font-size:.8rem; }
+h1,h2 { font-family:"Fredoka",sans-serif; color:var(--purple); }
+h1 { margin:.35rem 0 .6rem; font-size:clamp(2rem,7vw,3.35rem); line-height:1.05; }
+h2 { margin:2rem 0 .65rem; font-size:clamp(1.3rem,3vw,1.65rem); }
+h3 { margin:1.35rem 0 .45rem; color:#173d3b; }
+p,li { line-height:1.7; font-size:clamp(1rem,2vw,1.08rem); }
+.meta { color:#526a68; margin:0 0 22px; }
+.callout { padding:16px 18px; border-radius:18px; background:#e9fff4; border-left:5px solid #2ec4b6; }
+.danger { background:#fff2f4; border-left-color:#b4233a; }
+.button { display:inline-block; padding:13px 20px; border-radius:999px; background:var(--purple); color:#fff; text-decoration:none; font-weight:700; }
+.contact { overflow-wrap:anywhere; }
+footer { margin-top:38px; padding-top:20px; border-top:1px solid var(--line); color:#5d7280; font-size:.9rem; }
+@media (max-width:560px) { .site-header { padding-top:16px; } nav ul { display:grid; grid-template-columns:1fr 1fr; } nav a { text-align:center; } main { margin-top:8px; } }
+@media print { body { background:#fff; } .skip,nav,.button { display:none; } main { width:100%; margin:0; padding:0; box-shadow:none; } }

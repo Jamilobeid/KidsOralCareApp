@@ -40,7 +40,7 @@ const formatReminderTime = (time: string) => {
 };
 
 export const ParentDashboardScreen = () => {
-  const { t, child, brushingCountToday, reminders, setReminders, saveReminders, gamePlays, games } = useApp();
+  const { t, child, brushingCountToday, reminders, setReminders, saveReminders, sendTestReminder, gamePlays, games } = useApp();
   const [morningEnabled, setMorningEnabled] = useState(true);
   const [eveningEnabled, setEveningEnabled] = useState(true);
   const selectedBuddy = toothBuddies.find((buddy) => buddy.id === child.selectedCharacter) ?? toothBuddies[0];
@@ -53,6 +53,9 @@ export const ParentDashboardScreen = () => {
   const usedGameMinutes = Math.min(totalPlaysToday * MINUTES_PER_PLAY, DAILY_GAME_LIMIT_MINUTES);
   const gameUsagePercent = Math.min(usedGameMinutes / DAILY_GAME_LIMIT_MINUTES, 1);
   const totalDailyGamePlays = games.reduce((sum, game) => sum + game.dailyLimit, 0);
+  const gameUsageText = totalPlaysToday === 0
+    ? 'No games played today.'
+    : t('minutesUsedToday').replace('{{minutes}}', `${usedGameMinutes}`).replace('{{plays}}', `${totalPlaysToday}`).replace('{{total}}', `${totalDailyGamePlays}`);
 
   const updateReminderTime = (period: 'morning' | 'evening', minutesDelta: number) => {
     const current = period === 'morning' ? reminders.morning : reminders.evening;
@@ -68,7 +71,9 @@ export const ParentDashboardScreen = () => {
         <View style={styles.profileRow}>
           <View style={styles.buddyWrap}>
             <Image source={selectedBuddy.image} style={styles.buddyImage} resizeMode="contain" />
-            <View style={styles.levelBadge}><Text style={styles.levelBadgeText}>{t('level').toUpperCase()} {child.level}</Text></View>
+            <View style={styles.levelBadge}>
+              <Text numberOfLines={1} style={styles.levelBadgeText}>{t('level').toUpperCase()} {child.level}</Text>
+            </View>
           </View>
           <View style={styles.profileCopy}>
             <Text style={styles.dashboardTitle}>{t('childDashboard').replace('{{name}}', child.nickname)}</Text>
@@ -107,7 +112,7 @@ export const ParentDashboardScreen = () => {
           onToggle={setMorningEnabled}
           accent="#05AEEF"
           background="#EAF8FF"
-          onSubmit={saveReminders}
+          onSubmit={() => saveReminders({ morningEnabled, eveningEnabled })}
         />
         <ReminderRow
           image={artwork.evening}
@@ -119,8 +124,12 @@ export const ParentDashboardScreen = () => {
           onToggle={setEveningEnabled}
           accent="#7465FF"
           background="#EEF1FF"
-          onSubmit={saveReminders}
+          onSubmit={() => saveReminders({ morningEnabled, eveningEnabled })}
         />
+        <Pressable onPress={sendTestReminder} style={({ pressed }) => [styles.testReminderButton, pressed && styles.testReminderButtonPressed]}>
+          <Ionicons name="notifications" size={20} color="#FFFFFF" />
+          <Text style={styles.testReminderText}>Send a test notification</Text>
+        </Pressable>
       </View>
 
       <View style={styles.weekSection}>
@@ -149,7 +158,7 @@ export const ParentDashboardScreen = () => {
           <View style={[styles.progressFill, { width: `${gameUsagePercent * 100}%` }]} />
           <Text style={styles.progressLabel}>{Math.round(gameUsagePercent * 100)}% {t('used')}</Text>
         </View>
-        <Text style={styles.gameMinutesText}>{t('minutesUsedToday').replace('{{minutes}}', `${usedGameMinutes}`).replace('{{plays}}', `${totalPlaysToday}`).replace('{{total}}', `${totalDailyGamePlays}`)}</Text>
+        <Text style={styles.gameMinutesText}>{gameUsageText}</Text>
       </View>
 
       <View style={styles.limitCard}>
@@ -250,7 +259,7 @@ const styles = StyleSheet.create({
   profileRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   buddyWrap: { width: 98, height: 98, borderRadius: 32, backgroundColor: '#F4F8FF', alignItems: 'center', justifyContent: 'center', shadowColor: '#17324D', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
   buddyImage: { width: 100, height: 100 },
-  levelBadge: { position: 'absolute', bottom: -8, borderRadius: 999, backgroundColor: '#FFD21F', paddingHorizontal: 16, paddingVertical: 5 },
+  levelBadge: { position: 'absolute', bottom: -10, borderRadius: 999, backgroundColor: '#FFD21F', paddingHorizontal: 12, paddingVertical: 5 },
   levelBadgeText: { color: '#17324D', fontFamily: 'Fredoka_700Bold', fontSize: 13, lineHeight: 16 },
   profileCopy: { flex: 1 },
   dashboardTitle: { color: '#17324D', fontFamily: 'Fredoka_700Bold', fontSize: 29, lineHeight: 35 },
@@ -279,6 +288,9 @@ const styles = StyleSheet.create({
   checkLabelComplete: { color: '#008B78' },
   checkLabelEmpty: { color: '#8A96A8' },
   reminderStack: { gap: 14 },
+  testReminderButton: { minHeight: 52, borderRadius: 18, backgroundColor: '#41438F', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, paddingHorizontal: 18 },
+  testReminderButtonPressed: { opacity: 0.86, transform: [{ scale: 0.985 }] },
+  testReminderText: { color: '#FFFFFF', fontFamily: 'Fredoka_700Bold', fontSize: 16, lineHeight: 21 },
   reminderRow: { minHeight: 118, borderRadius: 24, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 16, borderWidth: 1, borderColor: 'rgba(23,50,77,0.07)' },
   reminderIconTile: { width: 58, height: 58, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.55)', alignItems: 'center', justifyContent: 'center' },
   reminderIcon: { width: 46, height: 46 },

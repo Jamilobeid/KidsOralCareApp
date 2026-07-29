@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Platform, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { BottomNav } from './src/components/BottomNav';
+import { AppErrorBoundary } from './src/components/AppErrorBoundary';
 import { AppProvider, useApp } from './src/context/AppContext';
 import { configureNotifications } from './src/services/reminders';
 import { AdminDashboardScreen } from './src/screens/AdminDashboardScreen';
@@ -17,14 +18,16 @@ import { ChildHomeScreen } from './src/screens/ChildHomeScreen';
 import { GamesScreen } from './src/screens/GamesScreen';
 import { LanguageScreen } from './src/screens/LanguageScreen';
 import { LeaderboardScreen } from './src/screens/LeaderboardScreen';
+import { LegalInformationScreen } from './src/screens/LegalInformationScreen';
 import { ParentDashboardScreen } from './src/screens/ParentDashboardScreen';
 import { PersonalizationScreen } from './src/screens/PersonalizationScreen';
 import { RewardsScreen } from './src/screens/RewardsScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { WelcomeScreen } from './src/screens/WelcomeScreen';
+
 const RootNavigator = ({ previewInset = false }: { previewInset?: boolean }) => {
-  const { screen } = useApp();
-  const showBottomNav = !['welcome', 'auth', 'language'].includes(screen);
+  const { isAdmin, screen } = useApp();
+  const showBottomNav = !['welcome', 'auth', 'language', 'legalInformation'].includes(screen);
 
   const renderScreen = () => {
     switch (screen) {
@@ -35,8 +38,9 @@ const RootNavigator = ({ previewInset = false }: { previewInset?: boolean }) => 
       case 'rewards': return <RewardsScreen />;
       case 'challenges': return <ChallengesScreen />;
       case 'leaderboard': return <LeaderboardScreen />;
+      case 'legalInformation': return <LegalInformationScreen />;
       case 'personalization': return <PersonalizationScreen />;
-      case 'parentDashboard': return <ParentDashboardScreen />;
+      case 'parentDashboard': return isAdmin ? <AdminDashboardScreen /> : <ParentDashboardScreen />;
       case 'adminDashboard': return <AdminDashboardScreen />;
       case 'settings': return <SettingsScreen />;
       case 'language': return <LanguageScreen />;
@@ -74,20 +78,42 @@ const PhoneStatusBar = () => (
 );
 
 export default function App() {
-  useFonts({
+  return (
+    <AppErrorBoundary>
+      <FontReadyApp />
+    </AppErrorBoundary>
+  );
+}
+
+const FontReadyApp = () => {
+  const [fontsLoaded, fontError] = useFonts({
     Fredoka_700Bold,
     Baloo2_600SemiBold,
     Nunito_400Regular
   });
 
-  useEffect(() => { configureNotifications(); }, []);
+  useEffect(() => {
+    void configureNotifications().catch((error) => {
+      console.warn('Notifications could not be initialized:', error);
+    });
+  }, []);
+
+  // Android fonts are embedded by the expo-font config plugin and are
+  // available synchronously. Web and iOS continue to load them at runtime.
+  if (fontError && Platform.OS !== 'android') {
+    throw fontError;
+  }
+
+  if (!fontsLoaded && Platform.OS !== 'android') {
+    return null;
+  }
 
   return (
     <AppProvider>
       <AppShell />
     </AppProvider>
   );
-}
+};
 
 const AppShell = () => {
   const { theme } = useApp();

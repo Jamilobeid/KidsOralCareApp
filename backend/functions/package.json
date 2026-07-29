@@ -6,7 +6,10 @@
   "scripts": {
     "build": "tsc",
     "serve": "npm run build && firebase emulators:start --only functions,firestore",
-    "deploy": "firebase deploy --only functions"
+    "deploy": "firebase deploy --only functions",
+    "admin:set": "node scripts/setAdminClaim.js",
+    "consent:set": "node scripts/setParentalConsent.js",
+    "usernames:backfill": "node scripts/backfillUsernameReservations.js"
   },
   "dependencies": {
     "firebase-admin": "^12.7.0",

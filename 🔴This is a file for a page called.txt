@@ -1,4 +1,6 @@
-🔴This is a file for a page called "Challenges"🔴
+🛑Application Notes🛑
+
+1. 🔴This is a file for a page called "Challenges"🔴
 
 I decided to remove it since it is a bit complicated to implement and since this is only a prototype, so after we show the prototype to the client, they decide if they want to include a page like this or not
 
@@ -41,3 +43,31 @@ const styles = StyleSheet.create({
   progressShell: { height: 14, borderRadius: 7, backgroundColor: '#DCEAF4', overflow: 'hidden' },
   progressFill: { height: '100%' }
 });
+
+So the loginCount counts the total events of logins, not only unique logins.
+
+2. For the admin account: 
+	Username: admin
+	Email: jamilobeid1972@gmail.com
+	Password: admin1133557799
+
+
+3. For the childtest1: 
+	Username: Jamil
+	Email: jamilobeid25@gmail.com
+	Password: Test12345
+
+Okay so to cap the usage of the billings, we can: 
+1. Set small budget alerts
+2. Set cloud function maxInstance 
+3. Enable App check to block many requests that do not come from the genuine application
+4. Require authentication which means reject requests without a valid signed-in user.
+5. Set Rate limits like the user cannot record 100 brushing sessions in one minute or a reminder cannot be counted repeatedly, or the same activity completion ID cannot be submitted twice, or the usage time cannot jump by several hours in one request).
+6. Keep minInstances: 0 so functions do not stay running unnecessarily
+7. If spending suddenly increases, we should investigate and disable the affected function or service
+
+
+
+
+
+
