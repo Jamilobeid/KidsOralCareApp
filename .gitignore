@@ -7,3 +7,6 @@ web-build/
 coverage/
 *firebase-adminsdk*.json
 service-account*.json
+
+# Local Netlify folder
+.netlify
