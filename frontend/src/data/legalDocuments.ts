@@ -19,7 +19,7 @@ export const legalDocuments: LegalDocument[] = [
     version: 'Version 1.0',
     publicPath: '/privacy-policy.html',
     sections: [
-      { heading: 'Who we are', body: 'Kids Oral Care is operated by Jamil Obeid in Beirut, Lebanon. Privacy and deletion questions may be sent to jamilworkinfo@gmail.com or +961 81 343 191.' },
+      { heading: 'Who we are', body: 'eSmile is operated by Jamil Obeid in Beirut, Lebanon. Privacy and deletion questions may be sent to jamilworkinfo@gmail.com or +961 81 343 191.' },
       { heading: 'Information we collect', body: 'We may collect the parent email and verification status; the child’s chosen username, age, avatar and settings; brushing progress; game activity; rewards; reminder preferences and follow-up; account consent records; and limited technical information required to operate and secure the service.' },
       { heading: 'Why we use it', body: 'We use this information to create and secure the family account, provide age-appropriate features, save progress, show the parent dashboard, deliver requested reminders, operate an optional parent-approved leaderboard, provide support, prevent misuse, and meet legal obligations.' },
       { heading: 'Leaderboard', body: 'Leaderboard participation is optional and requires separate parent approval. It is designed to show only the child’s chosen username, non-identifying avatar, points or stars, level, and rank—not the parent email, password, full name, exact age, or contact details.' },
@@ -32,7 +32,7 @@ export const legalDocuments: LegalDocument[] = [
   {
     id: 'terms',
     title: 'Terms of Use',
-    summary: 'The rules for parent-controlled accounts and safe use of Kids Oral Care.',
+    summary: 'The rules for parent-controlled accounts and safe use of eSmile.',
     version: 'Version 1.0',
     publicPath: '/terms-of-use.html',
     sections: [

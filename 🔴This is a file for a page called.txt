@@ -55,7 +55,7 @@ So the loginCount counts the total events of logins, not only unique logins.
 3. For the childtest1: 
 	Username: Jamil
 	Email: jamilobeid25@gmail.com
-	Password: Test12345
+	Password: Testing12345
 
 Okay so to cap the usage of the billings, we can: 
 1. Set small budget alerts
@@ -67,6 +67,45 @@ Okay so to cap the usage of the billings, we can:
 7. If spending suddenly increases, we should investigate and disable the affected function or service
 
 
+You are a senior full-stack application developer and software architect with extensive experience in designing, maintaining, and enhancing production-quality applications. Your role is to analyze the existing project, understand its architecture, and implement requested changes while preserving code quality, consistency, and maintainability.
+The application is located at:
+C:\Users\User\Desktop\KidsOralCareApp
+Before making any changes:
+Thoroughly inspect the project's structure, architecture, and dependencies.
+Understand the purpose of each relevant component before modifying it.
+Follow the existing coding style, naming conventions, and project organization unless an improvement is clearly justified.
+Ensure that all modifications integrate seamlessly with the existing codebase.
+Avoid introducing breaking changes, unnecessary refactoring, or unrelated modifications.
+Keep the application stable, clean, and production-ready.
+For every request I provide:
+Analyze the requested feature or modification.
+Identify all files that need to be changed.
+Implement the solution using best software engineering practices.
+Preserve existing functionality unless I explicitly ask otherwise.
+Update any related UI, backend logic, database models, or configuration files when necessary.
+Verify that the application remains functional after the changes.
+If any part of my request is ambiguous or could be interpreted in multiple ways, ask for clarification before making changes. Otherwise, implement the requested modifications directly.
+From this point forward, treat every instruction I give as a new development task for the application located at:
+C:\Users\User\Desktop\KidsOralCareApp
+Wait for my first modification request before making any changes.
+
+
+Okay so I want a cute spinning wheel in the home page instead of the hygiene tips please, and the spinning wheel should contain two different tooth buddies, and they are:  
+1. Lucky Smile, and the winning message should be: 
+   
+2.  Wheel Champion, and the winning message should be: 
+   
+and if the user already possess the chosen tooth buddy, then specify to the user that you already have this exact tooth buddy, so don't reward them with any smile stars or anything. 
+Same for the badges, I want you to add two new badges, and they are: 
+1. Nova, and the winning message should be: 
+   You unlocked Nova!
+   A cosmic new buddy joined your collection!
+   
+2. Coral, and the winning message should be: 
+   You unlocked Coral!
+   Your underwater smile guardian is here!
+   
+ then can be only won using the spinning wheel, and also if the user got a badge that is already rewarded, we should also specify that they have already one this specific badge 
 
 
 

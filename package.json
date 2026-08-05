@@ -2,7 +2,7 @@
   "name": "kids-oral-care-secure-backend",
   "version": "1.0.0",
   "private": true,
-  "description": "Secure serverless endpoints and public legal pages for Kids Oral Care.",
+  "description": "Secure serverless endpoints and public legal pages for eSmile.",
   "engines": {
     "node": ">=20"
   },

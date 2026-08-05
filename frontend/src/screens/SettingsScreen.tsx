@@ -5,6 +5,7 @@ import { Card } from '../components/Card';
 import { Screen } from '../components/Screen';
 import { useApp } from '../context/AppContext';
 import { toothBuddies } from '../data/toothBuddies';
+import { PasswordVisibilityIcon } from '../components/PasswordVisibilityIcon';
 import { LanguageCode, RootScreen } from '../types/app';
 import { bodyFont, buttonFont, headingFont, rewardFont } from '../utils/kidStyle';
 
@@ -136,7 +137,13 @@ export const SettingsScreen = () => {
       <SettingsCard imageSource={artwork.language} fallbackIcon="language" color="#2EC4B6" background="#E6FFF8" title={t('language')} subtitle={t('languageSubtitleSettings')} iconSize={58}>
         <View style={styles.optionGrid}>
           {languageOptions.map((option) => (
-            <OptionButton key={option.code} label={`${option.emoji} ${option.label}`} selected={language === option.code} onPress={() => setLanguage(option.code)} color={option.color} />
+            <OptionButton
+              key={option.code}
+              label={`${option.emoji} ${t(option.code === 'en' ? 'english' : option.code === 'fr' ? 'french' : 'arabic')}`}
+              selected={language === option.code}
+              onPress={() => setLanguage(option.code)}
+              color={option.color}
+            />
           ))}
         </View>
       </SettingsCard>
@@ -156,7 +163,7 @@ export const SettingsScreen = () => {
       <SettingsCard imageSource={artwork.about} fallbackIcon="information-circle" color="#2EC4B6" background="#E6FFF8" title={t('about')} subtitle={t('aboutSubtitle')}>
         <View style={styles.aboutRow}>
           <Text style={[bodyFont, styles.aboutLabel]}>{t('appNameLabel')}</Text>
-          <Text style={[rewardFont, styles.aboutValue]}>Kids Oral Care</Text>
+          <Text style={[rewardFont, styles.aboutValue]}>eSmile</Text>
         </View>
         <View style={styles.aboutRow}>
           <Text style={[bodyFont, styles.aboutLabel]}>{t('version')}</Text>
@@ -164,7 +171,7 @@ export const SettingsScreen = () => {
         </View>
         <Pressable accessibilityRole="button" onPress={() => navigateTo('legalInformation')} style={styles.legalButton}>
           <Ionicons name="document-text-outline" size={22} color="#FFFFFF" />
-          <Text style={[buttonFont, styles.legalButtonText]}>Open Legal Information</Text>
+          <Text style={[buttonFont, styles.legalButtonText]}>{t('openLegalInformation')}</Text>
           <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
         </Pressable>
       </SettingsCard>
@@ -231,7 +238,7 @@ const LinkCard = ({ imageSource, fallbackIcon, color, background, title, subtitl
 );
 
 const ParentLock = () => {
-  const { deleteAccountAndData, isAdmin, isFirebaseReady, setScreen, t } = useApp();
+  const { deleteAccountAndData, signOutAccount, leaveLeaderboard, leaderboardParticipating, isAdmin, isFirebaseReady, setScreen, t } = useApp();
   const [answer, setAnswer] = useState('');
   const [unlocked, setUnlocked] = useState(false);
   const [screenLimit, setScreenLimit] = useState(true);
@@ -241,15 +248,17 @@ const ParentLock = () => {
   const [deletionConfirmation, setDeletionConfirmation] = useState('');
   const [showDeletionPassword, setShowDeletionPassword] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const zoneTitle = isAdmin ? 'Admin Zone' : t('parentZone');
-  const lockQuestion = isAdmin ? 'Admin lock: 3 + 5 = ?' : t('parentLockQuestion');
+  const [signingOut, setSigningOut] = useState(false);
+  const [leavingLeaderboard, setLeavingLeaderboard] = useState(false);
+  const zoneTitle = isAdmin ? t('adminZone') : t('parentZone');
+  const lockQuestion = isAdmin ? t('adminLockQuestion') : t('parentLockQuestion');
 
   const checkAnswer = () => {
     if (answer.trim() === '8') {
       setUnlocked(true);
       return;
     }
-    Alert.alert(t('tryAgain'), isAdmin ? 'That admin lock is still closed. Hint: count on your fingers!' : t('parentLockWrong'));
+    Alert.alert(t('tryAgain'), isAdmin ? t('adminLockWrong') : t('parentLockWrong'));
   };
 
   const submitDeletion = async () => {
@@ -264,13 +273,46 @@ const ParentLock = () => {
     }
   };
 
+  const confirmSignOut = () => {
+    Alert.alert(t('signOutTitle'), t('signOutMessage'), [
+      { text: t('cancel'), style: 'cancel' },
+      {
+        text: t('signOut'),
+        style: 'destructive',
+        onPress: async () => {
+          if (signingOut) return;
+          setSigningOut(true);
+          await signOutAccount();
+          setSigningOut(false);
+        }
+      }
+    ]);
+  };
+
+  const confirmLeaderboardRemoval = () => {
+    Alert.alert(t('leaveLeaderboardTitle'), t('leaveLeaderboardMessage'), [
+      { text: t('cancel'), style: 'cancel' },
+      {
+        text: t('removeMyProfile'),
+        style: 'destructive',
+        onPress: async () => {
+          if (leavingLeaderboard) return;
+          setLeavingLeaderboard(true);
+          const removed = await leaveLeaderboard();
+          setLeavingLeaderboard(false);
+          if (removed) Alert.alert(t('leaderboardProfileRemoved'), t('leaderboardProfileRemovedMessage'));
+        }
+      }
+    ]);
+  };
+
   if (!unlocked) {
     return (
       <SettingsCard imageSource={artwork.parent} fallbackIcon="shield-checkmark" color="#31C778" background="#E9FFF4" title={zoneTitle} subtitle={t('parentZoneSubtitle')}>
         <View style={styles.lockBox}>
           <Text style={[headingFont, styles.lockQuestion]}>{lockQuestion}</Text>
           <View style={styles.lockInputRow}>
-            <TextInput value={answer} onChangeText={setAnswer} keyboardType="number-pad" placeholder="Answer" placeholderTextColor="#93A6B5" style={[bodyFont, styles.lockInput]} />
+            <TextInput value={answer} onChangeText={setAnswer} keyboardType="number-pad" placeholder={t('answer')} placeholderTextColor="#93A6B5" style={[bodyFont, styles.lockInput]} />
             <Pressable onPress={checkAnswer} style={styles.unlockButton}>
               <Text style={[buttonFont, styles.unlockText]}>{t('unlock')}</Text>
             </Pressable>
@@ -282,24 +324,64 @@ const ParentLock = () => {
 
   return (
     <SettingsCard imageSource={artwork.parent} fallbackIcon="shield-checkmark" color="#31C778" background="#E9FFF4" title={zoneTitle} subtitle={t('parentZoneUnlockedSubtitle')}>
-      <ToggleRow imageSource={artwork.screenTime} fallbackIcon="phone-portrait" label="Screen time limit" value={screenLimit} onValueChange={setScreenLimit} color="#7B61FF" background="#F0ECFF" />
-      <ToggleRow imageSource={artwork.playLimit} fallbackIcon="game-controller" label="Daily play limit" value={playLimit} onValueChange={setPlayLimit} color="#1D9BF0" background="#E5F6FF" />
+      <ToggleRow imageSource={artwork.screenTime} fallbackIcon="phone-portrait" label={t('screenTimeLimit')} value={screenLimit} onValueChange={setScreenLimit} color="#7B61FF" background="#F0ECFF" />
+      <ToggleRow imageSource={artwork.playLimit} fallbackIcon="game-controller" label={t('dailyPlayLimit')} value={playLimit} onValueChange={setPlayLimit} color="#1D9BF0" background="#E5F6FF" />
       <LinkCard
         imageSource={artwork.parentDashboard}
         fallbackIcon="clipboard"
         color="#1D9BF0"
         background="#E5F6FF"
         title={isAdmin ? t('adminDashboard') : t('openParentDashboard')}
-        subtitle={isAdmin ? 'View users, brushing, app time, and activity.' : t('openParentDashboardSubtitle')}
+        subtitle={isAdmin ? t('adminDashboardSubtitle') : t('openParentDashboardSubtitle')}
         onPress={() => setScreen(isAdmin ? 'adminDashboard' : 'parentDashboard')}
       />
+      {!isAdmin ? (
+        <View style={styles.leaderboardControl}>
+          <View style={styles.signOutCopy}>
+            <Ionicons name={leaderboardParticipating ? 'trophy' : 'eye-off'} size={24} color="#7B61FF" />
+            <View style={styles.dangerCopy}>
+              <Text style={[headingFont, styles.leaderboardControlTitle]}>{t('leaderboardPrivacyControl')}</Text>
+              <Text style={[bodyFont, styles.leaderboardControlText]}>
+                {t(leaderboardParticipating ? 'leaderboardCurrentlyVisible' : 'leaderboardCurrentlyPrivate')}
+              </Text>
+            </View>
+          </View>
+          {leaderboardParticipating ? (
+            <Pressable disabled={leavingLeaderboard} onPress={confirmLeaderboardRemoval} style={[styles.leaveLeaderboardButton, leavingLeaderboard && styles.disabledButton]}>
+              <Ionicons name="eye-off-outline" size={20} color="#FFFFFF" />
+              <Text style={[buttonFont, styles.leaveLeaderboardText]}>{leavingLeaderboard ? t('removing') : t('removeFromLeaderboard')}</Text>
+            </Pressable>
+          ) : (
+            <Text style={[bodyFont, styles.rejoinText]}>{t('leaderboardRejoinHelp')}</Text>
+          )}
+        </View>
+      ) : null}
+      <View style={styles.signOutZone}>
+        <View style={styles.signOutCopy}>
+          <Ionicons name="log-out-outline" size={24} color="#41438F" />
+          <View style={styles.dangerCopy}>
+            <Text style={[headingFont, styles.signOutTitle]}>{t('signOut')}</Text>
+            <Text style={[bodyFont, styles.signOutDescription]}>{t('signOutDescription')}</Text>
+          </View>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('signOut')}
+          disabled={signingOut}
+          onPress={confirmSignOut}
+          style={[styles.signOutButton, signingOut && styles.disabledButton]}
+        >
+          <Ionicons name="log-out-outline" size={21} color="#FFFFFF" />
+          <Text style={[buttonFont, styles.signOutButtonText]}>{signingOut ? t('signingOut') : t('signOut')}</Text>
+        </Pressable>
+      </View>
       {!isAdmin ? (
         <View style={styles.dangerZone}>
           <View style={styles.dangerHeader}>
             <Ionicons name="warning" size={24} color="#B4233A" />
             <View style={styles.dangerCopy}>
-              <Text style={[headingFont, styles.dangerTitle]}>Delete account and data</Text>
-              <Text style={[bodyFont, styles.dangerDescription]}>Permanently removes the parent account, child profile, progress, username reservation, activity records, and reminders.</Text>
+              <Text style={[headingFont, styles.dangerTitle]}>{t('deleteAccountData')}</Text>
+              <Text style={[bodyFont, styles.dangerDescription]}>{t('deleteAccountDescription')}</Text>
             </View>
           </View>
 
@@ -310,11 +392,11 @@ const ParentLock = () => {
               onPress={() => setShowDeletion(true)}
               style={[styles.openDeleteButton, !isFirebaseReady && styles.disabledButton]}
             >
-              <Text style={[buttonFont, styles.openDeleteText]}>{isFirebaseReady ? 'Start account deletion' : 'Account deletion requires Firebase'}</Text>
+              <Text style={[buttonFont, styles.openDeleteText]}>{isFirebaseReady ? t('startAccountDeletion') : t('deletionRequiresFirebase')}</Text>
             </Pressable>
           ) : (
             <View style={styles.deleteForm}>
-              <Text style={[bodyFont, styles.deleteWarning]}>This cannot be undone. Enter the parent password and type DELETE exactly.</Text>
+              <Text style={[bodyFont, styles.deleteWarning]}>{t('deleteWarning')}</Text>
               <View style={styles.deletePasswordRow}>
                 <TextInput
                   value={deletionPassword}
@@ -323,18 +405,18 @@ const ParentLock = () => {
                   secureTextEntry={!showDeletionPassword}
                   autoCapitalize="none"
                   autoCorrect={false}
-                  placeholder="Parent password"
+                  placeholder={t('parentPassword')}
                   placeholderTextColor="#8A96A8"
                   style={[bodyFont, styles.deletePasswordInput]}
                 />
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={showDeletionPassword ? 'Hide password' : 'Show password'}
+                  accessibilityLabel={showDeletionPassword ? t('hidePassword') : t('showPassword')}
                   onPress={() => setShowDeletionPassword((current) => !current)}
                   hitSlop={10}
                   style={styles.deleteEyeButton}
                 >
-                  <Ionicons name={showDeletionPassword ? 'eye-off' : 'eye'} size={21} color="#41438F" />
+                  <PasswordVisibilityIcon hidden={!showDeletionPassword} />
                 </Pressable>
               </View>
               <TextInput
@@ -343,7 +425,7 @@ const ParentLock = () => {
                 editable={!deleting}
                 autoCapitalize="characters"
                 autoCorrect={false}
-                placeholder="Type DELETE"
+                placeholder={t('typeDelete')}
                 placeholderTextColor="#8A96A8"
                 style={[bodyFont, styles.deleteConfirmInput]}
               />
@@ -357,14 +439,14 @@ const ParentLock = () => {
                   }}
                   style={styles.cancelDeleteButton}
                 >
-                  <Text style={[buttonFont, styles.cancelDeleteText]}>Cancel</Text>
+                  <Text style={[buttonFont, styles.cancelDeleteText]}>{t('cancel')}</Text>
                 </Pressable>
                 <Pressable
                   disabled={deleting || !deletionPassword || deletionConfirmation !== 'DELETE'}
                   onPress={submitDeletion}
                   style={[styles.confirmDeleteButton, (deleting || !deletionPassword || deletionConfirmation !== 'DELETE') && styles.disabledButton]}
                 >
-                  <Text style={[buttonFont, styles.confirmDeleteText]}>{deleting ? 'Deleting…' : 'Delete permanently'}</Text>
+                  <Text style={[buttonFont, styles.confirmDeleteText]}>{deleting ? t('deleting') : t('deletePermanently')}</Text>
                 </Pressable>
               </View>
             </View>
@@ -436,6 +518,18 @@ const styles = StyleSheet.create({
   unlockButton: { minHeight: 48, width: 76, borderRadius: 16, backgroundColor: '#454f59', alignItems: 'center', justifyContent: 'center' },
   unlockText: { color: '#FFFFFF', fontSize: 15, fontFamily: 'Fredoka_700Bold' },
   dangerZone: { width: 310, gap: 15, borderRadius: 24, backgroundColor: '#FFF2F4', borderWidth: 2, borderColor: '#FFC7D0', padding: 18 },
+  signOutZone: { width: 310, gap: 14, borderRadius: 24, backgroundColor: '#F3F2FF', borderWidth: 2, borderColor: '#D8D5FF', padding: 18 },
+  leaderboardControl: { width: 310, gap: 14, borderRadius: 24, backgroundColor: '#F7F3FF', borderWidth: 2, borderColor: '#DDD2FF', padding: 18 },
+  leaderboardControlTitle: { color: '#5D3FC0', fontSize: 19, lineHeight: 24 },
+  leaderboardControlText: { color: '#594F75', fontSize: 12, lineHeight: 18 },
+  leaveLeaderboardButton: { alignItems: 'center', backgroundColor: '#7B61FF', borderRadius: 16, flexDirection: 'row', gap: 8, justifyContent: 'center', minHeight: 48, paddingHorizontal: 12 },
+  leaveLeaderboardText: { color: '#FFFFFF', fontSize: 14, textAlign: 'center' },
+  rejoinText: { color: '#594F75', fontSize: 11, lineHeight: 17 },
+  signOutCopy: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  signOutTitle: { color: '#41438F', fontSize: 19, lineHeight: 24 },
+  signOutDescription: { color: '#4D4E75', fontSize: 12, lineHeight: 18 },
+  signOutButton: { minHeight: 50, borderRadius: 16, backgroundColor: '#41438F', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 14 },
+  signOutButtonText: { color: '#FFFFFF', fontSize: 15, lineHeight: 20 },
   dangerHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   dangerCopy: { flex: 1, gap: 5 },
   dangerTitle: { color: '#9B1C31', fontSize: 19, lineHeight: 24 },
@@ -446,7 +540,7 @@ const styles = StyleSheet.create({
   deleteWarning: { color: '#7A2332', fontSize: 13, lineHeight: 19 },
   deletePasswordRow: { minHeight: 50, borderRadius: 15, borderWidth: 1.5, borderColor: '#D796A2', backgroundColor: '#FFFFFF', flexDirection: 'row', alignItems: 'center', paddingLeft: 13 },
   deletePasswordInput: { flex: 1, color: '#17324D', fontSize: 15, paddingVertical: 10 },
-  deleteEyeButton: { width: 44, minHeight: 48, alignItems: 'center', justifyContent: 'center' },
+  deleteEyeButton: { width: 38, height: 38, marginRight: 6, borderRadius: 19, borderWidth: 1, borderColor: '#C9C4FF', backgroundColor: '#ECEAFF', alignItems: 'center', justifyContent: 'center' },
   deleteConfirmInput: { minHeight: 50, borderRadius: 15, borderWidth: 1.5, borderColor: '#D796A2', backgroundColor: '#FFFFFF', color: '#17324D', fontSize: 15, paddingHorizontal: 13 },
   deleteActions: { flexDirection: 'row', gap: 10 },
   cancelDeleteButton: { flex: 1, minHeight: 48, borderRadius: 16, borderWidth: 1.5, borderColor: '#AAB8C2', backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },

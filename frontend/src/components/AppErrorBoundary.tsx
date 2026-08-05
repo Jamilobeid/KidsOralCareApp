@@ -1,4 +1,5 @@
 import React from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 type Props = {
@@ -8,13 +9,23 @@ type Props = {
 type State = {
   hasError: boolean;
   recoveryKey: number;
+  language: 'en' | 'fr' | 'ar';
 };
 
 export class AppErrorBoundary extends React.Component<Props, State> {
   state: State = {
     hasError: false,
-    recoveryKey: 0
+    recoveryKey: 0,
+    language: 'en'
   };
+
+  componentDidMount() {
+    void AsyncStorage.getItem('eSmile:preferredLanguage').then((language) => {
+      if (language === 'en' || language === 'fr' || language === 'ar') {
+        this.setState({ language });
+      }
+    }).catch(() => undefined);
+  }
 
   static getDerivedStateFromError(): Partial<State> {
     return { hasError: true };
@@ -33,20 +44,23 @@ export class AppErrorBoundary extends React.Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
+      const isFrench = this.state.language === 'fr';
       return (
         <View style={styles.screen}>
           <Text style={styles.icon}>🦷</Text>
-          <Text style={styles.title}>Something went wrong</Text>
+          <Text style={styles.title}>{isFrench ? 'Un problème est survenu' : 'Something went wrong'}</Text>
           <Text style={styles.message}>
-            Your account data is still safe. Check your internet connection, then try opening the app again.
+            {isFrench
+              ? 'Les données de ton compte sont toujours en sécurité. Vérifie la connexion Internet, puis essaie de rouvrir l’application.'
+              : 'Your account data is still safe. Check your internet connection, then try opening the app again.'}
           </Text>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Try opening the application again"
+            accessibilityLabel={isFrench ? 'Essayer de rouvrir l’application' : 'Try opening the application again'}
             onPress={this.retry}
             style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
           >
-            <Text style={styles.buttonText}>Try again</Text>
+            <Text style={styles.buttonText}>{isFrench ? 'Réessayer' : 'Try again'}</Text>
           </Pressable>
         </View>
       );

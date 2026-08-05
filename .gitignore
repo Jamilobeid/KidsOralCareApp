@@ -10,3 +10,19 @@ service-account*.json
 
 # Local Netlify folder
 .netlify
+
+# Generated web build
+frontend/dist-web/
+
+# Temporary source images
+Images/
+
+# Temporary notes
+🔴This is a file for a page called.txt
+
+# Removed spinning-wheel assets
+frontend/assets/images/rewards-badge-lucky-smile.png
+frontend/assets/images/rewards-badge-wheel-champion.png
+frontend/assets/images/rewards-buddy-nova-wheel.png
+frontend/assets/images/rewards-buddy-coral-wheel.png
+frontend/assets/images/wheel-center-tooth.png

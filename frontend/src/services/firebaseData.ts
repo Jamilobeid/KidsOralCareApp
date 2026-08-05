@@ -10,8 +10,8 @@ import {
   signOut,
   User
 } from 'firebase/auth';
-import { collection, doc, getDoc, getDocs, increment, runTransaction, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
-import { AdminUserSummary, ChildProfile, ThemeName, UserRole } from '../types/app';
+import { collection, doc, getDoc, getDocs, increment, limit, orderBy, query, runTransaction, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
+import { AdminUserSummary, ChildProfile, LeaderboardEntry, ThemeName, UserRole } from '../types/app';
 import { emptyWeeklyBrushes, getLocalDateKey, getLocalWeekKey, normalizeWeeklyBrushes } from '../utils/calendar';
 import { auth, db, isFirebaseConfigured } from './firebase';
 
@@ -35,6 +35,9 @@ type ChildDocument = {
   dailyDateKey: string;
   weekKey: string;
   totalBrushes: number;
+  lastBrushingAt?: string;
+  unlockedCharacters?: string[];
+  selectedCharacter?: string;
   timeSpentMinutes: number;
   gamesPlayed: number;
   rewardsEarned: number;
@@ -46,7 +49,31 @@ type ChildDocument = {
   lastActive: string;
   theme?: ThemeName;
   avatar?: string;
+  leaderboardParticipating?: boolean;
 };
+
+const APPROVED_LEADERBOARD_AVATARS = new Set(['star', 'sun', 'rocket', 'leaf', 'rainbow', 'tooth']);
+const BLOCKED_PUBLIC_NICKNAME_WORDS = ['admin', 'moderator', 'support', 'firebase', 'netlify'];
+
+export const getPublicNicknameIssue = (nickname: string) => {
+  const clean = nickname.trim();
+  const normalized = clean.toLocaleLowerCase('en-US');
+  if (clean.length < 3 || clean.length > 15) return 'Use a nickname from 3 to 15 characters.';
+  if (!/^[\p{L}\p{N} _-]+$/u.test(clean)) return 'Use only letters, numbers, spaces, underscores, or hyphens.';
+  if (clean.includes('@') || /https?:|www\./i.test(clean)) return 'Do not use an email address or website as a nickname.';
+  if (/\d{4,}/.test(clean)) return 'Do not include a phone number or other long number in a nickname.';
+  if (BLOCKED_PUBLIC_NICKNAME_WORDS.some((word) => normalized.includes(word))) return 'Choose a nickname that does not imply an official eSmile role.';
+  return null;
+};
+
+const leaderboardPayload = (childId: string, child: Pick<ChildDocument, 'nickname' | 'avatar' | 'points' | 'level'>) => ({
+  childId,
+  nickname: child.nickname.trim().slice(0, 15),
+  avatar: APPROVED_LEADERBOARD_AVATARS.has(child.avatar ?? '') ? child.avatar : 'tooth',
+  points: Math.max(0, Math.floor(child.points)),
+  level: Math.max(1, Math.floor(child.level)),
+  updatedAt: serverTimestamp()
+});
 
 const withTimeout = async <T,>(promise: Promise<T>, milliseconds: number, message: string) => Promise.race([
   promise,
@@ -144,19 +171,19 @@ export const getFirebaseParentalConsentStatus = async (): Promise<ParentalConsen
   };
 };
 
-export const submitFirebaseParentalConsentRequest = async (
+export const recordFirebaseParentalConsent = async (
   parentLegalName: string,
   leaderboardRequested: boolean
 ) => {
   const user = auth?.currentUser;
   if (!user || !db || !user.emailVerified) throw new Error('Verify the parent email before submitting consent.');
-  await setDoc(doc(db, 'consentRequests', user.uid), {
+  await setDoc(doc(db, 'parentalConsents', user.uid), {
     uid: user.uid,
     parentLegalName: parentLegalName.trim(),
     signatureAcknowledgement: 'I CONSENT',
-    internalUseRequested: true,
-    leaderboardRequested,
-    status: 'pending-review',
+    internalUseGranted: true,
+    leaderboardDisclosureGranted: leaderboardRequested,
+    status: 'granted',
     noticeVersion: 'parent-notice-2026-07-29-v1',
     privacyPolicyVersion: 'privacy-draft-2026-07-29-v1',
     createdAt: serverTimestamp(),
@@ -176,6 +203,8 @@ export const createFirebaseChildProfile = async (
   if (consent.status !== 'granted') throw new Error('Parental consent has not been approved yet.');
 
   const cleanUsername = username.trim();
+  const publicNicknameIssue = getPublicNicknameIssue(cleanUsername);
+  if (publicNicknameIssue) throw new Error(publicNicknameIssue);
   const normalizedUsername = cleanUsername.normalize('NFKC').toLocaleLowerCase('en-US');
   const usernameKey = `u_${encodeURIComponent(normalizedUsername)}`;
   const childId = user.uid;
@@ -184,6 +213,7 @@ export const createFirebaseChildProfile = async (
     points: 0, badges: [], level: 1, todayBrushes: 0, weeklyBrushes: 0,
     weeklyBrushesByDay: emptyWeeklyBrushes(), brushedPeriodsToday: [], dailyGamePlays: {},
     dailyDateKey: getLocalDateKey(), weekKey: getLocalWeekKey(), totalBrushes: 0,
+    unlockedCharacters: ['Toothy'], selectedCharacter: 'Toothy',
     timeSpentMinutes: 0, gamesPlayed: 0, rewardsEarned: 0, engagementScore: 0,
     totalUsageSeconds: 0, loginCount: 1, activitiesCompleted: 0, remindersFollowed: 0,
     lastActive: 'Now', theme: child.theme, avatar: child.avatar
@@ -203,6 +233,9 @@ export const createFirebaseChildProfile = async (
       leaderboardParticipating: consent.leaderboardDisclosureGranted,
       lastActiveAt: serverTimestamp(), createdAt: serverTimestamp(), updatedAt: serverTimestamp()
     });
+    if (consent.leaderboardDisclosureGranted) {
+      transaction.set(doc(firestore, 'leaderboard', childId), leaderboardPayload(childId, childDocument));
+    }
   });
   return childId;
 };
@@ -283,11 +316,77 @@ export const getFirebaseUserProfile = async (user: User) => {
     if (!snapshot.exists()) return null;
     const data = snapshot.data() as Partial<ChildDocument>;
     const calendar = normalizedCalendarFields(data);
+    const rawLastBrushingAt = snapshot.data().lastBrushingAt as unknown;
+    const lastBrushingAt = typeof rawLastBrushingAt === 'string'
+      ? rawLastBrushingAt
+      : rawLastBrushingAt && typeof (rawLastBrushingAt as { toDate?: unknown }).toDate === 'function'
+        ? (rawLastBrushingAt as { toDate: () => Date }).toDate().toISOString()
+        : undefined;
     transaction.update(childRef, {
       ...calendar,
       updatedAt: serverTimestamp()
     });
-    return { ...data, ...calendar };
+    return { ...data, ...calendar, lastBrushingAt };
+  });
+};
+
+export const fetchFirebaseLeaderboard = async (): Promise<LeaderboardEntry[]> => {
+  if (!db || !auth?.currentUser?.emailVerified) return [];
+  const snapshot = await withTimeout(
+    getDocs(query(collection(db, 'leaderboard'), orderBy('points', 'desc'), limit(100))),
+    12000,
+    'The leaderboard did not answer after 12 seconds.'
+  );
+
+  return snapshot.docs.flatMap((item) => {
+    const data = item.data() as Partial<LeaderboardEntry> & { childId?: string };
+    if (
+      data.childId !== item.id
+      || typeof data.nickname !== 'string'
+      || typeof data.points !== 'number'
+      || typeof data.level !== 'number'
+    ) return [];
+    return [{
+      id: item.id,
+      nickname: data.nickname.slice(0, 15),
+      avatar: APPROVED_LEADERBOARD_AVATARS.has(data.avatar ?? '') ? data.avatar! : 'tooth',
+      points: Math.max(0, Math.floor(data.points)),
+      level: Math.max(1, Math.floor(data.level))
+    }];
+  });
+};
+
+export const withdrawFirebaseLeaderboardParticipation = async () => {
+  const user = auth?.currentUser;
+  if (!db || !user) throw new Error('Please sign in again.');
+  const firestore = db;
+  await runTransaction(firestore, async (transaction) => {
+    const childRef = doc(firestore, 'children', user.uid);
+    const childSnapshot = await transaction.get(childRef);
+    if (!childSnapshot.exists()) throw new Error('The child profile could not be found.');
+    transaction.update(childRef, { leaderboardParticipating: false, updatedAt: serverTimestamp() });
+    transaction.delete(doc(firestore, 'leaderboard', user.uid));
+  });
+};
+
+export const ensureFirebaseLeaderboardEntry = async () => {
+  const user = auth?.currentUser;
+  if (!db || !user) return;
+  const firestore = db;
+  await runTransaction(firestore, async (transaction) => {
+    const childRef = doc(firestore, 'children', user.uid);
+    const childSnapshot = await transaction.get(childRef);
+    if (!childSnapshot.exists()) return;
+    const child = childSnapshot.data() as ChildDocument;
+    const leaderboardRef = doc(firestore, 'leaderboard', user.uid);
+    if (child.leaderboardParticipating === true) {
+      transaction.set(leaderboardRef, leaderboardPayload(user.uid, child));
+    } else {
+      if (child.leaderboardParticipating !== false) {
+        transaction.update(childRef, { leaderboardParticipating: false, updatedAt: serverTimestamp() });
+      }
+      transaction.delete(leaderboardRef);
+    }
   });
 };
 
@@ -371,20 +470,35 @@ export const recordFirebaseGamePlay = async (childId: string, gameId: string, da
 
 export const syncFirebaseChildProfile = async (childId: string, child: ChildProfile) => {
   if (!db) return;
-  await updateDoc(doc(db, 'children', childId), {
-    nickname: child.nickname,
-    age: child.age,
-    points: child.points,
-    badges: child.badges,
-    level: child.level,
-    totalBrushes: child.totalBrushes,
-    weeklyBrushes: child.weeklyBrushes.reduce((total, brushes) => total + brushes, 0),
-    weeklyBrushesByDay: child.weeklyBrushes,
-    rewardsEarned: child.badges.length,
-    theme: child.theme,
-    avatar: child.avatar,
-    lastActiveAt: serverTimestamp(),
-    updatedAt: serverTimestamp()
+  const firestore = db;
+  await runTransaction(firestore, async (transaction) => {
+    const childRef = doc(firestore, 'children', childId);
+    const snapshot = await transaction.get(childRef);
+    if (!snapshot.exists()) throw new Error('The child profile could not be found.');
+    const current = snapshot.data() as Partial<ChildDocument>;
+    const update = {
+      nickname: child.nickname,
+      age: child.age,
+      points: child.points,
+      badges: child.badges,
+      level: child.level,
+      totalBrushes: child.totalBrushes,
+      lastBrushingAt: child.lastBrushingAt ?? null,
+      unlockedCharacters: child.unlockedCharacters,
+      selectedCharacter: child.selectedCharacter,
+      weeklyBrushes: child.weeklyBrushes.reduce((total, brushes) => total + brushes, 0),
+      weeklyBrushesByDay: child.weeklyBrushes,
+      rewardsEarned: child.badges.length,
+      theme: child.theme,
+      avatar: child.avatar,
+      leaderboardParticipating: current.leaderboardParticipating === true,
+      lastActiveAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+    transaction.update(childRef, update);
+    if (current.leaderboardParticipating === true) {
+      transaction.set(doc(firestore, 'leaderboard', childId), leaderboardPayload(childId, { ...current, ...update }));
+    }
   });
 };
 

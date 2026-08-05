@@ -1,4 +1,4 @@
-# Kids Oral Care — Terms of Use (Draft)
+# eSmile — Terms of Use (Draft)
 
 **Draft version:** 0.1  
 **Status:** Internal review draft — not approved for publication  
@@ -6,9 +6,9 @@
 
 > This draft must be reviewed by a qualified lawyer familiar with Lebanese consumer, privacy, contract, and child-protection law, as well as the laws of every launch country. It is not legal advice and must not be published until the remaining technical and legal checks are complete.
 
-## 1. Who operates Kids Oral Care
+## 1. Who operates eSmile
 
-Kids Oral Care (the **App**) is operated by **Jamil Obeid** (**we**, **us**, or **our**).
+eSmile (the **App**) is operated by **Jamil Obeid** (**we**, **us**, or **our**).
 
 Contact details:
 

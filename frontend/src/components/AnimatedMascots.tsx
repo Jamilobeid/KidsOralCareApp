@@ -2,6 +2,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { bodyFont } from '../utils/kidStyle';
+import { useApp } from '../context/AppContext';
 
 export const BouncyTooth = ({ withFlags = false, size = 92 }: { withFlags?: boolean; size?: number }) => {
   const float = useRef(new Animated.Value(0)).current;
@@ -68,6 +69,7 @@ export const AnimatedStatIcon = ({ type }: { type: 'star' | 'badge' | 'check' | 
 };
 
 export const TalkingTeeth = () => {
+  const { t } = useApp();
   const bob = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.loop(
@@ -83,11 +85,11 @@ export const TalkingTeeth = () => {
     <View style={styles.talkWrap}>
       <Animated.View style={[styles.toothTalk, { transform: [{ translateY: up }] }]}>
         <Ionicons name="sparkles" size={42} color="#17324D" />
-        <Text style={styles.bubbleText}>Brush time!</Text>
+        <Text style={styles.bubbleText}>{t('brushTime')}</Text>
       </Animated.View>
       <Animated.View style={[styles.toothTalk, { transform: [{ translateY: up }] }]}>
         <Ionicons name="sparkles" size={42} color="#17324D" />
-        <Text style={styles.bubbleText}>Shine bright!</Text>
+        <Text style={styles.bubbleText}>{t('shineBright')}</Text>
       </Animated.View>
     </View>
   );

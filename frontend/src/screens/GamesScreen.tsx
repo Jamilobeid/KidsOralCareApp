@@ -7,6 +7,8 @@ import { Screen } from '../components/Screen';
 import { useApp } from '../context/AppContext';
 import { Game } from '../types/app';
 import { bodyFont, buttonFont, headingFont, rewardFont } from '../utils/kidStyle';
+import { SmileRaceGame } from './SmileRaceGame';
+import { CleanMySmileGame } from './CleanMySmileGame';
 
 type IconSpec = { icon?: keyof typeof Ionicons.glyphMap; image?: ImageSourcePropType; color: string; background: string };
 type TargetSpec = IconSpec & { label: string };
@@ -67,7 +69,9 @@ const gameIcons: Record<string, IconSpec> = {
   'sugar-detective': { image: require('../../assets/images/game-sugar-detective.png'), color: '#1D9BF0', background: '#FFFFFF' },
   'brush-sequence': { icon: 'brush', color: '#FF9F1C', background: '#FFF4D8' },
   'clean-tooth': { image: require('../../assets/images/game-rescue-icon.png'), color: '#2BBBAD', background: '#FFFFFF' },
-  'smile-quiz': { image: require('../../assets/images/game-genius-icon.png'), color: '#7B61FF', background: '#FFFFFF' }
+  'smile-quiz': { image: require('../../assets/images/game-genius-icon.png'), color: '#7B61FF', background: '#FFFFFF' },
+  'smile-race': { image: require('../../assets/images/game-rescue-tooth.png'), color: '#6552EB', background: '#E9FFF9' },
+  'clean-my-smile': { image: require('../../assets/images/custom-home-toothbrush.png'), color: '#35A99A', background: '#E9FFF9' }
 };
 
 const targetSets: Record<string, TargetSpec[]> = {
@@ -461,7 +465,7 @@ const SugarDetectiveGame = ({ canPlayAgain, onReplay, onComplete }: { canPlayAga
         </View>
       </Animated.View>
 
-      <Text style={[buttonFont, styles.sugarQuestion, { color: theme.text }]}>How many sugar cubes are hiding inside?</Text>
+      <Text style={[buttonFont, styles.sugarQuestion, { color: theme.text }]}>{t('sugarQuestion')}</Text>
       <View style={styles.sugarOptions}>
         {options.map((choice) => {
           const isSelected = selected === choice;
@@ -474,7 +478,7 @@ const SugarDetectiveGame = ({ canPlayAgain, onReplay, onComplete }: { canPlayAga
             >
               <Image source={require('../../assets/images/game-sugar-cube.png')} style={styles.sugarCubeImage} resizeMode="contain" />
               <Text style={[rewardFont, styles.sugarOptionText, { color: theme.text }]}>{choice}</Text>
-              <Text style={[buttonFont, styles.sugarOptionLabel, { color: theme.text }]}>cubes</Text>
+              <Text style={[buttonFont, styles.sugarOptionLabel, { color: theme.text }]}>{t('cubes')}</Text>
             </Pressable>
           );
         })}
@@ -526,7 +530,7 @@ const CleanToothGame = ({ cleaned, canPlayAgain, onReplay, onClean, onReset, onC
 
   return (
     <Card style={[styles.gamePanelBorder, styles.cleanCard, styles.cleanPlayCard]}>
-      <Text style={[buttonFont, styles.cleanSubtitle, { color: '#4E7771' }]}>Tap every germ, sweet, and plaque spot.</Text>
+      <Text style={[buttonFont, styles.cleanSubtitle, { color: '#4E7771' }]}>{t('cleanSubtitle')}</Text>
       <View style={styles.cleanProgressShell}><View style={[styles.cleanProgressFill, { width: `${(cleanedCount / cleanItems.length) * 100}%` }]} /></View>
       <Text style={[rewardFont, styles.rescueScore, { color: theme.primary }]}>Score: {cleanedCount} / {cleanItems.length}</Text>
       <View style={styles.toothPlayArea}>
@@ -667,7 +671,7 @@ export const GamesScreen = () => {
     return (
       <Screen gradientBackground showDecorations={false}>
         <GameHeader game={{ ...selectedGame, titleKey: t(selectedGame.titleKey) }} onBack={leaveGame} />
-        {selectedGame.id === 'plaque-pop' ? <StrongToothGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onWin={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'food-sorter' ? <HealthyPicksGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onWin={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'sugar-detective' ? <SugarDetectiveGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onComplete={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'clean-tooth' ? <CleanToothGame cleaned={cleaned} canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onClean={(index) => setCleaned((items) => items.map((item, itemIndex) => itemIndex === index ? true : item))} onReset={() => setCleaned(cleanItems.map(() => false))} onComplete={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'smile-quiz' ? <SmileQuizGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onComplete={() => awardGame(selectedGame.id)} /> : <GenericGame game={selectedGame} score={score} onScore={() => setScore((value) => value + 1)} />}
+        {selectedGame.id === 'plaque-pop' ? <StrongToothGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onWin={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'food-sorter' ? <HealthyPicksGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onWin={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'sugar-detective' ? <SugarDetectiveGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onComplete={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'clean-tooth' ? <CleanToothGame cleaned={cleaned} canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onClean={(index) => setCleaned((items) => items.map((item, itemIndex) => itemIndex === index ? true : item))} onReset={() => setCleaned(cleanItems.map(() => false))} onComplete={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'smile-quiz' ? <SmileQuizGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onComplete={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'smile-race' ? <SmileRaceGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onComplete={(smileStars) => awardGame(selectedGame.id, smileStars)} /> : selectedGame.id === 'clean-my-smile' ? <CleanMySmileGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onComplete={() => awardGame(selectedGame.id)} /> : <GenericGame game={selectedGame} score={score} onScore={() => setScore((value) => value + 1)} />}
       </Screen>
     );
   }
@@ -692,7 +696,7 @@ export const GamesScreen = () => {
               </View>
             </View>
             <AppButton
-              label={left > 0 ? `${t('play')} +${game.points}` : t('limitReachedShort')}
+              label={left > 0 ? (game.id === 'smile-race' ? `${t('play')} • SCORE REWARDS` : `${t('play')} +${game.points}`) : t('limitReachedShort')}
               onPress={() => openGame(game)}
               variant={left > 0 ? 'primary' : 'secondary'}
               style={[

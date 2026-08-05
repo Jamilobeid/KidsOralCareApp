@@ -75,7 +75,7 @@ const sendVerification = async (uid, recoveryEmail) => {
         lastVerificationSentAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
-    await queueEmail(recoveryEmail, 'Verify your Kids Oral Care parent email', `Verify the parent email for this account: ${link}\n\nThis link expires in 24 hours.`, `<h2>Verify the parent email</h2><p>Tap the button below to unlock the Kids Oral Care account.</p><p><a href="${link}" style="background:#6155F6;color:#fff;padding:12px 20px;border-radius:22px;text-decoration:none;font-weight:bold">Verify parent email</a></p><p>This link expires in 24 hours.</p>`);
+    await queueEmail(recoveryEmail, 'Verify your eSmile parent email', `Verify the parent email for this account: ${link}\n\nThis link expires in 24 hours.`, `<h2>Verify the parent email</h2><p>Tap the button below to unlock the eSmile account.</p><p><a href="${link}" style="background:#6155F6;color:#fff;padding:12px 20px;border-radius:22px;text-decoration:none;font-weight:bold">Verify parent email</a></p><p>This link expires in 24 hours.</p>`);
 };
 exports.startParentEmailVerification = (0, https_1.onCall)(callableOptions, async (request) => {
     if (!request.auth)
@@ -136,7 +136,7 @@ exports.verifyParentEmail = (0, https_1.onRequest)(async (request, response) => 
         verificationExpiresAt: admin.firestore.FieldValue.delete(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });
-    response.status(200).send('<!doctype html><html><meta name="viewport" content="width=device-width"><body style="font-family:Arial;text-align:center;padding:48px;color:#17324D"><h1 style="color:#41438F">Email verified!</h1><p>Return to Kids Oral Care and tap “I’ve verified my email”.</p></body></html>');
+    response.status(200).send('<!doctype html><html><meta name="viewport" content="width=device-width"><body style="font-family:Arial;text-align:center;padding:48px;color:#17324D"><h1 style="color:#41438F">Email verified!</h1><p>Return to eSmile and tap “I’ve verified my email”.</p></body></html>');
 });
 exports.requestPasswordReset = (0, https_1.onCall)(callableOptions, async (request) => {
     const username = normalizeUsername(String(request.data?.username ?? ''));
@@ -156,7 +156,7 @@ exports.requestPasswordReset = (0, https_1.onCall)(callableOptions, async (reque
     if (Date.now() - lastReset < REQUEST_COOLDOWN_MS)
         return genericResult;
     const resetLink = await admin.auth().generatePasswordResetLink(`${username}@${AUTH_DOMAIN}`);
-    await queueEmail(recoveryEmail, 'Reset your Kids Oral Care password', `Choose a new password using this secure link: ${resetLink}`, `<h2>Reset the account password</h2><p><a href="${resetLink}" style="background:#6155F6;color:#fff;padding:12px 20px;border-radius:22px;text-decoration:none;font-weight:bold">Choose a new password</a></p><p>If you did not request this, you can ignore this email.</p>`);
+    await queueEmail(recoveryEmail, 'Reset your eSmile password', `Choose a new password using this secure link: ${resetLink}`, `<h2>Reset the account password</h2><p><a href="${resetLink}" style="background:#6155F6;color:#fff;padding:12px 20px;border-radius:22px;text-decoration:none;font-weight:bold">Choose a new password</a></p><p>If you did not request this, you can ignore this email.</p>`);
     await profileRef.update({ lastPasswordResetSentAt: admin.firestore.FieldValue.serverTimestamp() });
     return genericResult;
 });

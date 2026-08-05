@@ -12,31 +12,31 @@ const icons: Record<LegalDocumentId, keyof typeof Ionicons.glyphMap> = {
 };
 
 export const LegalInformationScreen = () => {
-  const { setScreen } = useApp();
+  const { setScreen, t } = useApp();
   const [selected, setSelected] = useState<LegalDocumentId | null>(null);
   return (
     <Screen contentContainerStyle={styles.screen} gradientBackground showDecorations={false}>
       <View style={styles.header}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back to settings" onPress={() => setScreen('settings')} style={styles.backButton}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('backToSettings')} onPress={() => setScreen('settings')} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#41438F" />
         </Pressable>
-        <Text style={[headingFont, styles.title]}>Legal Information</Text>
+        <Text style={[headingFont, styles.title]}>{t('legalInformation')}</Text>
       </View>
-      <Text style={[bodyFont, styles.intro]}>Parents can review these documents at any time. Each document is currently marked as a draft until final legal review.</Text>
+      <Text style={[bodyFont, styles.intro]}>{t('legalInformationIntro')}</Text>
       {legalDocuments.map((document) => (
         <Pressable key={document.id} accessibilityRole="button" onPress={() => setSelected(document.id)} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
           <View style={styles.iconWrap}><Ionicons name={icons[document.id]} size={30} color="#41438F" /></View>
           <View style={styles.copy}>
-            <Text style={[headingFont, styles.cardTitle]}>{document.title}</Text>
-            <Text style={[bodyFont, styles.summary]}>{document.summary}</Text>
+            <Text style={[headingFont, styles.cardTitle]}>{t(`legalTitle_${document.id}`)}</Text>
+            <Text style={[bodyFont, styles.summary]}>{t(`legalSummary_${document.id}`)}</Text>
             <Text style={[bodyFont, styles.version]}>{document.version} · Review pending</Text>
           </View>
           <Ionicons name="chevron-forward" size={22} color="#7A9995" />
         </Pressable>
       ))}
       <View style={styles.contactCard}>
-        <Text style={[headingFont, styles.contactTitle]}>Questions or requests</Text>
-        <Text style={[bodyFont, styles.contactText]}>Jamil Obeid · Beirut, Lebanon</Text>
+        <Text style={[headingFont, styles.contactTitle]}>{t('questionsOrRequests')}</Text>
+        <Text style={[bodyFont, styles.contactText]}>Jamil Obeid · {t('beirutLebanon')}</Text>
         <Text style={[bodyFont, styles.contactText]}>jamilworkinfo@gmail.com · +961 81 343 191</Text>
       </View>
       <LegalDocumentModal documentId={selected} onClose={() => setSelected(null)} />

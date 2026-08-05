@@ -3,6 +3,16 @@ const crypto = require('crypto');
 
 const VALID_STATUSES = new Set(['granted', 'denied', 'withdrawn']);
 const VALID_METHODS = new Set(['signed-form', 'video-call', 'knowledge-check', 'approved-provider']);
+const APPROVED_LEADERBOARD_AVATARS = new Set(['star', 'sun', 'rocket', 'leaf', 'rainbow', 'tooth']);
+
+const isSafeLeaderboardNickname = (value) => (
+  typeof value === 'string'
+  && value.trim().length >= 3
+  && value.trim().length <= 15
+  && /^[\p{L}\p{N}_ -]+$/u.test(value.trim())
+  && !/\d{4}/.test(value)
+  && !/(admin|moderator|support|firebase|netlify)/iu.test(value)
+);
 
 const getArgument = (name) => {
   const index = process.argv.indexOf(`--${name}`);
@@ -59,6 +69,8 @@ const run = async () => {
   }
 
   const consentRef = db.doc(`parentalConsents/${user.uid}`);
+  const childRef = db.doc(`children/${user.uid}`);
+  const leaderboardRef = db.doc(`leaderboard/${user.uid}`);
   const auditRef = db.collection('consentAudits').doc();
   const now = admin.firestore.FieldValue.serverTimestamp();
   const leaderboardDisclosureGranted = status === 'granted' && leaderboardValue === 'true';
@@ -81,7 +93,21 @@ const run = async () => {
   };
 
   await db.runTransaction(async (transaction) => {
-    const existing = await transaction.get(consentRef);
+    const [existing, childSnapshot] = await Promise.all([
+      transaction.get(consentRef),
+      transaction.get(childRef)
+    ]);
+
+    if (leaderboardDisclosureGranted && childSnapshot.exists) {
+      const child = childSnapshot.data();
+      if (!isSafeLeaderboardNickname(child.nickname)) {
+        throw new Error('The child nickname is not safe for public leaderboard display. Update it before granting leaderboard consent.');
+      }
+      if (!APPROVED_LEADERBOARD_AVATARS.has(child.avatar)) {
+        throw new Error('The child avatar is not approved for leaderboard display. Update it before granting leaderboard consent.');
+      }
+    }
+
     transaction.set(consentRef, {
       ...consentData,
       createdAt: existing.exists ? existing.data().createdAt : now
@@ -96,6 +122,24 @@ const run = async () => {
       evidenceRef: status === 'granted' ? evidenceRef : null,
       createdAt: now
     });
+
+    if (childSnapshot.exists && leaderboardDisclosureGranted) {
+      const child = childSnapshot.data();
+      transaction.update(childRef, { leaderboardParticipating: true, updatedAt: now });
+      transaction.set(leaderboardRef, {
+        childId: user.uid,
+        nickname: child.nickname.trim(),
+        avatar: child.avatar,
+        points: Number.isInteger(child.points) && child.points >= 0 ? child.points : 0,
+        level: Number.isInteger(child.level) && child.level >= 1 ? child.level : 1,
+        updatedAt: now
+      });
+    } else {
+      if (childSnapshot.exists) {
+        transaction.update(childRef, { leaderboardParticipating: false, updatedAt: now });
+      }
+      transaction.delete(leaderboardRef);
+    }
   });
 
   const customClaims = { ...(user.customClaims ?? {}) };

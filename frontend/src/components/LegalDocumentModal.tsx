@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getLegalDocument, LegalDocumentId } from '../data/legalDocuments';
+import { useApp } from '../context/AppContext';
 import { bodyFont, headingFont } from '../utils/kidStyle';
 
 type Props = { documentId: LegalDocumentId | null; onClose: () => void };
@@ -10,6 +11,7 @@ type Props = { documentId: LegalDocumentId | null; onClose: () => void };
 const publicEnvironment = process.env as Record<string, string | undefined>;
 
 export const LegalDocumentModal = ({ documentId, onClose }: Props) => {
+  const { t } = useApp();
   const document = documentId ? getLegalDocument(documentId) : null;
   const publicBaseUrl = publicEnvironment.EXPO_PUBLIC_LEGAL_BASE_URL?.trim().replace(/\/$/, '');
   return (
@@ -18,17 +20,17 @@ export const LegalDocumentModal = ({ documentId, onClose }: Props) => {
         <SafeAreaView style={styles.safe}>
           <View style={styles.header}>
             <View style={styles.headerCopy}>
-              <Text style={[headingFont, styles.title]}>{document.title}</Text>
+              <Text style={[headingFont, styles.title]}>{t(`legalTitle_${document.id}`)}</Text>
               <Text style={[bodyFont, styles.version]}>{document.version} · Effective date pending publication</Text>
             </View>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close legal document" onPress={onClose} style={styles.closeButton}>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('closeLegalDocument')} onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close" size={25} color="#41438F" />
             </Pressable>
           </View>
           <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
             <View style={styles.publicationBanner}>
               <Ionicons name="calendar-outline" size={22} color="#25645E" />
-              <Text style={[bodyFont, styles.publicationText]}>Version 1.0. The effective date will be added when these documents are published.</Text>
+              <Text style={[bodyFont, styles.publicationText]}>{t('publicationDateNotice')}</Text>
             </View>
             {document.sections.map((section) => (
               <View key={section.heading} style={styles.section}>
@@ -36,11 +38,11 @@ export const LegalDocumentModal = ({ documentId, onClose }: Props) => {
                 <Text style={[bodyFont, styles.body]}>{section.body}</Text>
               </View>
             ))}
-            <Text style={[bodyFont, styles.updated]}>Contact: jamilworkinfo@gmail.com</Text>
+            <Text style={[bodyFont, styles.updated]}>{t('contact')}: jamilworkinfo@gmail.com</Text>
             {publicBaseUrl ? (
               <Pressable accessibilityRole="link" onPress={() => Linking.openURL(`${publicBaseUrl}${document.publicPath}`)} style={styles.publicLink}>
                 <Ionicons name="open-outline" size={18} color="#FFFFFF" />
-                <Text style={[headingFont, styles.publicLinkText]}>View public web version</Text>
+                <Text style={[headingFont, styles.publicLinkText]}>{t('viewPublicWebVersion')}</Text>
               </Pressable>
             ) : null}
           </ScrollView>

@@ -6,18 +6,13 @@ import { useApp } from '../context/AppContext';
 import { toothBuddies } from '../data/toothBuddies';
 import { RootScreen } from '../types/app';
 import { bodyFont, headingFont } from '../utils/kidStyle';
+import { getLevelProgress } from '../utils/levels';
 
 const brushTimerImage = require('../../assets/images/home-brush-timer.png');
 const starImage = require('../../assets/images/home-smile-stars.png');
 const badgeImage = require('../../assets/images/custom-home-badge.png');
 const targetImage = require('../../assets/images/custom-home-target.png');
 const smallStarImage = require('../../assets/images/custom-home-star-new.png');
-const tipAlertImage = require('../../assets/images/custom-home-tip-alert.png');
-const tipOneImage = require('../../assets/images/custom-home-one.png');
-const tipTwoImage = require('../../assets/images/custom-home-two.png');
-const LEVEL_COUNT = 5;
-const STARS_PER_LEVEL = 200;
-
 const navTiles: { labelKey: string; target: RootScreen; image: ImageSourcePropType }[] = [
   { labelKey: 'games', target: 'games', image: require('../../assets/images/custom-home-games.png') },
   { labelKey: 'brushing', target: 'brushing', image: require('../../assets/images/custom-home-brush-tile.png') },
@@ -27,16 +22,10 @@ const navTiles: { labelKey: string; target: RootScreen; image: ImageSourcePropTy
 
 export const ChildHomeScreen = () => {
   const { child, brushingCountToday, setScreen, theme, t } = useApp();
-  const level = Math.min(Math.floor(child.points / STARS_PER_LEVEL) + 1, LEVEL_COUNT);
-  const levelStart = (level - 1) * STARS_PER_LEVEL;
-  const nextLevelAt = level * STARS_PER_LEVEL;
-  const starsIntoLevel = level === LEVEL_COUNT ? STARS_PER_LEVEL : child.points - levelStart;
-  const starsToNextLevel = level === LEVEL_COUNT ? 0 : Math.max(nextLevelAt - child.points, 0);
-  const levelProgress = level === LEVEL_COUNT ? 1 : Math.min(Math.max(starsIntoLevel / STARS_PER_LEVEL, 0), 1);
+  const { level, isMaxLevel, starsToNextLevel, progress: levelProgress } = getLevelProgress(child.points);
   const dailyProgress = Math.min(brushingCountToday, 2);
   const progressPercent = `${(dailyProgress / 2) * 100}%` as `${number}%`;
   const selectedBuddy = toothBuddies.find((buddy) => buddy.id === child.selectedCharacter) ?? toothBuddies[0];
-
   return (
     <LinearGradient colors={theme.gradient} locations={[0, 0.80, 1]} style={styles.rootGradient}>
       <SafeAreaView style={styles.safe}>
@@ -62,7 +51,7 @@ export const ChildHomeScreen = () => {
                 <View style={styles.levelTrack}>
                   <View style={[styles.levelFill, { width: `${levelProgress * 100}%` }]} />
                 </View>
-                <Text style={[headingFont, styles.levelHint]}>{level === LEVEL_COUNT ? t('maxLevelReached') : t('starsToLevel').replace('{{count}}', `${starsToNextLevel}`).replace('{{level}}', `${level + 1}`)}</Text>
+                <Text style={[headingFont, styles.levelHint]}>{isMaxLevel ? t('maxLevelReached') : t('starsToLevel').replace('{{count}}', `${starsToNextLevel}`).replace('{{level}}', `${level + 1}`)}</Text>
               </View>
             </View>
 
@@ -109,21 +98,6 @@ export const ChildHomeScreen = () => {
             <View style={[styles.progressFill, { width: progressPercent }]} />
           </View>
           <Text style={[headingFont, styles.progressText]}>{dailyProgress}/2</Text>
-        </View>
-
-        <View style={styles.tipsSection}>
-          <View style={styles.tipsHeader}>
-            <Image source={tipAlertImage} style={styles.tipAlert} resizeMode="contain" />
-            <Text style={[headingFont, styles.tipsTitle]}>{t('hygieneTips')}</Text>
-          </View>
-          <View style={styles.tipRow}>
-            <Image source={tipOneImage} style={styles.tipNumberImage} resizeMode="contain" />
-            <Text style={[headingFont, styles.tipText]}>{t('tipBrushCircles')}</Text>
-          </View>
-          <View style={styles.tipRow}>
-            <Image source={tipTwoImage} style={styles.tipNumberImage} resizeMode="contain" />
-            <Text style={[headingFont, styles.tipText]}>{t('tipSpit')}</Text>
-          </View>
         </View>
 
         <View style={styles.tileGrid}>
@@ -412,49 +386,6 @@ const styles = StyleSheet.create({
     fontSize: 19,
     lineHeight: 24,
     textAlign: 'center'
-  },
-  tipsSection: {
-    paddingHorizontal: 24,
-    paddingTop: 40
-  },
-  tipsHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    marginBottom: 15
-  },
-  tipAlert: {
-    height: 49,
-    marginRight: 11,
-    transform: [{ rotate: '-9deg' }],
-    width: 49
-  },
-  tipsTitle: {
-    color: '#111111',
-    fontSize: 27,
-    lineHeight: 34
-  },
-  tipRow: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.78)',
-    borderColor: '#D7EBF0',
-    borderRadius: 16,
-    borderWidth: 1.5,
-    flexDirection: 'row',
-    marginBottom: 12,
-    minHeight: 54,
-    paddingHorizontal: 13
-  },
-  tipNumberImage: {
-    height: 36,
-    marginRight: 8,
-    width: 36
-  },
-  tipText: {
-    color: '#111111',
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 16,
-    textAlign: 'left'
   },
   tileGrid: {
     flexDirection: 'row',

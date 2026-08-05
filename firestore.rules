@@ -31,6 +31,29 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/parentalConsents/$(parentId)).data.leaderboardDisclosureGranted == true;
     }
 
+    function isApprovedLeaderboardAvatar(avatar) {
+      return avatar in ['star', 'sun', 'rocket', 'leaf', 'rainbow', 'tooth'];
+    }
+
+    function isSafeLeaderboardNickname(nickname) {
+      return nickname is string
+        && nickname.size() >= 3
+        && nickname.size() <= 15
+        && !nickname.matches('.*[@:/.].*')
+        && !nickname.matches('.*[0-9][0-9][0-9][0-9].*');
+    }
+
+    function leaderboardMatchesChild(entryId) {
+      return existsAfter(/databases/$(database)/documents/children/$(entryId))
+        && getAfter(/databases/$(database)/documents/children/$(entryId)).data.parentId == request.auth.uid
+        && getAfter(/databases/$(database)/documents/children/$(entryId)).data.leaderboardParticipating == true
+        && request.resource.data.childId == entryId
+        && request.resource.data.nickname == getAfter(/databases/$(database)/documents/children/$(entryId)).data.nickname
+        && request.resource.data.avatar == getAfter(/databases/$(database)/documents/children/$(entryId)).data.avatar
+        && request.resource.data.points == getAfter(/databases/$(database)/documents/children/$(entryId)).data.points
+        && request.resource.data.level == getAfter(/databases/$(database)/documents/children/$(entryId)).data.level;
+    }
+
     function ownsChild(childId) {
       return emailVerified()
         && exists(/databases/$(database)/documents/children/$(childId))
@@ -65,8 +88,17 @@ service cloud.firestore {
         && !("deletionPending" in request.resource.data)
         && request.resource.data.normalizedUsername is string
         && request.resource.data.usernameKey is string
+        && request.resource.data.points == 0
+        && request.resource.data.level == 1
+        && request.resource.data.leaderboardParticipating is bool
+        && (request.resource.data.leaderboardParticipating == false
+          || (isApprovedLeaderboardAvatar(request.resource.data.avatar)
+            && isSafeLeaderboardNickname(request.resource.data.nickname)))
+        && request.resource.data.leaderboardParticipating == hasLeaderboardConsent(request.auth.uid)
         && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.usernameKey)).data.uid == request.auth.uid
-        && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.usernameKey)).data.normalizedUsername == request.resource.data.normalizedUsername;
+        && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.usernameKey)).data.normalizedUsername == request.resource.data.normalizedUsername
+        && (request.resource.data.leaderboardParticipating == false
+          || existsAfter(/databases/$(database)/documents/leaderboard/$(childId)));
 
       allow read: if ownsChild(childId) || isAdmin();
 
@@ -74,8 +106,26 @@ service cloud.firestore {
         && !("deletionPending" in request.resource.data)
         && request.resource.data.id == resource.data.id
         && request.resource.data.parentId == resource.data.parentId
+        && request.resource.data.nickname == resource.data.nickname
+        && request.resource.data.age == resource.data.age
         && request.resource.data.normalizedUsername == resource.data.normalizedUsername
-        && request.resource.data.usernameKey == resource.data.usernameKey;
+        && request.resource.data.usernameKey == resource.data.usernameKey
+        && request.resource.data.points is int
+        && request.resource.data.points >= resource.data.points
+        && request.resource.data.points <= resource.data.points + 50
+        && request.resource.data.level is int
+        && request.resource.data.level >= resource.data.level
+        && request.resource.data.level <= resource.data.level + 1
+        && (request.resource.data.leaderboardParticipating == false
+          || (isApprovedLeaderboardAvatar(request.resource.data.avatar)
+            && isSafeLeaderboardNickname(request.resource.data.nickname)))
+        && request.resource.data.leaderboardParticipating is bool
+        && (request.resource.data.leaderboardParticipating == false
+          || ("leaderboardParticipating" in resource.data
+            && request.resource.data.leaderboardParticipating == resource.data.leaderboardParticipating)
+          || hasLeaderboardConsent(request.auth.uid))
+        && (request.resource.data.leaderboardParticipating == true
+          || !existsAfter(/databases/$(database)/documents/leaderboard/$(childId)));
 
       allow delete: if ownsChild(childId) || isAdmin();
     }
@@ -124,14 +174,25 @@ service cloud.firestore {
     }
 
     match /leaderboard/{entryId} {
-      allow read: if emailVerified();
+      allow read: if isAdmin() || hasActiveParentalConsent(request.auth.uid);
       allow create, update: if emailVerified()
+        && entryId == request.auth.uid
         && request.resource.data.keys().hasOnly([
           'childId', 'nickname', 'avatar', 'points', 'level', 'updatedAt'
         ])
-        && ownsChild(request.resource.data.childId)
-        && hasLeaderboardConsent(request.auth.uid);
-      allow delete: if isAdmin();
+        && request.resource.data.childId == request.auth.uid
+        && request.resource.data.points is int
+        && request.resource.data.points >= 0
+        && request.resource.data.points <= 1000000
+        && request.resource.data.level is int
+        && request.resource.data.level >= 1
+        && request.resource.data.level <= 1000
+        && isSafeLeaderboardNickname(request.resource.data.nickname)
+        && isApprovedLeaderboardAvatar(request.resource.data.avatar)
+        && hasLeaderboardConsent(request.auth.uid)
+        && leaderboardMatchesChild(entryId);
+      allow delete: if isAdmin()
+        || (emailVerified() && entryId == request.auth.uid && resource.data.childId == request.auth.uid);
     }
 
     match /analytics/{docId} {
@@ -162,7 +223,21 @@ service cloud.firestore {
 
     match /parentalConsents/{parentId} {
       allow get: if isParent(parentId) || isAdmin();
-      allow list, create, update, delete: if false;
+      allow create: if isParent(parentId)
+        && request.resource.data.keys().hasOnly([
+          'uid', 'parentLegalName', 'signatureAcknowledgement', 'internalUseGranted',
+          'leaderboardDisclosureGranted', 'status', 'noticeVersion', 'privacyPolicyVersion',
+          'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.parentLegalName is string
+        && request.resource.data.parentLegalName.size() >= 2
+        && request.resource.data.parentLegalName.size() <= 120
+        && request.resource.data.signatureAcknowledgement == 'I CONSENT'
+        && request.resource.data.internalUseGranted == true
+        && request.resource.data.leaderboardDisclosureGranted is bool
+        && request.resource.data.status == 'granted';
+      allow list, update, delete: if false;
     }
 
     match /consentAudits/{auditId} {

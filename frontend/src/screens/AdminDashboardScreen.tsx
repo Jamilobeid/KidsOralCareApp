@@ -25,12 +25,12 @@ const formatUsageDuration = (totalSeconds: number) => {
     : `${hours}h`;
 };
 
-const UserActivityCard = ({ user }: { user: AdminUserSummary }) => (
+const UserActivityCard = ({ user, t }: { user: AdminUserSummary; t: (key: string) => string }) => (
   <Card style={styles.userCard}>
     <View style={styles.userHeader}>
       <View>
         <Text style={[buttonFont, styles.userName]}>{user.nickname}</Text>
-        <Text style={[bodyFont, styles.userMeta]}>Age {user.age} - Last active: {user.lastActive}</Text>
+        <Text style={[bodyFont, styles.userMeta]}>{t('age')} {user.age} - {t('lastActive')}: {user.lastActive}</Text>
       </View>
       <View style={styles.engagementBadge}>
         <Text style={[rewardFont, styles.engagementValue]}>{user.engagementScore}%</Text>
@@ -38,14 +38,14 @@ const UserActivityCard = ({ user }: { user: AdminUserSummary }) => (
     </View>
 
     <View style={styles.metricGrid}>
-      <Metric label="Today" value={`${user.todayBrushes} brushes`} />
-      <Metric label="This week" value={`${user.weeklyBrushes} brushes`} />
-      <Metric label="Total recorded brushing sessions" value={`${user.totalBrushes}`} />
-      <Metric label="Total application use" value={formatUsageDuration(user.totalUsageSeconds)} />
-      <Metric label="Total followed reminders" value={`${user.remindersFollowed}`} />
-      <Metric label="Total logins" value={`${user.loginCount}`} />
-      <Metric label="Completed activities" value={`${user.activitiesCompleted}`} />
-      <Metric label="Rewards" value={`${user.rewardsEarned} earned`} />
+      <Metric label={t('today')} value={`${user.todayBrushes} ${t('brushes')}`} />
+      <Metric label={t('thisWeek')} value={`${user.weeklyBrushes} ${t('brushes')}`} />
+      <Metric label={t('totalBrushingSessions')} value={`${user.totalBrushes}`} />
+      <Metric label={t('totalApplicationUse')} value={formatUsageDuration(user.totalUsageSeconds)} />
+      <Metric label={t('totalFollowedReminders')} value={`${user.remindersFollowed}`} />
+      <Metric label={t('totalLogins')} value={`${user.loginCount}`} />
+      <Metric label={t('completedActivities')} value={`${user.activitiesCompleted}`} />
+      <Metric label={t('rewards')} value={`${user.rewardsEarned} ${t('earned')}`} />
     </View>
   </Card>
 );
@@ -86,8 +86,8 @@ export const AdminDashboardScreen = () => {
       <Screen contentContainerStyle={styles.screen} gradientBackground showDecorations={false}>
         <Text style={[headingFont, styles.pageTitle]}>{t('adminDashboard')}</Text>
         <Card style={styles.userCard}>
-          <Text style={[headingFont, styles.sectionTitle]}>Admin only</Text>
-          <Text style={[bodyFont, styles.subtitle]}>Please sign in with the admin account to view user activity.</Text>
+          <Text style={[headingFont, styles.sectionTitle]}>{t('adminOnly')}</Text>
+          <Text style={[bodyFont, styles.subtitle]}>{t('adminOnlyMessage')}</Text>
         </Card>
       </Screen>
     );
@@ -98,24 +98,24 @@ export const AdminDashboardScreen = () => {
       <View style={styles.titleRow}>
         <Text style={[headingFont, styles.pageTitle]}>{t('adminDashboard')}</Text>
         <Pressable onPress={refreshAdminUsers} style={({ pressed }) => [styles.refreshButton, pressed && styles.refreshButtonPressed]}>
-          <Text style={[buttonFont, styles.refreshText]}>Refresh</Text>
+          <Text style={[buttonFont, styles.refreshText]}>{t('refresh')}</Text>
         </Pressable>
       </View>
-      <Text style={[bodyFont, styles.subtitle]}>Overview of users, brushing activity, app time, and engagement.</Text>
+      <Text style={[bodyFont, styles.subtitle]}>{t('adminOverview')}</Text>
 
       <View style={styles.stats}>
-        <SummaryCard label="Reminders followed" value={totals.remindersFollowed} background="#E9FFF4" color="#168954" />
-        <SummaryCard label="Activities completed" value={totals.activitiesCompleted} background="#F0ECFF" color="#7B61FF" />
-        <SummaryCard label="Users" value={adminUsers.length} background="#E8F7FF" color="#1D9BF0" />
-        <SummaryCard label="Total brushes" value={totals.brushes} background="#FFF5D6" color="#FF9F0A" />
-        <SummaryCard label="App time" value={formatUsageDuration(totals.totalUsageSeconds)} background="#FFEAF3" color="#FF4F86" />
-        <SummaryCard label="Engagement" value={`${totals.engagement}%`} background="#E6FFF8" color="#168F84" />
+        <SummaryCard label={t('remindersFollowed')} value={totals.remindersFollowed} background="#E9FFF4" color="#168954" />
+        <SummaryCard label={t('activitiesCompleted')} value={totals.activitiesCompleted} background="#F0ECFF" color="#7B61FF" />
+        <SummaryCard label={t('users')} value={adminUsers.length} background="#E8F7FF" color="#1D9BF0" />
+        <SummaryCard label={t('totalBrushes')} value={totals.brushes} background="#FFF5D6" color="#FF9F0A" />
+        <SummaryCard label={t('appTime')} value={formatUsageDuration(totals.totalUsageSeconds)} background="#FFEAF3" color="#FF4F86" />
+        <SummaryCard label={t('engagement')} value={`${totals.engagement}%`} background="#E6FFF8" color="#168F84" />
       </View>
 
-      <Text style={[headingFont, styles.sectionTitle]}>Users</Text>
+      <Text style={[headingFont, styles.sectionTitle]}>{t('users')}</Text>
 
       {adminUsers.map((user) => (
-        <UserActivityCard key={user.id} user={user} />
+        <UserActivityCard key={user.id} user={user} t={t} />
       ))}
     </Screen>
   );

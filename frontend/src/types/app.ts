@@ -17,6 +17,7 @@ export type ChildProfile = {
   selectedCharacter: string;
   level: number;
   totalBrushes: number;
+  lastBrushingAt?: string;
   weeklyBrushes: number[];
 };
 
@@ -85,6 +86,7 @@ export type RootScreen =
   | 'childHome'
   | 'brushing'
   | 'games'
+  | 'learn'
   | 'rewards'
   | 'challenges'
   | 'leaderboard'

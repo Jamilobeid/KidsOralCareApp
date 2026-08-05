@@ -16,7 +16,7 @@ const artwork = {
   game: require('../../assets/images/parent-game-controller.png')
 };
 
-const WEEK_DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+const WEEK_DAY_KEYS = ['mondayShort', 'tuesdayShort', 'wednesdayShort', 'thursdayShort', 'fridayShort', 'saturdayShort', 'sundayShort'];
 const DAILY_GAME_LIMIT_MINUTES = 20;
 const MINUTES_PER_PLAY = 4;
 
@@ -45,7 +45,7 @@ export const ParentDashboardScreen = () => {
   const [eveningEnabled, setEveningEnabled] = useState(true);
   const selectedBuddy = toothBuddies.find((buddy) => buddy.id === child.selectedCharacter) ?? toothBuddies[0];
   const currentWeekIndex = (new Date().getDay() + 6) % 7;
-  const weeklyBrushes = WEEK_DAYS.map((_, index) => child.weeklyBrushes[index] ?? 0);
+  const weeklyBrushes = WEEK_DAY_KEYS.map((_, index) => child.weeklyBrushes[index] ?? 0);
   const weeklyBrushDays = weeklyBrushes.filter((count) => count > 0).length;
   const morningDone = brushingCountToday >= 1;
   const eveningDone = brushingCountToday >= 2;
@@ -54,7 +54,7 @@ export const ParentDashboardScreen = () => {
   const gameUsagePercent = Math.min(usedGameMinutes / DAILY_GAME_LIMIT_MINUTES, 1);
   const totalDailyGamePlays = games.reduce((sum, game) => sum + game.dailyLimit, 0);
   const gameUsageText = totalPlaysToday === 0
-    ? 'No games played today.'
+    ? t('noGamesPlayedToday')
     : t('minutesUsedToday').replace('{{minutes}}', `${usedGameMinutes}`).replace('{{plays}}', `${totalPlaysToday}`).replace('{{total}}', `${totalDailyGamePlays}`);
 
   const updateReminderTime = (period: 'morning' | 'evening', minutesDelta: number) => {
@@ -128,18 +128,18 @@ export const ParentDashboardScreen = () => {
         />
         <Pressable onPress={sendTestReminder} style={({ pressed }) => [styles.testReminderButton, pressed && styles.testReminderButtonPressed]}>
           <Ionicons name="notifications" size={20} color="#FFFFFF" />
-          <Text style={styles.testReminderText}>Send a test notification</Text>
+          <Text style={styles.testReminderText}>{t('sendTestNotification')}</Text>
         </Pressable>
       </View>
 
       <View style={styles.weekSection}>
         <Text style={styles.weekTitle}>{t('thisWeek')}</Text>
         <View style={styles.weekCard}>
-          {WEEK_DAYS.map((day, index) => {
+          {WEEK_DAY_KEYS.map((dayKey, index) => {
             const brushCount = weeklyBrushes[index] ?? 0;
             const isToday = index === currentWeekIndex;
             const isFuture = index > currentWeekIndex;
-            return <WeekDay key={`${day}-${index}`} day={day} brushCount={brushCount} active={isToday} future={isFuture} />;
+            return <WeekDay key={`${dayKey}-${index}`} day={t(dayKey)} brushCount={brushCount} active={isToday} future={isFuture} />;
           })}
         </View>
       </View>

@@ -6,7 +6,7 @@ import { Screen } from '../components/Screen';
 import { BodyText, Title } from '../components/Typography';
 import { useApp } from '../context/AppContext';
 import { themes } from '../data/themes';
-import { toothBuddies } from '../data/toothBuddies';
+import { isToothBuddyUnlocked, toothBuddies } from '../data/toothBuddies';
 import { ThemeName } from '../types/app';
 
 export const PersonalizationScreen = () => {
@@ -27,7 +27,7 @@ export const PersonalizationScreen = () => {
         <Text style={styles.sectionTitle}>{t('myToothBuddy')}</Text>
         <View style={styles.buddyGrid}>
           {toothBuddies.map((buddy) => {
-            const unlocked = child.level >= buddy.requiredLevel;
+            const unlocked = isToothBuddyUnlocked(buddy, child.level);
             const selected = unlocked && child.selectedCharacter === buddy.id;
 
             return (

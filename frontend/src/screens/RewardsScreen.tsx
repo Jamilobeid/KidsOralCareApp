@@ -3,11 +3,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { Alert, Image, ImageSourcePropType, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '../components/Screen';
 import { useApp } from '../context/AppContext';
-import { toothBuddies } from '../data/toothBuddies';
+import { isToothBuddyUnlocked, toothBuddies } from '../data/toothBuddies';
 import { rewardFont } from '../utils/kidStyle';
+import { getLevelForPoints } from '../utils/levels';
 
-const LEVEL_COUNT = 5;
-const STARS_PER_LEVEL = 200;
+const SPARKLE_MASTER_LEVEL = 5;
 
 const badgeDefinitions = [
   { id: 'first-brush', titleKey: 'badgeFirstBrush', image: require('../../assets/images/rewards-badge-first-brush-custom.png'), isNew: false },
@@ -17,7 +17,19 @@ const badgeDefinitions = [
   { id: 'night-owl', titleKey: 'badgeNightOwl', image: require('../../assets/images/rewards-badge-night-owl-custom.png'), isNew: false },
   { id: 'perfect-timer', titleKey: 'badgePerfectTimer', image: require('../../assets/images/rewards-badge-perfect-timer-custom.png'), isNew: false },
   { id: 'cavity-crusher', titleKey: 'badgeCavityCrusher', image: require('../../assets/images/rewards-badge-cavity-crusher-custom.png'), isNew: false },
-  { id: 'sparkle-master', titleKey: 'badgeSparkleMaster', image: require('../../assets/images/rewards-badge-sparkle-master-custom.png'), isNew: false }
+  { id: 'sparkle-master', titleKey: 'badgeSparkleMaster', image: require('../../assets/images/rewards-badge-sparkle-master-custom.png'), isNew: false },
+  { id: 'exactly-on-time', titleKey: 'badgeExactlyOnTime', lockedKey: 'unlockExactlyOnTime', image: require('../../assets/images/rewards-badge-exactly-on-time.png'), isNew: false },
+  { id: 'new-year-new-smile', titleKey: 'badgeNewYearNewSmile', lockedKey: 'unlockNewYearNewSmile', image: require('../../assets/images/rewards-badge-new-year-new-smile.png'), isNew: false },
+  { id: 'timer-tamer', titleKey: 'badgeTimerTamer', lockedKey: 'unlockFullTimers10', image: require('../../assets/images/rewards-badge-timer-tamer.png'), isNew: false },
+  { id: 'clockwork-brusher', titleKey: 'badgeClockworkBrusher', lockedKey: 'unlockFullTimers25', image: require('../../assets/images/rewards-badge-clockwork-brusher.png'), isNew: false },
+  { id: 'time-guardian', titleKey: 'badgeTimeGuardian', lockedKey: 'unlockFullTimers50', image: require('../../assets/images/rewards-badge-time-guardian.png'), isNew: false },
+  { id: 'super-number', titleKey: 'badgeSuperNumber', lockedKey: 'unlockFullTimers100', image: require('../../assets/images/rewards-badge-super-number.png'), isNew: false },
+  { id: 'second-chance-smile', titleKey: 'badgeSecondChanceSmile', lockedKey: 'unlockSecondChanceSmile', image: require('../../assets/images/rewards-badge-second-chance-smile.png'), isNew: false },
+  { id: 'pocket-of-stars', titleKey: 'badgePocketOfStars', lockedKey: 'unlockSmileStars50', image: require('../../assets/images/rewards-badge-pocket-of-stars.png'), isNew: false },
+  { id: 'star-saver', titleKey: 'badgeStarSaver', lockedKey: 'unlockSmileStars100', image: require('../../assets/images/rewards-badge-star-saver.png'), isNew: false },
+  { id: 'star-explorer', titleKey: 'badgeStarExplorer', lockedKey: 'unlockSmileStars250', image: require('../../assets/images/rewards-badge-star-explorer.png'), isNew: false },
+  { id: 'star-captain', titleKey: 'badgeStarCaptain', lockedKey: 'unlockSmileStars500', image: require('../../assets/images/rewards-badge-star-captain.png'), isNew: false },
+  { id: 'galaxy-of-smiles', titleKey: 'badgeGalaxyOfSmiles', lockedKey: 'unlockSmileStars1000', image: require('../../assets/images/rewards-badge-galaxy-of-smiles.png'), isNew: false }
 ];
 
 const getProgress = (progress: number, target: number) => Math.min(progress / target, 1);
@@ -25,7 +37,7 @@ const getProgress = (progress: number, target: number) => Math.min(progress / ta
 export const RewardsScreen = () => {
   const { child, theme, brushingCountToday, challenges, chooseCharacter, t } = useApp();
 
-  const level = Math.min(Math.floor(child.points / STARS_PER_LEVEL) + 1, LEVEL_COUNT);
+  const level = getLevelForPoints(child.points);
   const weeklyGames = challenges.find((challenge) => challenge.id === 'weekly-games');
   const dailyBrushes = challenges.find((challenge) => challenge.id === 'daily-two-brushes');
   const completedBrushDays = child.weeklyBrushes.map((brushes) => brushes >= 2);
@@ -35,7 +47,7 @@ export const RewardsScreen = () => {
   );
   const hasPerfectWeek = completedBrushDays.length >= 7 && completedBrushDays.every(Boolean);
 
-  const unlockedBadges = new Set<string>();
+  const unlockedBadges = new Set<string>(child.badges);
   if (brushingCountToday >= 1 || child.points >= 20) unlockedBadges.add('first-brush');
   if (hasThreeDayStreak) unlockedBadges.add('three-day-streak');
   if (hasPerfectWeek) unlockedBadges.add('week-warrior');
@@ -43,7 +55,16 @@ export const RewardsScreen = () => {
   if (brushingCountToday >= 2) unlockedBadges.add('night-owl');
   if (dailyBrushes && getProgress(dailyBrushes.progress, dailyBrushes.target) >= 1) unlockedBadges.add('perfect-timer');
   if (weeklyGames && getProgress(weeklyGames.progress, weeklyGames.target) >= 1) unlockedBadges.add('cavity-crusher');
-  if (level >= LEVEL_COUNT) unlockedBadges.add('sparkle-master');
+  if (level >= SPARKLE_MASTER_LEVEL) unlockedBadges.add('sparkle-master');
+  if (child.totalBrushes >= 10) unlockedBadges.add('timer-tamer');
+  if (child.totalBrushes >= 25) unlockedBadges.add('clockwork-brusher');
+  if (child.totalBrushes >= 50) unlockedBadges.add('time-guardian');
+  if (child.totalBrushes >= 100) unlockedBadges.add('super-number');
+  if (child.points >= 50) unlockedBadges.add('pocket-of-stars');
+  if (child.points >= 100) unlockedBadges.add('star-saver');
+  if (child.points >= 250) unlockedBadges.add('star-explorer');
+  if (child.points >= 500) unlockedBadges.add('star-captain');
+  if (child.points >= 1000) unlockedBadges.add('galaxy-of-smiles');
 
   const handleBuddyPress = (buddy: (typeof toothBuddies)[number], unlocked: boolean) => {
     if (unlocked) {
@@ -75,7 +96,7 @@ export const RewardsScreen = () => {
               </View>
               <View style={styles.badgeCopy}>
                 <Text style={[styles.badgeName, !unlocked && styles.lockedText]}>{t(badge.titleKey)}</Text>
-                <Text style={[styles.badgeStatus, !unlocked && styles.lockedText]}>{unlocked ? t('unlocked') : t('keepBrushingUnlock')}</Text>
+                <Text style={[styles.badgeStatus, !unlocked && styles.lockedText]}>{unlocked ? t('unlocked') : t(('lockedKey' in badge && badge.lockedKey) || 'keepBrushingUnlock')}</Text>
               </View>
               {unlocked && badge.isNew ? <Text style={styles.newPill}>{t('new')}</Text> : null}
             </View>
@@ -90,13 +111,13 @@ export const RewardsScreen = () => {
 
       <View style={styles.buddyGrid}>
         {toothBuddies.map((buddy) => {
-          const unlocked = level >= buddy.requiredLevel;
+          const unlocked = isToothBuddyUnlocked(buddy, level);
           const active = unlocked && child.selectedCharacter === buddy.id;
           return (
             <Pressable key={buddy.id} style={[styles.buddyCard, !unlocked && styles.buddyCardLocked, active && styles.buddyCardActive]} onPress={() => handleBuddyPress(buddy, unlocked)}>
               <View style={[styles.buddyAvatar, { backgroundColor: buddy.tone }]}>
                 <Image source={buddy.image as ImageSourcePropType} style={[styles.buddyImage, !unlocked && styles.lockedBuddyImage]} resizeMode="contain" />
-                {!unlocked ? <View style={styles.buddyLockOverlay}><Ionicons name="lock-closed" size={14} color="#FFFFFF" /><Text style={styles.lockText}>{t('level').toUpperCase()} {buddy.requiredLevel}</Text></View> : null}
+                {!unlocked ? <View style={styles.buddyLockOverlay}><Ionicons name="lock-closed" size={14} color="#FFFFFF" /><Text style={styles.lockText}>{`${t('level').toUpperCase()} ${buddy.requiredLevel}`}</Text></View> : null}
               </View>
               <Text style={styles.buddyName}>{buddy.title}</Text>
               <Text style={styles.buddySubtitle}>{buddy.subtitle}</Text>

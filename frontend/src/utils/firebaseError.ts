@@ -13,11 +13,16 @@ export const getFriendlyFirebaseError = (error: unknown, fallback: string) => {
     'auth/invalid-email': 'Enter a valid parent email address.',
     'auth/missing-password': 'Enter the account password.',
     'auth/network-request-failed': 'The internet connection was interrupted. Check the connection and try again.',
+    'auth/operation-not-allowed': 'Email/password account creation is disabled in Firebase Authentication.',
+    'auth/configuration-not-found': 'Firebase Authentication configuration could not be found for this project.',
+    'auth/invalid-api-key': 'The application is using an invalid Firebase API key.',
+    'auth/app-not-authorized': 'This application is not authorized to use the configured Firebase project.',
     'auth/too-many-requests': 'Too many attempts were made. Wait a few minutes, then try again.',
     'auth/user-disabled': 'This account has been disabled. Contact the application administrator.',
     'auth/weak-password': 'Choose a stronger password with at least six characters.',
     'username-already-in-use': 'This username is already taken. Please choose another one.',
-    'permission-denied': 'Firebase refused this request. Sign in again and make sure the email is verified.',
+    'permission-denied': 'Firestore refused this request. Check that the latest security rules are published.',
+    'firestore/permission-denied': 'Firestore refused this request. Check that the latest security rules are published.',
     'unavailable': 'Firebase is temporarily unavailable. Check the internet connection and try again.'
   };
 
@@ -31,5 +36,6 @@ export const getFriendlyFirebaseError = (error: unknown, fallback: string) => {
     return 'The security check could not be completed. Refresh the application and try again.';
   }
 
-  return fallback;
+  const safeCode = code && /^[a-z-]+\/[a-z0-9-]+$/i.test(code) ? ` (${code})` : '';
+  return `${fallback}${safeCode}`;
 };

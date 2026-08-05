@@ -1,4 +1,4 @@
-# Kids Oral Care — Secure Account Deletion Setup
+# eSmile — Secure Account Deletion Setup
 
 The mobile client and deletion endpoint are implemented in source. Complete these deployment steps before testing the feature.
 

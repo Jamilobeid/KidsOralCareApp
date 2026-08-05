@@ -1,4 +1,4 @@
-# Kids Oral Care — Parental Notice and Consent Specification
+# eSmile — Parental Notice and Consent Specification
 
 Owner: Jamil Obeid  
 Privacy contact: jamilworkinfo@gmail.com  
@@ -9,7 +9,7 @@ Status: Engineering/legal specification; consent method requires legal approval 
 
 ## 1. Non-negotiable launch rule
 
-Kids Oral Care must not upload a child username, age, profile, progress, activity, or leaderboard information until:
+eSmile must not upload a child username, age, profile, progress, activity, or leaderboard information until:
 
 1. A parent-only Firebase account exists.
 2. The parent email is verified.
@@ -23,7 +23,7 @@ A checkbox, parental math gate, or ordinary Firebase email-verification link alo
 
 Subject to legal approval, the recommended initial design is:
 
-- Use a verified-parent-email **email-plus** consent flow only for information used internally to provide Kids Oral Care.
+- Use a verified-parent-email **email-plus** consent flow only for information used internally to provide eSmile.
 - Keep the leaderboard disabled by default for every child.
 - Do not publicly disclose a child username or avatar under the initial internal-use consent.
 - Treat leaderboard participation as a separate parent-controlled opt-in that remains unavailable until counsel approves an appropriate disclosure-consent method.
@@ -50,7 +50,7 @@ The child username and age may be entered locally before consent for user experi
 
 ### Parent action required before creating a child profile
 
-Kids Oral Care is designed for children ages 4–12. We need a parent or legal guardian’s verified consent before collecting or using information for a child profile.
+eSmile is designed for children ages 4–12. We need a parent or legal guardian’s verified consent before collecting or using information for a child profile.
 
 **Operator**  
 Jamil Obeid  
@@ -88,7 +88,7 @@ You may review or correct the child’s information, refuse further collection o
 
 **Consent is required**
 
-Kids Oral Care will not create the child profile or collect the child information described above if you do not complete the approved consent process. If consent is not completed within 30 days, the parent-only registration information will be deleted.
+eSmile will not create the child profile or collect the child information described above if you do not complete the approved consent process. If consent is not completed within 30 days, the parent-only registration information will be deleted.
 
 Privacy Policy: **[INSERT APPROVED PUBLIC PRIVACY POLICY URL BEFORE LAUNCH]**
 

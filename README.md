@@ -1,4 +1,4 @@
-﻿# Kids Oral Care App
+# eSmile App
 
 A cross-platform Expo + React Native mobile application for children's oral hygiene. It includes child brushing guidance, games, rewards, challenges, parent monitoring, admin statistics, and multilingual support for English, French, and Arabic with RTL handling.
 

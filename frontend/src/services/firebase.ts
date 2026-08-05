@@ -1,8 +1,9 @@
 ﻿import { initializeApp, getApps } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, initializeAuth } from 'firebase/auth';
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check';
 import { initializeFirestore } from 'firebase/firestore';
 import { Platform } from 'react-native';
+import { nativeAuthPersistence } from './firebaseAuthPersistence';
 
 const publicEnvironment = process.env as Record<string, string | undefined>;
 
@@ -34,5 +35,22 @@ if (Platform.OS === 'web' && app && appCheckSiteKey) {
   });
 }
 
-export const auth = app ? getAuth(app) : null;
+const createAuth = () => {
+  if (!app) return null;
+  if (Platform.OS === 'web') return getAuth(app);
+
+  try {
+    // Keep Firebase refresh credentials in the OS-protected Keychain/Keystore,
+    // never in plaintext AsyncStorage.
+    return initializeAuth(app, { persistence: nativeAuthPersistence });
+  } catch (error) {
+    // Fast Refresh can initialize this module more than once.
+    if ((error as { code?: string }).code === 'auth/already-initialized') {
+      return getAuth(app);
+    }
+    throw error;
+  }
+};
+
+export const auth = createAuth();
 export const db = app ? initializeFirestore(app, { experimentalAutoDetectLongPolling: true }) : null;

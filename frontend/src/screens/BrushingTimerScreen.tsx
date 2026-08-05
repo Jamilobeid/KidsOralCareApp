@@ -35,7 +35,9 @@ export const BrushingTimerScreen = () => {
   const [secondsLeft, setSecondsLeft] = useState(totalSeconds);
   const [running, setRunning] = useState(false);
   const [finished, setFinished] = useState(false);
+  const [rewardEarned, setRewardEarned] = useState(false);
   const completedRef = useRef(false);
+  const startedAtRef = useRef<Date | null>(null);
 
   const elapsed = totalSeconds - secondsLeft;
   const hasStarted = elapsed > 0 || running;
@@ -63,13 +65,15 @@ export const BrushingTimerScreen = () => {
     completedRef.current = true;
     setRunning(false);
     setFinished(true);
-    completeBrushing();
+    setRewardEarned(completeBrushing(startedAtRef.current ?? new Date()));
   }, [completeBrushing, secondsLeft]);
 
   const resetTimer = () => {
     completedRef.current = false;
+    startedAtRef.current = null;
     setRunning(false);
     setFinished(false);
+    setRewardEarned(false);
     setSecondsLeft(totalSeconds);
   };
 
@@ -79,8 +83,9 @@ export const BrushingTimerScreen = () => {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.topArea}>
             <View style={styles.titleBlock}>
-              <Text style={[headingFont, styles.titleLeft]}>{t('newMission')}</Text>
-              <Text style={[headingFont, styles.titleRight]}>{t('brushTime')}</Text>
+              <Text style={[headingFont, styles.brushPageTitle]}>
+                  {t('Brush')}
+              </Text>
               <Text style={[headingFont, styles.subtitleLeft]}>{t('brushInstructionFull')}</Text>
             </View>
             <View style={styles.toothRow}>
@@ -115,7 +120,7 @@ export const BrushingTimerScreen = () => {
               <View style={[styles.progressFill, { width: `${progress * 100}%` as `${number}%` }]} />
             </View>
 
-            {finished ? <CelebrationCard t={t} /> : null}
+            {finished ? <CelebrationCard rewardEarned={rewardEarned} t={t} /> : null}
           </View>
 
           <View style={styles.buttons}>
@@ -124,6 +129,7 @@ export const BrushingTimerScreen = () => {
               accessibilityLabel={running ? t('pauseTimer') : t('startTimerFull')}
               onPress={() => {
                 if (finished) return;
+                if (!hasStarted) startedAtRef.current = new Date();
                 setRunning((value) => !value);
               }}
               style={({ pressed }) => [styles.actionButton, styles.startButton, pressed && styles.pressed]}
@@ -145,17 +151,21 @@ export const BrushingTimerScreen = () => {
   );
 };
 
-const CelebrationCard = ({ t }: { t: (key: string) => string }) => (
+const CelebrationCard = ({ rewardEarned, t }: { rewardEarned: boolean; t: (key: string) => string }) => (
   <View style={styles.celebrationCard}>
     <Text style={styles.partyIcon}>🎉</Text>
     <Text style={[headingFont, styles.celebrationTitle]}>{t('youDidIt')}</Text>
     <Text style={[headingFont, styles.celebrationCopy]}>{t('celebrationCopy')}</Text>
-    <View style={styles.celebrationStars}>
-      <Image source={rewardStarImage} style={styles.celebrationStar} resizeMode="contain" />
-      <Image source={rewardStarImage} style={styles.celebrationStar} resizeMode="contain" />
-      <Image source={rewardStarImage} style={styles.celebrationStar} resizeMode="contain" />
-    </View>
-    <Text style={[headingFont, styles.celebrationReward]}>{t('smileStarsReward')}</Text>
+    {rewardEarned ? (
+      <>
+        <View style={styles.celebrationStars}>
+          <Image source={rewardStarImage} style={styles.celebrationStar} resizeMode="contain" />
+          <Image source={rewardStarImage} style={styles.celebrationStar} resizeMode="contain" />
+          <Image source={rewardStarImage} style={styles.celebrationStar} resizeMode="contain" />
+        </View>
+        <Text style={[headingFont, styles.celebrationReward]}>{t('smileStarsReward')}</Text>
+      </>
+    ) : null}
   </View>
 );
 
@@ -180,28 +190,21 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: '100%'
   },
-  titleLeft: {
+  brushPageTitle: {
     color: '#41438F',
     fontFamily: 'Fredoka_700Bold',
     fontSize: 40,
-    lineHeight: 48,
-    marginRight: 100
-  },
-  titleRight: {
-    color: '#41438F',
-    fontFamily: 'Fredoka_700Bold',
-    fontSize: 40,
-    lineHeight: 48,
-    marginLeft: 130,
-    marginTop: -3,
-    width: 265
+    lineHeight: 40,
+    textAlign: 'center',
+    width: '100%', 
+    marginTop: 14
   },
   subtitleLeft: {
     color: '#454f59',
-    fontSize: 18,
+    fontSize: 15,
     lineHeight: 22,
     marginLeft: 0,
-    marginTop: 88,
+    marginTop: 120,
     marginBottom: 15,
     textAlign: 'center',
     width: '100%'
@@ -213,11 +216,11 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     position: 'absolute',
     right: 55,
-    top: 80
+    top: 70
   },
   topTooth: {
-    height: 75,
-    width: 75
+    height: 80,
+    width: 80
   },
   topToothOne: {
     marginTop: 1,

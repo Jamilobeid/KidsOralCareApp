@@ -6,3 +6,5 @@ dist-web/
 .env.*
 !.env.example
 backend/
+android/.gradle/
+android/**/build/

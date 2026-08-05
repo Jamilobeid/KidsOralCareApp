@@ -1,4 +1,4 @@
-# Kids Oral Care — Data Retention and Deletion Policy
+# eSmile — Data Retention and Deletion Policy
 
 Document owner: Jamil Obeid  
 Privacy contact: jamilworkinfo@gmail.com  
@@ -11,7 +11,7 @@ Primary market: Lebanon; additional international markets to be finalized
 
 ## 1. Policy principles
 
-Kids Oral Care will:
+eSmile will:
 
 1. Collect only data needed to provide the child’s account, progress, safety, recovery, and reminders.
 2. Document a specific purpose and retention period for every personal-data category.
@@ -44,7 +44,7 @@ Kids Oral Care will:
 | Brushing and game session records | While account is active, but no longer than two years from each event unless needed for the currently displayed lifetime total | Account deletion or event age limit | Within 30 days of trigger | Only irreversibly aggregated, non-identifying counts may remain |
 | Usage, login, activity, reward, and reminder metrics linked to the child | While account is active; detailed timestamps no longer than two years | Account deletion or metric age limit | Within 30 days | Irreversibly aggregated counts only |
 | Leaderboard entry containing child username | While account is active and leaderboard participation remains enabled | Account deletion, parent opt-out, username change, or consent withdrawal | Remove promptly; no later than 30 days | None |
-| Local remembered parent email | Until Remember Me is disabled or the account is deleted | User action or deletion | Immediately on device when action completes | Device backups controlled by the operating-system account may be outside direct app control and must be disclosed if applicable |
+| Legacy locally remembered parent email | No current retention; current versions never store it | First startup after update | Deleted immediately by a one-way migration without reading the value | AsyncStorage dependency may be removed after the migration window is complete |
 | Local notification schedules and payloads | Until reminders are disabled, replaced, or account is deleted | User action or deletion | Immediately on device when action completes | Already delivered notifications may remain in device notification history until cleared by the app/user/OS |
 | Unverified registration | Up to 30 days after account creation | Email remains unverified for 30 days | Delete within 7 days after expiry | Parent may restart registration |
 | Verification token | Maximum 24 hours | Token used or expires | Immediately after successful use; expired tokens removed within 24 hours | Store only a cryptographic hash, never the raw token |
@@ -92,7 +92,7 @@ The deletion flow must:
 
 ### External path
 
-A public webpage must allow deletion requests when the application is unavailable or uninstalled. It must identify Kids Oral Care and Jamil Obeid, provide a request form or `jamilworkinfo@gmail.com`, and verify control of the parent email before disclosure or deletion.
+A public webpage must allow deletion requests when the application is unavailable or uninstalled. It must identify eSmile and Jamil Obeid, provide a request form or `jamilworkinfo@gmail.com`, and verify control of the parent email before disclosure or deletion.
 
 ### Request authentication
 
@@ -200,7 +200,7 @@ Product analytics, convenience, possible future use, machine learning, or indefi
 - Parent-requested and inactivity deletion remove every account-linked collection.
 - Deletion is safe to retry and produces an auditable result.
 - Authentication deletion cannot leave accessible Firestore records behind.
-- Local remembered email, cached state, and scheduled reminders are cleared.
+- The legacy remembered-email key is removed on first startup after update; cached account state and scheduled reminders are cleared on deletion.
 - Leaderboard username disappears after opt-out or deletion.
 - Backup retention is no more than 30 days and restored deletions are reapplied.
 - The parent receives request and completion confirmation.

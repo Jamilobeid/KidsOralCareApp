@@ -1,4 +1,4 @@
-# Kids Oral Care — Privacy Policy (Draft)
+# eSmile — Privacy Policy (Draft)
 
 Draft owner: Jamil Obeid  
 Draft date: 29 July 2026  
@@ -22,9 +22,9 @@ Privacy contact: jamilworkinfo@gmail.com
 
 ## Privacy Policy
 
-### 1. Who operates Kids Oral Care
+### 1. Who operates eSmile
 
-Kids Oral Care is operated by **Jamil Obeid** (“Kids Oral Care,” “we,” “us,” or “our”). This policy explains how Kids Oral Care collects, uses, discloses, retains, and deletes information when a parent or guardian creates and manages an account for a child using the Kids Oral Care mobile application and related services.
+eSmile is operated by **Jamil Obeid** (“eSmile,” “we,” “us,” or “our”). This policy explains how eSmile collects, uses, discloses, retains, and deletes information when a parent or guardian creates and manages an account for a child using the eSmile mobile application and related services.
 
 Contact details:
 
@@ -46,7 +46,7 @@ We collect only information reasonably necessary to provide the account, oral-ca
 - Password-reset and email-verification status.
 - Parental-consent status, method, notice version, and timestamps after the consent system is implemented.
 
-Passwords are processed by Firebase Authentication. Kids Oral Care does not store readable passwords in its application database.
+Passwords are processed by Firebase Authentication. eSmile does not store readable passwords in its application database.
 
 #### Child account and profile information
 
@@ -74,8 +74,8 @@ If the leaderboard is enabled, it may display only the child’s chosen username
 
 - Notification permission status and locally scheduled morning/evening reminder content.
 - Device language or locale used to present the application in the selected language.
-- A remembered parent email stored locally if “Remember me” is enabled.
-- Firebase authentication state and cache needed to maintain a signed-in session.
+- The parent email is not persisted locally. Current versions remove the former Remember Me value from older installations on first startup after update.
+- An encrypted Firebase authentication session stored in the device's iOS Keychain or Android Keystore so the child can remain signed in without storing or displaying the parent email or password.
 
 The current application does **not** collect precise location, contacts, photographs, camera data, microphone recordings, advertising identifiers, or information for targeted advertising. We do not use third-party advertising or behavioral advertising SDKs.
 
@@ -107,7 +107,7 @@ We do not sell personal information. We do not use children’s information for 
 
 ### 5. When information is disclosed
 
-We disclose information only as necessary to operate and protect Kids Oral Care:
+We disclose information only as necessary to operate and protect eSmile:
 
 - **Google Firebase** provides authentication, email verification, password reset, database, and related security infrastructure.
 - **Netlify** hosts the secure account-and-data deletion function and the public deletion-information page. The function processes an authenticated deletion request only to remove the account and linked Firebase data.
@@ -115,17 +115,17 @@ We disclose information only as necessary to operate and protect Kids Oral Care:
 - **Authorized administrators and service personnel** may access the minimum information required for support, safety, security, deletion, and service operation, subject to access controls.
 - **Authorities or other recipients required by law** may receive information when disclosure is legally required, necessary to protect a child or another person, or necessary to establish or defend legal rights.
 
-We require service providers that process personal information for Kids Oral Care to use it only for authorized purposes and provide protections appropriate to children’s information. We do not permit providers to use child account data for their own advertising.
+We require service providers that process personal information for eSmile to use it only for authorized purposes and provide protections appropriate to children’s information. We do not permit providers to use child account data for their own advertising.
 
 ### 6. International processing
 
-Kids Oral Care is operated primarily from Lebanon. Firebase, Netlify, Expo, Apple, Google, and their subprocessors may process information on infrastructure located outside Lebanon or the parent’s country. Before release, we will confirm the Firebase database region, relevant provider locations, and any transfer safeguards required for each launch country.
+eSmile is operated primarily from Lebanon. Firebase, Netlify, Expo, Apple, Google, and their subprocessors may process information on infrastructure located outside Lebanon or the parent’s country. Before release, we will confirm the Firebase database region, relevant provider locations, and any transfer safeguards required for each launch country.
 
 ### 7. Notifications and device permissions
 
 The application may request permission to send morning and evening brushing reminders. These reminders are scheduled locally on the device. Parents can disable reminders in the application settings or the device settings.
 
-Kids Oral Care does not require camera, precise-location, contacts, or microphone-recording permission. If a future feature changes these practices, we will update this policy, provide any required notice, and obtain any required parental consent before collecting the new information.
+eSmile does not require camera, precise-location, contacts, or microphone-recording permission. If a future feature changes these practices, we will update this policy, provide any required notice, and obtain any required parental consent before collecting the new information.
 
 ### 8. How long we retain information
 
@@ -157,14 +157,14 @@ Requests may be submitted through the protected Parent Zone in the application o
 
 We aim to remove account-linked information from active systems within **30 days** of a verified deletion request. Provider-controlled backups may retain encrypted copies for up to an additional 30 days before automatic expiry. Already delivered notifications may remain in device notification history until removed by the user or operating system.
 
-If consent is withdrawn and Kids Oral Care cannot operate without the affected processing, we will stop new non-essential processing and begin account deletion.
+If consent is withdrawn and eSmile cannot operate without the affected processing, we will stop new non-essential processing and begin account deletion.
 
 ### 10. Account deletion
 
 Parents can request deletion through:
 
 - **In the application:** Settings → Parent Zone → Delete Account and Data.
-- **Outside the application:** the Kids Oral Care public deletion page or **jamilworkinfo@gmail.com**.
+- **Outside the application:** the eSmile public deletion page or **jamilworkinfo@gmail.com**.
 
 Deletion includes the Firebase Authentication account, parent and child profiles, username reservation, leaderboard entry, brushing/game records, progress and activity information, recovery records, and locally scheduled reminders under the application’s control. We may retain only minimal non-identifying evidence of the request and completion where legally permitted or required.
 
@@ -176,7 +176,7 @@ No method of storage or transmission is completely secure. Parents should use a 
 
 ### 12. Children’s privacy and parental consent
 
-Kids Oral Care is child-directed. The parent—not the child—must create and control the account. Before collecting child personal information, we will provide direct notice to the parent and obtain verifiable parental consent using the consent process presented during registration, except where law permits limited collection solely to obtain consent.
+eSmile is child-directed. The parent—not the child—must create and control the account. Before collecting child personal information, we will provide direct notice to the parent and obtain verifiable parental consent using the consent process presented during registration, except where law permits limited collection solely to obtain consent.
 
 A parental gate used to protect settings or external links is not by itself verifiable parental consent. The consent process and its evidence will be implemented and tested before public launch.
 

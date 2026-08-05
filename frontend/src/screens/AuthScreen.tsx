@@ -8,6 +8,7 @@ import { useApp } from '../context/AppContext';
 import { LegalDocumentId } from '../data/legalDocuments';
 import { bodyFont, headingFont } from '../utils/kidStyle';
 import { appAlert as Alert } from '../utils/appAlert';
+import { PasswordVisibilityIcon } from '../components/PasswordVisibilityIcon';
 
 const bubbleToothImage = require('../../assets/images/login-tooth-bubbles-cutout.png');
 const bowToothImage = require('../../assets/images/login-tooth-bow-cutout.png');
@@ -18,7 +19,7 @@ export const AuthScreen = () => {
   const {
     t, authMode, signInChild, registerParent,
     verificationPending, verificationEmailMasked, consentPending, childSetupPending, checkParentEmailVerification,
-    submitParentalConsent, checkParentalConsentApproval, completeChildSetup,
+    submitParentalConsent, completeChildSetup,
     resendVerificationEmail, cancelVerification, requestPasswordReset
   } = useApp();
   const [username, setUsername] = useState('');
@@ -29,10 +30,9 @@ export const AuthScreen = () => {
   const [age, setAge] = useState(6);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [parentLegalName, setParentLegalName] = useState('');
   const [consentSignature, setConsentSignature] = useState('');
-  const [leaderboardRequested, setLeaderboardRequested] = useState(true);
+  const [leaderboardRequested, setLeaderboardRequested] = useState(false);
   const [legalAccepted, setLegalAccepted] = useState(false);
   const [openLegalDocument, setOpenLegalDocument] = useState<LegalDocumentId | null>(null);
   const isSignup = authMode === 'signup';
@@ -63,12 +63,12 @@ export const AuthScreen = () => {
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parentEmail.trim())) {
-      Alert.alert('Parent email needed', 'Enter a valid parent or guardian email address.');
+      Alert.alert(t('parentEmailNeeded'), t('parentEmailNeededMessage'));
       return;
     }
 
     if (!legalAccepted) {
-      Alert.alert('Review required', 'Please review and accept the Privacy Policy and Terms of Use before creating the parent account.');
+      Alert.alert(t('reviewRequired'), t('reviewRequiredMessage'));
       return;
     }
 
@@ -81,18 +81,18 @@ export const AuthScreen = () => {
         <SafeAreaView style={styles.safe}>
           <View style={styles.centeredContent}>
             <Ionicons name="mail-unread-outline" size={72} color="#6155F6" />
-            <Text style={[headingFont, styles.recoveryTitle]}>Verify the parent email</Text>
+            <Text style={[headingFont, styles.recoveryTitle]}>{t('verifyParentEmail')}</Text>
             <Text style={[bodyFont, styles.recoveryMessage]}>
               {`We sent a Firebase verification link to ${verificationEmailMasked}. Open the link, then come back and continue.`}
             </Text>
             <Pressable accessibilityRole="button" onPress={checkParentEmailVerification} style={styles.loginButton}>
-              <Text style={[headingFont, styles.loginButtonText]}>I've verified my email</Text>
+              <Text style={[headingFont, styles.loginButtonText]}>{t('emailVerifiedButton')}</Text>
             </Pressable>
             <Pressable accessibilityRole="button" onPress={resendVerificationEmail} style={styles.secondaryButton}>
-              <Text style={[headingFont, styles.secondaryButtonText]}>Resend verification email</Text>
+              <Text style={[headingFont, styles.secondaryButtonText]}>{t('resendVerificationEmail')}</Text>
             </Pressable>
             <Pressable accessibilityRole="button" onPress={cancelVerification} style={styles.textButton}>
-              <Text style={[bodyFont, styles.textButtonLabel]}>Back to sign in</Text>
+              <Text style={[bodyFont, styles.textButtonLabel]}>{t('backToSignIn')}</Text>
             </Pressable>
           </View>
         </SafeAreaView>
@@ -106,28 +106,25 @@ export const AuthScreen = () => {
         <SafeAreaView style={styles.safe}>
           <ScrollView contentContainerStyle={styles.consentContent} showsVerticalScrollIndicator={false}>
             <Ionicons name="shield-checkmark-outline" size={64} color="#31C778" />
-            <Text style={[headingFont, styles.recoveryTitle]}>Parent consent</Text>
+            <Text style={[headingFont, styles.recoveryTitle]}>{t('parentConsent')}</Text>
             <View style={styles.noticeCard}>
-              <Text style={[headingFont, styles.noticeTitle]}>Please review before creating the child profile</Text>
-              <Text style={[bodyFont, styles.noticeText]}>Kids Oral Care will collect the child’s chosen username, age, avatar, brushing progress, game activity, rewards, usage, and reminder-following to provide the application and parent dashboard.</Text>
-              <Text style={[bodyFont, styles.noticeText]}>We use Firebase for authentication and storage and Netlify for secure deletion. We do not sell child information or use targeted advertising, location, camera, or microphone recordings.</Text>
-              <Text style={[bodyFont, styles.noticeText]}>You may review, correct, withdraw consent, or request deletion by using Parent Zone or contacting jamilworkinfo@gmail.com. Account-linked data is removed from active systems within 30 days of a verified request.</Text>
-              <Text style={[bodyFont, styles.noticeContact]}>Jamil Obeid · Beirut, Lebanon · +961 81 343 191</Text>
+              <Text style={[headingFont, styles.noticeTitle]}>{t('consentReviewTitle')}</Text>
+              <Text style={[bodyFont, styles.noticeText]}>{t('consentCollectionNotice')}</Text>
+              <Text style={[bodyFont, styles.noticeText]}>{t('consentServiceNotice')}</Text>
+              <Text style={[bodyFont, styles.noticeText]}>{t('consentRightsNotice')}</Text>
+              <Text style={[bodyFont, styles.noticeContact]}>Jamil Obeid · {t('beirutLebanon')} · +961 81 343 191</Text>
             </View>
             <View style={styles.consentForm}>
-              <Text style={[headingFont, styles.signupLabel]}>Parent’s full legal name:</Text>
+              <Text style={[headingFont, styles.signupLabel]}>{t('parentLegalName')}</Text>
               <TextInput value={parentLegalName} onChangeText={setParentLegalName} autoCapitalize="words" style={[bodyFont, styles.consentInput]} />
               <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: leaderboardRequested }} onPress={() => setLeaderboardRequested((value) => !value)} style={styles.consentChoice}>
                 <View style={[styles.checkbox, leaderboardRequested && styles.checkboxChecked]}>{leaderboardRequested ? <Ionicons name="checkmark" size={14} color="#FFFFFF" /> : null}</View>
-                <Text style={[bodyFont, styles.consentChoiceText]}>I also approve showing only the child’s username, avatar, points, and level on the leaderboard.</Text>
+                <Text style={[bodyFont, styles.consentChoiceText]}>{t('leaderboardConsent')}</Text>
               </Pressable>
-              <Text style={[headingFont, styles.signupLabel]}>Type I CONSENT:</Text>
+              <Text style={[headingFont, styles.signupLabel]}>{t('typeConsent')}</Text>
               <TextInput value={consentSignature} onChangeText={setConsentSignature} autoCapitalize="characters" style={[bodyFont, styles.consentInput]} />
               <Pressable accessibilityRole="button" onPress={() => submitParentalConsent(parentLegalName, leaderboardRequested, consentSignature)} style={styles.loginButton}>
-                <Text style={[headingFont, styles.loginButtonText]}>Submit signed request</Text>
-              </Pressable>
-              <Pressable accessibilityRole="button" onPress={checkParentalConsentApproval} style={styles.secondaryButton}>
-                <Text style={[headingFont, styles.secondaryButtonText]}>Check approval</Text>
+                <Text style={[headingFont, styles.loginButtonText]}>{t('submitSignedRequest')}</Text>
               </Pressable>
             </View>
           </ScrollView>
@@ -142,19 +139,23 @@ export const AuthScreen = () => {
         <SafeAreaView style={styles.safe}>
           <View style={styles.centeredContent}>
             <Ionicons name="happy-outline" size={68} color="#6155F6" />
-            <Text style={[headingFont, styles.recoveryTitle]}>Create the child profile</Text>
-            <Text style={[bodyFont, styles.recoveryMessage]}>Parental consent is approved. Now choose the child’s username and age.</Text>
+            <Text style={[headingFont, styles.recoveryTitle]}>{t('createChildProfile')}</Text>
+            <Text style={[bodyFont, styles.recoveryMessage]}>{t('createChildProfileMessage')}</Text>
             <View style={styles.recoveryPanel}>
-              <Text style={[headingFont, styles.signupLabel]}>Username:</Text>
+              <Text style={[headingFont, styles.signupLabel]}>{t('username')}:</Text>
               <TextInput value={username} onChangeText={setUsername} autoCapitalize="none" autoCorrect={false} style={[bodyFont, styles.consentInput]} />
-              <Text style={[headingFont, styles.recoveryFieldLabel]}>Age:</Text>
+              <Text style={[headingFont, styles.recoveryFieldLabel]}>{t('age')}:</Text>
               <View style={styles.agePicker}>
-                <Pressable onPress={() => setAge((value) => Math.max(4, value - 1))} style={styles.ageButton}><Ionicons name="remove" size={18} color="#41438F" /></Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel="Decrease age" disabled={age <= 4} onPress={() => setAge((value) => Math.max(4, value - 1))} style={[styles.ageButton, age <= 4 && styles.ageButtonDisabled]}>
+                  <Text style={[headingFont, styles.ageButtonText]}>−</Text>
+                </Pressable>
                 <Text style={[headingFont, styles.ageValue]}>{age}</Text>
-                <Pressable onPress={() => setAge((value) => Math.min(12, value + 1))} style={styles.ageButton}><Ionicons name="add" size={18} color="#41438F" /></Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel="Increase age" disabled={age >= 12} onPress={() => setAge((value) => Math.min(12, value + 1))} style={[styles.ageButton, age >= 12 && styles.ageButtonDisabled]}>
+                  <Text style={[headingFont, styles.ageButtonText]}>+</Text>
+                </Pressable>
               </View>
               <Pressable accessibilityRole="button" onPress={() => completeChildSetup(username, age)} style={[styles.loginButton, styles.recoverySubmit]}>
-                <Text style={[headingFont, styles.loginButtonText]}>Create child profile</Text>
+                <Text style={[headingFont, styles.loginButtonText]}>{t('createChildProfile')}</Text>
               </Pressable>
             </View>
           </View>
@@ -169,21 +170,21 @@ export const AuthScreen = () => {
         <SafeAreaView style={styles.safe}>
           <View style={styles.centeredContent}>
             <Ionicons name="key-outline" size={66} color="#6155F6" />
-            <Text style={[headingFont, styles.recoveryTitle]}>Reset password</Text>
-            <Text style={[bodyFont, styles.recoveryMessage]}>Enter the parent email used to create the account.</Text>
+            <Text style={[headingFont, styles.recoveryTitle]}>{t('resetPassword')}</Text>
+            <Text style={[bodyFont, styles.recoveryMessage]}>{t('resetPasswordMessage')}</Text>
             <View style={styles.recoveryPanel}>
-              <Text style={[headingFont, styles.label]}>Parent email:</Text>
+              <Text style={[headingFont, styles.label]}>{t('parentEmail')}:</Text>
               <TextInput value={parentEmail} onChangeText={setParentEmail} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} style={[bodyFont, styles.underlineInput]} />
               <Pressable
                 accessibilityRole="button"
                 onPress={() => requestPasswordReset(parentEmail)}
                 style={[styles.loginButton, styles.recoverySubmit]}
               >
-                <Text style={[headingFont, styles.loginButtonText]}>Send reset link</Text>
+                <Text style={[headingFont, styles.loginButtonText]}>{t('sendResetLink')}</Text>
               </Pressable>
             </View>
             <Pressable accessibilityRole="button" onPress={() => setShowForgotPassword(false)} style={styles.textButton}>
-              <Text style={[bodyFont, styles.textButtonLabel]}>Back to sign in</Text>
+              <Text style={[bodyFont, styles.textButtonLabel]}>{t('backToSignIn')}</Text>
             </Pressable>
           </View>
         </SafeAreaView>
@@ -206,7 +207,7 @@ export const AuthScreen = () => {
             <Text style={[headingFont, styles.signupSubtitle]}>{t('signupSubtitle')}</Text>
             <View style={styles.signupPanel}>
               <View style={styles.signupField}>
-                <Text style={[headingFont, styles.signupLabel]}>Parent email:</Text>
+                <Text style={[headingFont, styles.signupLabel]}>{t('parentEmail')}:</Text>
                 <TextInput
                   value={parentEmail}
                   onChangeText={setParentEmail}
@@ -235,7 +236,7 @@ export const AuthScreen = () => {
                     hitSlop={10}
                     style={styles.eyeButton}
                   >
-                    <Ionicons name={passwordVisible ? 'eye-off' : 'eye'} size={20} color="#41438F" />
+                    <PasswordVisibilityIcon hidden={!passwordVisible} />
                   </Pressable>
                 </View>
               </View>
@@ -258,27 +259,27 @@ export const AuthScreen = () => {
                     hitSlop={10}
                     style={styles.eyeButton}
                   >
-                    <Ionicons name={confirmPasswordVisible ? 'eye-off' : 'eye'} size={20} color="#41438F" />
+                    <PasswordVisibilityIcon hidden={!confirmPasswordVisible} />
                   </Pressable>
                 </View>
               </View>
 
               <View style={styles.legalAgreement}>
-                <Text style={[bodyFont, styles.legalIntro]}>Before creating the parent account, please review:</Text>
+                <Text style={[bodyFont, styles.legalIntro]}>{t('beforeCreatingAccount')}</Text>
                 <View style={styles.legalLinksRow}>
                   <Pressable accessibilityRole="link" onPress={() => setOpenLegalDocument('privacy')} hitSlop={6}>
-                    <Text style={[headingFont, styles.legalLink]}>Privacy Policy</Text>
+                    <Text style={[headingFont, styles.legalLink]}>{t('privacyPolicy')}</Text>
                   </Pressable>
-                  <Text style={[bodyFont, styles.legalSeparator]}>and</Text>
+                  <Text style={[bodyFont, styles.legalSeparator]}>{t('and')}</Text>
                   <Pressable accessibilityRole="link" onPress={() => setOpenLegalDocument('terms')} hitSlop={6}>
-                    <Text style={[headingFont, styles.legalLink]}>Terms of Use</Text>
+                    <Text style={[headingFont, styles.legalLink]}>{t('termsOfUse')}</Text>
                   </Pressable>
                 </View>
                 <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: legalAccepted }} onPress={() => setLegalAccepted((value) => !value)} style={styles.legalAcceptRow}>
                   <View style={[styles.checkbox, legalAccepted && styles.checkboxChecked]}>
                     {legalAccepted ? <Ionicons name="checkmark" size={14} color="#FFFFFF" /> : null}
                   </View>
-                  <Text style={[bodyFont, styles.legalAcceptText]}>I am the parent or legal guardian, and I accept the Privacy Policy and Terms of Use.</Text>
+                  <Text style={[bodyFont, styles.legalAcceptText]}>{t('legalAcceptance')}</Text>
                 </Pressable>
               </View>
 
@@ -288,7 +289,7 @@ export const AuthScreen = () => {
                 onPress={validateSignup}
                 style={({ pressed }) => [styles.signupCreateButton, pressed && styles.loginButtonPressed]}
               >
-                <Text style={[headingFont, styles.signupCreateButtonText]}>Create parent account</Text>
+                <Text style={[headingFont, styles.signupCreateButtonText]}>{t('createParentAccount')}</Text>
               </Pressable>
             </View>
             <LegalDocumentModal documentId={openLegalDocument} onClose={() => setOpenLegalDocument(null)} />
@@ -310,7 +311,7 @@ export const AuthScreen = () => {
 
           <View style={styles.formPanel}>
             <View style={styles.fieldBlock}>
-              <Text style={[headingFont, styles.label]}>Parent email:</Text>
+              <Text style={[headingFont, styles.label]}>{t('parentEmail')}:</Text>
               <TextInput
                 value={parentEmail}
                 onChangeText={setParentEmail}
@@ -341,30 +342,19 @@ export const AuthScreen = () => {
                   hitSlop={10}
                   style={styles.eyeButton}
                 >
-                  <Ionicons name={passwordVisible ? 'eye-off' : 'eye'} size={21} color="#41438F" />
+                  <PasswordVisibilityIcon hidden={!passwordVisible} />
                 </Pressable>
               </View>
             </View>
 
-            <Pressable
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: rememberMe }}
-              onPress={() => setRememberMe((checked) => !checked)}
-              style={styles.rememberRow}
-            >
-              <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
-                {rememberMe ? <Ionicons name="checkmark" size={14} color="#FFFFFF" /> : null}
-              </View>
-              <Text style={[bodyFont, styles.rememberText]}>{t('rememberMe')}</Text>
-            </Pressable>
             <Pressable accessibilityRole="button" onPress={() => setShowForgotPassword(true)} style={styles.forgotButton}>
-              <Text style={[bodyFont, styles.forgotButtonText]}>Forgot password?</Text>
+              <Text style={[bodyFont, styles.forgotButtonText]}>{t('forgotPassword')}</Text>
             </Pressable>
 
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t('login')}
-              onPress={() => signInChild(parentEmail, password, rememberMe)}
+              onPress={() => signInChild(parentEmail, password)}
               style={({ pressed }) => [styles.loginButton, pressed && styles.loginButtonPressed]}
             >
               <Text style={[headingFont, styles.loginButtonText]}>{t('login')}</Text>
@@ -457,28 +447,26 @@ const styles = StyleSheet.create({
     borderBottomColor: '#333333',
     borderBottomWidth: 1.5,
     flexDirection: 'row',
-    height: 30
+    height: 40
   },
   passwordInput: {
     color: '#111111',
     flex: 1,
     fontSize: 16,
-    height: 30,
+    height: 38,
     paddingHorizontal: 0,
     paddingVertical: 2
   },
   eyeButton: {
     alignItems: 'center',
-    height: 30,
+    backgroundColor: '#ECEAFF',
+    borderColor: '#C9C4FF',
+    borderRadius: 17,
+    borderWidth: 1,
+    height: 34,
     justifyContent: 'center',
-    width: 32
-  },
-  rememberRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 24,
-    marginTop: -6
+    marginLeft: 6,
+    width: 34
   },
   checkbox: {
     alignItems: 'center',
@@ -491,11 +479,6 @@ const styles = StyleSheet.create({
   },
   checkboxChecked: {
     backgroundColor: '#6155F6'
-  },
-  rememberText: {
-    color: '#111111',
-    fontSize: 14,
-    fontWeight: '800'
   },
   loginButton: {
     alignItems: 'center',
@@ -621,13 +604,13 @@ const styles = StyleSheet.create({
     borderBottomColor: '#333333',
     borderBottomWidth: 1.4,
     flexDirection: 'row',
-    height: 28
+    height: 38
   },
   signupPasswordInput: {
     color: '#111111',
     flex: 1,
     fontSize: 16,
-    height: 28,
+    height: 36,
     paddingHorizontal: 0,
     paddingVertical: 2
   },
@@ -649,6 +632,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 34
   },
+  ageButtonDisabled: { opacity: 0.4 },
+  ageButtonText: { color: '#302B82', fontSize: 22, lineHeight: 24, textAlign: 'center' },
   ageValue: {
     color: '#111111',
     fontSize: 20,
