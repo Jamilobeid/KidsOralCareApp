@@ -17,7 +17,7 @@ export const PersonalizationScreen = () => {
       chooseCharacter(buddy.id);
       return;
     }
-    Alert.alert(t('keepLeveling'), t('unlocksAtLevel').replace('{{name}}', buddy.title).replace('{{level}}', `${buddy.requiredLevel}`));
+    Alert.alert(buddy.achievementId ? t('locked') : t('keepLeveling'), buddy.unlockDescription ?? t('unlocksAtLevel').replace('{{name}}', buddy.title).replace('{{level}}', `${buddy.requiredLevel}`));
   };
 
   return (
@@ -27,7 +27,7 @@ export const PersonalizationScreen = () => {
         <Text style={styles.sectionTitle}>{t('myToothBuddy')}</Text>
         <View style={styles.buddyGrid}>
           {toothBuddies.map((buddy) => {
-            const unlocked = isToothBuddyUnlocked(buddy, child.level);
+            const unlocked = isToothBuddyUnlocked(buddy, child.level, child.unlockedCharacters);
             const selected = unlocked && child.selectedCharacter === buddy.id;
 
             return (
@@ -37,7 +37,7 @@ export const PersonalizationScreen = () => {
                   {!unlocked ? (
                     <View style={styles.lockBadge}>
                       <Ionicons name="lock-closed" size={12} color="#FFFFFF" />
-                      <Text style={styles.lockText}>{t('chooseLevel').replace('{{level}}', `${buddy.requiredLevel}`)}</Text>
+                      <Text style={styles.lockText}>{buddy.achievementId ? t('goal') : t('chooseLevel').replace('{{level}}', `${buddy.requiredLevel}`)}</Text>
                     </View>
                   ) : null}
                 </View>

@@ -29,7 +29,9 @@ const badgeDefinitions = [
   { id: 'star-saver', titleKey: 'badgeStarSaver', lockedKey: 'unlockSmileStars100', image: require('../../assets/images/rewards-badge-star-saver.png'), isNew: false },
   { id: 'star-explorer', titleKey: 'badgeStarExplorer', lockedKey: 'unlockSmileStars250', image: require('../../assets/images/rewards-badge-star-explorer.png'), isNew: false },
   { id: 'star-captain', titleKey: 'badgeStarCaptain', lockedKey: 'unlockSmileStars500', image: require('../../assets/images/rewards-badge-star-captain.png'), isNew: false },
-  { id: 'galaxy-of-smiles', titleKey: 'badgeGalaxyOfSmiles', lockedKey: 'unlockSmileStars1000', image: require('../../assets/images/rewards-badge-galaxy-of-smiles.png'), isNew: false }
+  { id: 'galaxy-of-smiles', titleKey: 'badgeGalaxyOfSmiles', lockedKey: 'unlockSmileStars1000', image: require('../../assets/images/rewards-badge-galaxy-of-smiles.png'), isNew: false },
+  { id: 'turbo-tooth', titleKey: 'badgeTurboTooth', lockedKey: 'unlockTurboTooth', image: require('../../assets/images/rewards-badge-turbo-tooth.png'), isNew: false },
+  { id: 'sparkle-sprinter', titleKey: 'badgeSparkleSprinter', lockedKey: 'unlockSparkleSprinter', image: require('../../assets/images/rewards-badge-sparkle-sprinter.png'), isNew: false }
 ];
 
 const getProgress = (progress: number, target: number) => Math.min(progress / target, 1);
@@ -71,7 +73,7 @@ export const RewardsScreen = () => {
       chooseCharacter(buddy.id);
       return;
     }
-    Alert.alert(t('keepLeveling'), t('unlocksAtLevel').replace('{{name}}', buddy.title).replace('{{level}}', `${buddy.requiredLevel}`));
+    Alert.alert(buddy.achievementId ? t('locked') : t('keepLeveling'), buddy.unlockDescription ?? t('unlocksAtLevel').replace('{{name}}', buddy.title).replace('{{level}}', `${buddy.requiredLevel}`));
   };
 
   return (
@@ -106,18 +108,18 @@ export const RewardsScreen = () => {
 
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>{t('myToothBuddies')}</Text>
-        <Text style={styles.sectionMeta}>{t('unlockByLevel')}</Text>
+        <Text style={styles.sectionMeta}>{t('unlockByPlaying')}</Text>
       </View>
 
       <View style={styles.buddyGrid}>
         {toothBuddies.map((buddy) => {
-          const unlocked = isToothBuddyUnlocked(buddy, level);
+          const unlocked = isToothBuddyUnlocked(buddy, level, child.unlockedCharacters);
           const active = unlocked && child.selectedCharacter === buddy.id;
           return (
             <Pressable key={buddy.id} style={[styles.buddyCard, !unlocked && styles.buddyCardLocked, active && styles.buddyCardActive]} onPress={() => handleBuddyPress(buddy, unlocked)}>
               <View style={[styles.buddyAvatar, { backgroundColor: buddy.tone }]}>
                 <Image source={buddy.image as ImageSourcePropType} style={[styles.buddyImage, !unlocked && styles.lockedBuddyImage]} resizeMode="contain" />
-                {!unlocked ? <View style={styles.buddyLockOverlay}><Ionicons name="lock-closed" size={14} color="#FFFFFF" /><Text style={styles.lockText}>{`${t('level').toUpperCase()} ${buddy.requiredLevel}`}</Text></View> : null}
+                {!unlocked ? <View style={styles.buddyLockOverlay}><Ionicons name="lock-closed" size={14} color="#FFFFFF" /><Text style={styles.lockText}>{buddy.achievementId ? t('goal').toUpperCase() : `${t('level').toUpperCase()} ${buddy.requiredLevel}`}</Text></View> : null}
               </View>
               <Text style={styles.buddyName}>{buddy.title}</Text>
               <Text style={styles.buddySubtitle}>{buddy.subtitle}</Text>
@@ -128,7 +130,7 @@ export const RewardsScreen = () => {
               ) : (
                 <View style={styles.levelLockButton}>
                   <Ionicons name="lock-closed" size={17} color="#8A6A1D" />
-                  <Text style={styles.levelLockText}>{t('chooseLevel').replace('{{level}}', `${buddy.requiredLevel}`)}</Text>
+                  <Text style={styles.levelLockText}>{buddy.unlockDescription ?? t('chooseLevel').replace('{{level}}', `${buddy.requiredLevel}`)}</Text>
                 </View>
               )}
             </Pressable>

@@ -1,38 +1,101 @@
 import React, { useRef, useState } from 'react';
-import { Image, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, ImageSourcePropType, LayoutAnimation, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from '../components/Card';
 import { useApp } from '../context/AppContext';
 import { toothBuddies } from '../data/toothBuddies';
 import { bodyFont, headingFont } from '../utils/kidStyle';
-
 type Stage = 'intro' | 'brushing' | 'flossing' | 'complete';
 type Point = { x: number; y: number };
-type BrushZone = { name: string; instruction: string; x: number; y: number; radius: number; arrow: keyof typeof Ionicons.glyphMap };
-type FoodParticle = Point & { id: number };
+type BrushZone = { name: string; instruction: string; image: ImageSourcePropType; arrow: keyof typeof Ionicons.glyphMap };
+type FlossParticle = Point & { id: number; kind: 'brown' | 'yellow'; size: number };
+type DebrisKind = 'greenGerm' | 'sugarCube' | 'pinkGerm' | 'grayPlaque' | 'purpleCandy';
+type SurfaceDebris = Point & { id: number; kind: DebrisKind; zoneIndex: number; size: number };
 
-const MOUTH_HEIGHT = 390;
+const MOUTH_HEIGHT = 440;
+const MOUTH_IMAGE_ASPECT_RATIO = 4 / 3;
 const BRUSH_REWARD = 20;
+const DEBRIS_BRUSH_PASSES = 3;
+const PLAQUE_FLOSS_PASSES = 3;
 const brushZones: BrushZone[] = [
-  { name: 'Front teeth', instruction: 'Brush gently from side to side', x: 0.5, y: 0.34, radius: 72, arrow: 'swap-horizontal' },
-  { name: 'Inner surfaces', instruction: 'Move the brush up and down', x: 0.5, y: 0.55, radius: 78, arrow: 'swap-vertical' },
-  { name: 'Chewing surfaces', instruction: 'Use short back-and-forth strokes', x: 0.5, y: 0.72, radius: 72, arrow: 'swap-horizontal' },
-  { name: 'Back teeth & molars', instruction: 'Reach both sides of the back teeth', x: 0.5, y: 0.48, radius: 145, arrow: 'git-compare-outline' }
+  { name: 'Front teeth', instruction: 'Brush all highlighted upper and lower front teeth', image: require('../../assets/images/clean-smile-front-teeth.png'), arrow: 'swap-horizontal' },
+  { name: 'Left back teeth', instruction: 'Brush every highlighted tooth on the left side', image: require('../../assets/images/clean-smile-left-back-teeth.png'), arrow: 'swap-horizontal' },
+  { name: 'Right back teeth', instruction: 'Brush every highlighted tooth on the right side', image: require('../../assets/images/clean-smile-right-back-teeth.png'), arrow: 'swap-horizontal' },
+  { name: 'Chewing surfaces', instruction: 'Use short back-and-forth strokes on every highlighted surface', image: require('../../assets/images/clean-smile-chewing-surfaces.png'), arrow: 'swap-horizontal' }
 ];
-const foodParticles: FoodParticle[] = [
-  { id: 1, x: 0.33, y: 0.31 }, { id: 2, x: 0.46, y: 0.27 }, { id: 3, x: 0.59, y: 0.30 },
-  { id: 4, x: 0.37, y: 0.72 }, { id: 5, x: 0.51, y: 0.76 }, { id: 6, x: 0.64, y: 0.70 }
+const cleanMouthImage = require('../../assets/images/clean-smile-clean-mouth.png');
+const flossParticles: FlossParticle[] = [
+  { id: 1, kind: 'brown', x: 0.37, y: 0.32, size: 28 },
+  { id: 2, kind: 'yellow', x: 0.48, y: 0.31, size: 31 },
+  { id: 3, kind: 'brown', x: 0.60, y: 0.32, size: 28 },
+  { id: 4, kind: 'yellow', x: 0.39, y: 0.68, size: 32 },
+  { id: 5, kind: 'brown', x: 0.49, y: 0.70, size: 33 },
+  { id: 6, kind: 'yellow', x: 0.61, y: 0.68, size: 32 },
+  // Additional upper debris
+  { id: 7, kind: 'yellow', x: 0.27, y: 0.41, size: 30 },
+  { id: 8, kind: 'brown', x: 0.72, y: 0.41, size: 30 },
+
+  // Additional lower debris
+  { id: 9, kind: 'brown', x: 0.28, y: 0.60, size: 30 },
+  { id: 10, kind: 'brown', x: 0.73, y: 0.60, size: 30 }
+];
+const debrisImages: Record<DebrisKind, ImageSourcePropType> = {
+  greenGerm: require('../../assets/images/clean-smile-germ-green.png'),
+  sugarCube: require('../../assets/images/clean-smile-sugar-cube.png'),
+  pinkGerm: require('../../assets/images/clean-smile-germ-pink.png'),
+  grayPlaque: require('../../assets/images/clean-smile-plaque-gray.png'),
+  purpleCandy: require('../../assets/images/clean-smile-candy-purple.png')
+};
+const flossDebrisImages: Record<FlossParticle['kind'], ImageSourcePropType> = {
+  brown: require('../../assets/images/clean-smile-floss-plaque-brown.png'),
+  yellow: require('../../assets/images/clean-smile-floss-plaque-yellow.png')
+};
+const surfaceDebris: SurfaceDebris[] = [
+  { id: 1, kind: 'greenGerm', zoneIndex: 0, x: 0.33, y: 0.29, size: 30 },
+  { id: 2, kind: 'sugarCube', zoneIndex: 0, x: 0.43, y: 0.30, size: 30 },
+  { id: 3, kind: 'pinkGerm', zoneIndex: 0, x: 0.54, y: 0.29, size: 30 },
+  { id: 4, kind: 'grayPlaque', zoneIndex: 0, x: 0.64, y: 0.31, size: 30 },
+  { id: 5, kind: 'purpleCandy', zoneIndex: 0, x: 0.35, y: 0.65, size: 32 },
+  { id: 6, kind: 'greenGerm', zoneIndex: 0, x: 0.45, y: 0.67, size: 30 },
+  { id: 7, kind: 'sugarCube', zoneIndex: 0, x: 0.55, y: 0.68, size: 30 },
+  { id: 8, kind: 'pinkGerm', zoneIndex: 0, x: 0.65, y: 0.67, size: 30 },
+  { id: 9, kind: 'grayPlaque', zoneIndex: 1, x: 0.44, y: 0.44, size: 40 },
+  { id: 10, kind: 'greenGerm', zoneIndex: 1, x: 0.63, y: 0.45, size: 38 },
+  { id: 11, kind: 'purpleCandy', zoneIndex: 1, x: 0.78, y: 0.46, size: 45 },
+  { id: 12, kind: 'pinkGerm', zoneIndex: 1, x: 0.45, y: 0.58, size: 35 },
+  { id: 13, kind: 'sugarCube', zoneIndex: 1, x: 0.58, y: 0.58, size: 35 },
+  { id: 14, kind: 'grayPlaque', zoneIndex: 1, x: 0.74, y: 0.58, size: 38 },
+  { id: 15, kind: 'greenGerm', zoneIndex: 2, x: 0.22, y: 0.43, size: 36 },
+  { id: 16, kind: 'sugarCube', zoneIndex: 2, x: 0.39, y: 0.44, size: 35 },
+  { id: 17, kind: 'purpleCandy', zoneIndex: 2, x: 0.56, y: 0.43, size: 42 },
+  { id: 18, kind: 'pinkGerm', zoneIndex: 2, x: 0.22, y: 0.57, size: 36 },
+  { id: 19, kind: 'grayPlaque', zoneIndex: 2, x: 0.39, y: 0.57, size: 38 },
+  { id: 20, kind: 'greenGerm', zoneIndex: 2, x: 0.54, y: 0.57, size: 36 },
+  { id: 21, kind: 'pinkGerm', zoneIndex: 3, x: 0.30, y: 0.28, size: 30 },
+  { id: 22, kind: 'sugarCube', zoneIndex: 3, x: 0.30, y: 0.40, size: 28 },
+  { id: 23, kind: 'grayPlaque', zoneIndex: 3, x: 0.65, y: 0.29, size: 32 },
+  { id: 24, kind: 'purpleCandy', zoneIndex: 3, x: 0.67, y: 0.40, size: 40 },
+  { id: 25, kind: 'greenGerm', zoneIndex: 3, x: 0.30, y: 0.69, size: 31 },
+  { id: 26, kind: 'pinkGerm', zoneIndex: 3, x: 0.30, y: 0.57, size: 31 },
+  { id: 27, kind: 'sugarCube', zoneIndex: 3, x: 0.67, y: 0.58, size: 31 },
+  { id: 28, kind: 'grayPlaque', zoneIndex: 3, x: 0.66, y: 0.69, size: 31 }
 ];
 
 const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y);
+const toBoardPoint = (point: Point, boardWidth: number) => {
+  const imageHeight = boardWidth / MOUTH_IMAGE_ASPECT_RATIO;
+  const imageTop = (MOUTH_HEIGHT - imageHeight) / 2;
+  return { x: point.x * boardWidth, y: imageTop + point.y * imageHeight };
+};
 
-export const CleanMySmileGame = ({ canPlayAgain, onComplete, onReplay }: { canPlayAgain: boolean; onComplete: () => void; onReplay: () => boolean }) => {
+export const CleanMySmileGame = ({ canPlayAgain, onComplete, onReplay }: { canPlayAgain: boolean; onComplete: (durationSeconds: number) => void; onReplay: () => boolean }) => {
   const { child } = useApp();
   const buddy = toothBuddies.find((item) => item.id === child.selectedCharacter) ?? toothBuddies[0];
   const [stage, setStage] = useState<Stage>('intro');
   const [zoneIndex, setZoneIndex] = useState(0);
-  const [zoneProgress, setZoneProgress] = useState(0);
   const [cleanedZones, setCleanedZones] = useState<boolean[]>(brushZones.map(() => false));
+  const [debrisBrushCounts, setDebrisBrushCounts] = useState<Record<number, number>>({});
+  const [plaqueFlossCounts, setPlaqueFlossCounts] = useState<Record<number, number>>({});
   const [removedParticles, setRemovedParticles] = useState<number[]>([]);
   const [toolPosition, setToolPosition] = useState<Point>({ x: 170, y: 310 });
   const [mouthWidth, setMouthWidth] = useState(340);
@@ -41,17 +104,25 @@ export const CleanMySmileGame = ({ canPlayAgain, onComplete, onReplay }: { canPl
   const completedRef = useRef(false);
   const stageRef = useRef<Stage>('intro');
   const zoneIndexRef = useRef(0);
-  const removedParticlesRef = useRef<number[]>([]);
+  const debrisBrushCountsRef = useRef<Record<number, number>>({});
+  const activeDebrisContactsRef = useRef<Set<number>>(new Set());
+  const plaqueFlossCountsRef = useRef<Record<number, number>>({});
+  const activeFlossContactsRef = useRef<Set<number>>(new Set());
   const mouthWidthRef = useRef(340);
+  const startedAtRef = useRef<number | null>(null);
 
   const reset = () => {
-    setStage('brushing');
+    startedAtRef.current = Date.now();
+    setStage('flossing');
     setZoneIndex(0);
-    setZoneProgress(0);
     setCleanedZones(brushZones.map(() => false));
+    setDebrisBrushCounts({});
+    setPlaqueFlossCounts({});
     setRemovedParticles([]);
     setToolPosition({ x: 170, y: 310 });
     lastTouchRef.current = null;
+    activeDebrisContactsRef.current.clear();
+    activeFlossContactsRef.current.clear();
     transitioningRef.current = false;
     completedRef.current = false;
   };
@@ -62,44 +133,70 @@ export const CleanMySmileGame = ({ canPlayAgain, onComplete, onReplay }: { canPl
     const currentZoneIndex = zoneIndexRef.current;
     setCleanedZones((current) => current.map((cleaned, index) => index === currentZoneIndex ? true : cleaned));
     if (currentZoneIndex === brushZones.length - 1) {
-      setStage('flossing');
-      setToolPosition({ x: mouthWidthRef.current / 2, y: 330 });
+      completedRef.current = true;
+      setStage('complete');
+      const durationSeconds = startedAtRef.current === null ? Number.POSITIVE_INFINITY : (Date.now() - startedAtRef.current) / 1000;
+      onComplete(durationSeconds);
     } else {
       zoneIndexRef.current = currentZoneIndex + 1;
       setZoneIndex(zoneIndexRef.current);
-      setZoneProgress(0);
     }
     setTimeout(() => { transitioningRef.current = false; }, 250);
   };
 
   const handleBrushingMove = (point: Point) => {
-    const zone = brushZones[zoneIndexRef.current];
-    const target = { x: zone.x * mouthWidthRef.current, y: zone.y * MOUTH_HEIGHT };
     const previous = lastTouchRef.current;
     lastTouchRef.current = point;
-    if (distance(point, target) > zone.radius || !previous) return;
-    const strokeDistance = distance(point, previous);
-    if (strokeDistance < 3) return;
-    setZoneProgress((current) => {
-      const next = Math.min(100, current + Math.min(10, strokeDistance / 3));
-      if (next >= 100) completeZone();
+    if (!previous || distance(point, previous) < 2) return;
+
+    const currentZoneDebris = surfaceDebris.filter((debris) => debris.zoneIndex === zoneIndexRef.current);
+    const currentContacts = new Set(currentZoneDebris
+      .filter((debris) => (debrisBrushCountsRef.current[debris.id] ?? 0) < DEBRIS_BRUSH_PASSES)
+      .filter((debris) => distance(point, toBoardPoint(debris, mouthWidthRef.current)) < debris.size / 2 + 28)
+      .map((debris) => debris.id));
+    const newContacts = [...currentContacts].filter((id) => !activeDebrisContactsRef.current.has(id));
+    activeDebrisContactsRef.current = currentContacts;
+    if (!newContacts.length) return;
+
+    LayoutAnimation.configureNext({
+      duration: 180,
+      update: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.opacity },
+      delete: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.opacity }
+    });
+    setDebrisBrushCounts((current) => {
+      const next = { ...current };
+      newContacts.forEach((id) => { next[id] = Math.min(DEBRIS_BRUSH_PASSES, (next[id] ?? 0) + 1); });
+      debrisBrushCountsRef.current = next;
+      if (currentZoneDebris.every((debris) => (next[debris.id] ?? 0) >= DEBRIS_BRUSH_PASSES)) completeZone();
       return next;
     });
   };
 
   const handleFlossMove = (point: Point) => {
-    const newlyRemoved = foodParticles
-      .filter((particle) => !removedParticlesRef.current.includes(particle.id))
-      .filter((particle) => distance(point, { x: particle.x * mouthWidthRef.current, y: particle.y * MOUTH_HEIGHT }) < 34)
-      .map((particle) => particle.id);
-    if (!newlyRemoved.length) return;
-    setRemovedParticles((current) => {
-      const next = [...new Set([...current, ...newlyRemoved])];
-      removedParticlesRef.current = next;
-      if (next.length === foodParticles.length && !completedRef.current) {
-        completedRef.current = true;
-        setStage('complete');
-        onComplete();
+    const currentContacts = new Set(flossParticles
+      .filter((particle) => (plaqueFlossCountsRef.current[particle.id] ?? 0) < PLAQUE_FLOSS_PASSES)
+      .filter((particle) => distance(point, toBoardPoint(particle, mouthWidthRef.current)) < particle.size / 2 + 25)
+      .map((particle) => particle.id));
+    const newContacts = [...currentContacts].filter((id) => !activeFlossContactsRef.current.has(id));
+    activeFlossContactsRef.current = currentContacts;
+    if (!newContacts.length) return;
+
+    LayoutAnimation.configureNext({
+      duration: 180,
+      update: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.opacity },
+      delete: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.opacity }
+    });
+    setPlaqueFlossCounts((current) => {
+      const next = { ...current };
+      newContacts.forEach((id) => { next[id] = Math.min(PLAQUE_FLOSS_PASSES, (next[id] ?? 0) + 1); });
+      plaqueFlossCountsRef.current = next;
+      const completedParticles = flossParticles.filter((particle) => (next[particle.id] ?? 0) >= PLAQUE_FLOSS_PASSES).map((particle) => particle.id);
+      setRemovedParticles(completedParticles);
+      if (completedParticles.length === flossParticles.length && !transitioningRef.current) {
+        transitioningRef.current = true;
+        setStage('brushing');
+        setToolPosition({ x: mouthWidthRef.current / 2, y: 330 });
+        setTimeout(() => { transitioningRef.current = false; }, 250);
       }
       return next;
     });
@@ -119,13 +216,14 @@ export const CleanMySmileGame = ({ canPlayAgain, onComplete, onReplay }: { canPl
       if (stageRef.current === 'brushing') handleBrushingMove(point);
       if (stageRef.current === 'flossing') handleFlossMove(point);
     },
-    onPanResponderRelease: () => { lastTouchRef.current = null; },
-    onPanResponderTerminate: () => { lastTouchRef.current = null; }
+    onPanResponderRelease: () => { lastTouchRef.current = null; activeDebrisContactsRef.current.clear(); activeFlossContactsRef.current.clear(); },
+    onPanResponderTerminate: () => { lastTouchRef.current = null; activeDebrisContactsRef.current.clear(); activeFlossContactsRef.current.clear(); }
   })).current;
 
   stageRef.current = stage;
   zoneIndexRef.current = zoneIndex;
-  removedParticlesRef.current = removedParticles;
+  debrisBrushCountsRef.current = debrisBrushCounts;
+  plaqueFlossCountsRef.current = plaqueFlossCounts;
   mouthWidthRef.current = mouthWidth;
 
   const replay = () => {
@@ -140,13 +238,13 @@ export const CleanMySmileGame = ({ canPlayAgain, onComplete, onReplay }: { canPl
           <Image source={buddy.image} style={styles.guideBuddy} resizeMode="contain" />
           <View style={styles.guideBubble}><Text style={[headingFont, styles.guideText]}>Let’s clean every tooth!</Text></View>
         </View>
-        <Image source={require('../../assets/images/brushing-mouth.png')} style={styles.introMouth} resizeMode="contain" />
-        <Text style={[headingFont, styles.introTitle]}>Brush, then floss!</Text>
-        <Text style={[bodyFont, styles.introCopy]}>Drag the toothbrush through each highlighted area. When every surface is clean, use the floss to remove food between the teeth.</Text>
+        <Image source={cleanMouthImage} style={styles.introMouth} resizeMode="contain" />
+        <Text style={[headingFont, styles.introTitle]}>Floss, then brush every tooth!</Text>
+        <Text style={[bodyFont, styles.introNote]}>Remember to brush the inner surfaces of your teeth in real life, too!</Text>
         <View style={styles.stepsRow}>
-          <View style={styles.stepPill}><Text style={styles.stepNumber}>1</Text><Text style={styles.stepText}>BRUSH</Text></View>
+          <View style={styles.stepPill}><Text style={styles.stepNumber}>1</Text><Text style={styles.stepText}>FLOSS</Text></View>
           <Ionicons name="arrow-forward" size={19} color="#698086" />
-          <View style={styles.stepPill}><Text style={styles.stepNumber}>2</Text><Text style={styles.stepText}>FLOSS</Text></View>
+          <View style={styles.stepPill}><Text style={styles.stepNumber}>2</Text><Text style={styles.stepText}>BRUSH</Text></View>
         </View>
         <Pressable accessibilityRole="button" onPress={reset} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={[headingFont, styles.primaryButtonText]}>START CLEANING</Text></Pressable>
       </Card>
@@ -156,25 +254,33 @@ export const CleanMySmileGame = ({ canPlayAgain, onComplete, onReplay }: { canPl
   if (stage === 'complete') {
     return (
       <Card style={styles.completeCard}>
-        <Text style={styles.completeEmoji}>✨🦷✨</Text>
-        <Text style={[headingFont, styles.completeTitle]}>Sparkling clean!</Text>
-        <Text style={[bodyFont, styles.completeCopy]}>You cleaned every tooth surface and flossed away all the food particles.</Text>
+        <Image source={cleanMouthImage} style={styles.completeMouthImage} resizeMode="contain" />
+        <Text style={[headingFont, styles.completeTitle]}>Sparkling Clean!</Text>
+        <Text style={[bodyFont, styles.completeCopy]}>You flossed away all the plaque characters and brushed every highlighted area.</Text>
         <View style={styles.finalScore}><Text style={[headingFont, styles.finalScoreLabel]}>FINAL SCORE</Text><Text style={[headingFont, styles.finalScoreValue]}>100 / 100</Text></View>
-        <Text style={[headingFont, styles.rewardText]}>+{BRUSH_REWARD} SMILE STARS</Text>
-        {canPlayAgain ? <Pressable accessibilityRole="button" onPress={replay} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={[headingFont, styles.primaryButtonText]}>CLEAN AGAIN</Text></Pressable> : <Text style={[bodyFont, styles.noTriesText]}>All cleaning games are finished today. Come back tomorrow!</Text>}
+        <View style={styles.rewardPill}>
+          <Image source={require('../../assets/images/game-clean-reward-star.png')} style={styles.rewardStarImage} resizeMode="contain" />
+          <Text style={[headingFont, styles.rewardValue]}>+{BRUSH_REWARD}</Text>
+        </View>
+        {canPlayAgain ? <Pressable accessibilityRole="button" onPress={replay} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={[headingFont, styles.primaryButtonText]}>CLEAN AGAIN</Text></Pressable> : null}
       </Card>
     );
   }
 
   const zone = brushZones[zoneIndex];
-  const overallProgress = stage === 'brushing'
-    ? (cleanedZones.filter(Boolean).length * 100 + zoneProgress) / (brushZones.length + 1)
-    : (brushZones.length * 100 + removedParticles.length / foodParticles.length * 100) / (brushZones.length + 1);
+  const currentZoneDebris = surfaceDebris.filter((debris) => debris.zoneIndex === zoneIndex);
+  const cleanedCurrentZoneDebris = currentZoneDebris.filter((debris) => (debrisBrushCounts[debris.id] ?? 0) >= DEBRIS_BRUSH_PASSES).length;
+  const currentZoneBrushPasses = currentZoneDebris.reduce((total, debris) => total + (debrisBrushCounts[debris.id] ?? 0), 0);
+  const zoneProgress = currentZoneDebris.length ? currentZoneBrushPasses / (currentZoneDebris.length * DEBRIS_BRUSH_PASSES) * 100 : 0;
+  const flossProgress = flossParticles.reduce((total, particle) => total + (plaqueFlossCounts[particle.id] ?? 0), 0) / (flossParticles.length * PLAQUE_FLOSS_PASSES) * 100;
+  const overallProgress = stage === 'flossing'
+    ? flossProgress / (brushZones.length + 1)
+    : (100 + cleanedZones.filter(Boolean).length * 100 + zoneProgress) / (brushZones.length + 1);
 
   return (
     <View style={styles.gameWrap}>
       <View style={styles.stageHeader}>
-        <View style={styles.stagePill}><Ionicons name={stage === 'brushing' ? 'brush' : 'git-branch-outline'} size={19} color="#6552EB" /><Text style={[headingFont, styles.stagePillText]}>{stage === 'brushing' ? `BRUSHING ${zoneIndex + 1}/4` : 'FLOSSING'}</Text></View>
+        <View style={styles.stagePill}><Ionicons name={stage === 'brushing' ? 'brush' : 'git-branch-outline'} size={19} color="#6552EB" /><Text style={styles.stagePillText}>{stage === 'brushing' ? `BRUSHING ${zoneIndex + 1}/${brushZones.length}` : 'FLOSSING'}</Text></View>
         <Text style={[headingFont, styles.progressPercent]}>{Math.round(overallProgress)}%</Text>
       </View>
       <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${overallProgress}%` as `${number}%` }]} /></View>
@@ -182,7 +288,7 @@ export const CleanMySmileGame = ({ canPlayAgain, onComplete, onReplay }: { canPl
         <Ionicons name={stage === 'brushing' ? zone.arrow : 'swap-vertical'} size={28} color="#6552EB" />
         <View style={styles.instructionCopy}>
           <Text style={[headingFont, styles.instructionTitle]}>{stage === 'brushing' ? zone.name : 'Floss between the teeth'}</Text>
-          <Text style={[bodyFont, styles.instructionText]}>{stage === 'brushing' ? zone.instruction : `Remove every food particle • ${removedParticles.length}/${foodParticles.length}`}</Text>
+          <Text style={[bodyFont, styles.instructionText]}>{stage === 'brushing' ? `${zone.instruction} • ${cleanedCurrentZoneDebris}/${currentZoneDebris.length}` : `Remove every plaque spot • ${removedParticles.length}/${flossParticles.length}`}</Text>
         </View>
       </View>
       <View
@@ -194,25 +300,49 @@ export const CleanMySmileGame = ({ canPlayAgain, onComplete, onReplay }: { canPl
         }}
         style={styles.mouthBoard}
       >
-        <Image source={require('../../assets/images/brushing-mouth.png')} style={styles.mouthImage} resizeMode="contain" />
-        {stage === 'brushing' ? (
-          <View style={[styles.highlight, { height: zone.radius * 1.25, left: zone.x * mouthWidth - zone.radius * 0.75, top: zone.y * MOUTH_HEIGHT - zone.radius * 0.62, width: zone.radius * 1.5 }]}>
-            <Ionicons name={zone.arrow} size={31} color="#FFFFFF" />
-          </View>
-        ) : foodParticles.map((particle) => removedParticles.includes(particle.id) ? null : (
-          <View key={particle.id} style={[styles.foodParticle, { left: particle.x * mouthWidth - 11, top: particle.y * MOUTH_HEIGHT - 11 }]}><Ionicons name="ellipse" size={13} color="#F28C28" /></View>
-        ))}
+        <Image source={stage === 'brushing' ? zone.image : cleanMouthImage} style={styles.mouthImage} resizeMode="contain" />
+        {stage === 'brushing' ? surfaceDebris.map((debris) => {
+          const brushCount = debrisBrushCounts[debris.id] ?? 0;
+          if (debris.zoneIndex !== zoneIndex || brushCount >= DEBRIS_BRUSH_PASSES) return null;
+          const position = toBoardPoint(debris, mouthWidth);
+          const weakening = brushCount / DEBRIS_BRUSH_PASSES;
+          return (
+            <Image
+              key={debris.id}
+              resizeMode="contain"
+              source={debrisImages[debris.kind]}
+              style={[
+                styles.surfaceDebris,
+                {
+                  height: debris.size,
+                  left: position.x - debris.size / 2,
+                  opacity: 1 - weakening * 0.7,
+                  top: position.y - debris.size / 2,
+                  transform: [{ scale: 1 - weakening * 0.28 }],
+                  width: debris.size
+                }
+              ]}
+            />
+          );
+        }) : null}
+        {stage === 'flossing' ? flossParticles.map((particle) => {
+          const flossCount = plaqueFlossCounts[particle.id] ?? 0;
+          if (flossCount >= PLAQUE_FLOSS_PASSES) return null;
+          const position = toBoardPoint(particle, mouthWidth);
+          const weakening = flossCount / PLAQUE_FLOSS_PASSES;
+          return <Image key={particle.id} source={flossDebrisImages[particle.kind]} resizeMode="contain" style={[styles.flossDebris, { height: particle.size, left: position.x - particle.size / 2, opacity: 1 - weakening * 0.7, top: position.y - particle.size / 2, transform: [{ scale: 1 - weakening * 0.28 }], width: particle.size }]} />;
+        }) : null}
         {stage === 'brushing' ? (
           <View pointerEvents="none" style={[styles.toothbrushTool, { left: toolPosition.x - 25, top: toolPosition.y - 63 }]}>
             <Image source={require('../../assets/images/custom-home-toothbrush.png')} style={styles.toothbrushImage} resizeMode="contain" />
           </View>
         ) : (
-          <View pointerEvents="none" style={[styles.flossTool, { left: toolPosition.x - 28, top: toolPosition.y - 31 }]}>
-            <View style={styles.flossHandleLeft} /><View style={styles.flossThread} /><View style={styles.flossHandleRight} />
+          <View pointerEvents="none" style={[styles.flossTool, { left: toolPosition.x - 39, top: toolPosition.y - 26 }]}>
+            <Image source={require('../../assets/images/clean-smile-dental-floss-tool.png')} style={styles.flossToolImage} resizeMode="contain" />
           </View>
         )}
       </View>
-      <Text style={[bodyFont, styles.dragHint]}>Keep your finger on the screen and follow the highlighted guidance.</Text>
+      <Text style={[bodyFont, styles.dragHint]}>{stage === 'brushing' ? 'Keep your finger on the screen and brush away every germ and plaque character.' : 'Drag the floss across every brown and yellow plaque character.'}</Text>
     </View>
   );
 };
@@ -222,12 +352,12 @@ const styles = StyleSheet.create({
   guideRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'center' },
   guideBuddy: { height: 85, width: 85 },
   guideBubble: { backgroundColor: '#E9FFF8', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 10 },
-  guideText: { color: '#28535A', fontSize: 15 },
+  guideText: { color: '#28535A', fontSize: 17 },
   introMouth: { height: 180, width: '100%' },
-  introTitle: { color: '#41438F', fontSize: 28, lineHeight: 35, textAlign: 'center' },
-  introCopy: { color: '#5B7379', fontSize: 15, lineHeight: 22, textAlign: 'center' },
+  introTitle: { color: '#41438F', fontSize: 28, lineHeight: 40, textAlign: 'center' },
+  introNote: { color: '#5B7379', fontSize: 14, lineHeight: 20, textAlign: 'center' },
   stepsRow: { alignItems: 'center', flexDirection: 'row', gap: 9 },
-  stepPill: { alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 999, elevation: 2, flexDirection: 'row', gap: 6, paddingHorizontal: 12, paddingVertical: 8 },
+  stepPill: { alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 999, elevation: 2, flexDirection: 'row', gap: 6, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 15, marginTop: 10 },
   stepNumber: { backgroundColor: '#6552EB', borderRadius: 12, color: '#FFFFFF', fontFamily: 'Fredoka_700Bold', overflow: 'hidden', paddingHorizontal: 7, paddingVertical: 2 },
   stepText: { color: '#536B73', fontFamily: 'Fredoka_700Bold', fontSize: 12 },
   primaryButton: { alignItems: 'center', alignSelf: 'stretch', backgroundColor: '#6552EB', borderRadius: 999, justifyContent: 'center', minHeight: 52 },
@@ -235,33 +365,33 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.76, transform: [{ scale: 0.98 }] },
   gameWrap: { gap: 11 },
   stageHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
-  stagePill: { alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 999, elevation: 2, flexDirection: 'row', gap: 6, paddingHorizontal: 13, paddingVertical: 8 },
-  stagePillText: { color: '#41438F', fontSize: 13 },
+  stagePill: { alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 999, elevation: 2, flexDirection: 'row', gap: 6, paddingHorizontal: 13, paddingVertical: 8, margin: 7 },
+  stagePillText: { color: '#41438F', fontSize: 13, fontFamily: 'Fredoka_700Bold' },
   progressPercent: { color: '#168954', fontSize: 17 },
   progressTrack: { backgroundColor: '#DDE9EA', borderRadius: 999, height: 10, overflow: 'hidden' },
   progressFill: { backgroundColor: '#35C5B4', borderRadius: 999, height: '100%' },
-  instructionCard: { alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 20, elevation: 2, flexDirection: 'row', gap: 11, padding: 12 },
+  instructionCard: { alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 20, elevation: 2, flexDirection: 'row', gap: 11, padding: 12, fontFamily: 'Fredoka_700Bold' },
   instructionCopy: { flex: 1 },
   instructionTitle: { color: '#314950', fontSize: 17, lineHeight: 21 },
-  instructionText: { color: '#6A8085', fontSize: 13, lineHeight: 18 },
+  instructionText: { color: '#6A8085', fontSize: 12, lineHeight: 20, fontFamily: 'Fredoka_700Bold' },
   mouthBoard: { backgroundColor: '#F7FFFC', borderColor: '#FFFFFF', borderRadius: 28, borderWidth: 5, elevation: 5, height: MOUTH_HEIGHT, overflow: 'hidden', position: 'relative' },
   mouthImage: { height: '100%', width: '100%' },
-  highlight: { alignItems: 'center', backgroundColor: 'rgba(53,197,180,0.50)', borderColor: '#FFFFFF', borderRadius: 999, borderWidth: 3, justifyContent: 'center', position: 'absolute' },
-  toothbrushTool: { height: 100, position: 'absolute', transform: [{ rotate: '-25deg' }], width: 50 },
-  toothbrushImage: { height: 100, width: 50 },
-  foodParticle: { alignItems: 'center', backgroundColor: '#FFF1C9', borderColor: '#FFFFFF', borderRadius: 11, borderWidth: 2, height: 22, justifyContent: 'center', position: 'absolute', width: 22 },
-  flossTool: { alignItems: 'flex-start', flexDirection: 'row', height: 62, position: 'absolute', width: 56 },
-  flossHandleLeft: { backgroundColor: '#35C5B4', borderRadius: 5, height: 48, width: 9 },
-  flossThread: { borderBottomColor: '#FFFFFF', borderBottomWidth: 3, height: 38, width: 38 },
-  flossHandleRight: { backgroundColor: '#35C5B4', borderRadius: 5, height: 48, width: 9 },
+  surfaceDebris: { position: 'absolute', zIndex: 2 },
+  toothbrushTool: { height: 130, position: 'absolute', transform: [{ rotate: '-80deg' }], width: 90 },
+  toothbrushImage: { height: 130, width: 90 },
+  flossDebris: { position: 'absolute', zIndex: 3 },
+  flossTool: { height: 100, position: 'absolute', width: 78, zIndex: 5 },
+  flossToolImage: { height: 100, width: 78 },
   dragHint: { color: '#607A80', fontSize: 13, lineHeight: 18, textAlign: 'center' },
   completeCard: { alignItems: 'center', backgroundColor: '#F7FFFC', borderRadius: 28, gap: 13, padding: 24 },
-  completeEmoji: { fontSize: 54 },
-  completeTitle: { color: '#41438F', fontSize: 29, lineHeight: 36 },
-  completeCopy: { color: '#5B7379', fontSize: 15, lineHeight: 22, textAlign: 'center' },
-  finalScore: { alignItems: 'center', backgroundColor: '#E9FFF8', borderRadius: 22, minWidth: 180, padding: 14 },
+  completeMouthImage: { height: 210, width: '100%' },
+  completeTitle: { color: '#41438F', fontSize: 29, lineHeight: 40 },
+  completeCopy: { color: '#5B7379', fontSize: 15, lineHeight: 24, textAlign: 'center', fontFamily: 'Fredoka_700Bold', margin: 8, marginBottom: 10  },
+  finalScore: { alignItems: 'center', backgroundColor: '#E9FFF8', borderRadius: 22, minWidth: 180, padding: 14, marginBottom:10 },
   finalScoreLabel: { color: '#168954', fontSize: 12, letterSpacing: 1 },
   finalScoreValue: { color: '#173D3B', fontSize: 25 },
-  rewardText: { color: '#F29A00', fontSize: 19 },
+  rewardPill: { alignItems: 'center', backgroundColor: '#E8ECEB', borderRadius: 999, flexDirection: 'row', gap: 5, paddingHorizontal: 13, paddingVertical: 7 },
+  rewardStarImage: { height: 34, width: 34 },
+  rewardValue: { color: '#171B1B', fontSize: 20, lineHeight: 25 },
   noTriesText: { color: '#C8447C', fontSize: 15, lineHeight: 21, textAlign: 'center' }
 });

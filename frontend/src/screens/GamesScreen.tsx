@@ -70,8 +70,8 @@ const gameIcons: Record<string, IconSpec> = {
   'brush-sequence': { icon: 'brush', color: '#FF9F1C', background: '#FFF4D8' },
   'clean-tooth': { image: require('../../assets/images/game-rescue-icon.png'), color: '#2BBBAD', background: '#FFFFFF' },
   'smile-quiz': { image: require('../../assets/images/game-genius-icon.png'), color: '#7B61FF', background: '#FFFFFF' },
-  'smile-race': { image: require('../../assets/images/game-rescue-tooth.png'), color: '#6552EB', background: '#E9FFF9' },
-  'clean-my-smile': { image: require('../../assets/images/custom-home-toothbrush.png'), color: '#35A99A', background: '#E9FFF9' }
+  'smile-race': { image: require('../../assets/images/game-smile-race-icon.png'), color: '#6552EB', background: '#E9FFF9' },
+  'clean-my-smile': { image: require('../../assets/images/game-clean-my-smile-icon.png'), color: '#35A99A', background: '#E9FFF9' }
 };
 
 const targetSets: Record<string, TargetSpec[]> = {
@@ -671,7 +671,7 @@ export const GamesScreen = () => {
     return (
       <Screen gradientBackground showDecorations={false}>
         <GameHeader game={{ ...selectedGame, titleKey: t(selectedGame.titleKey) }} onBack={leaveGame} />
-        {selectedGame.id === 'plaque-pop' ? <StrongToothGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onWin={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'food-sorter' ? <HealthyPicksGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onWin={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'sugar-detective' ? <SugarDetectiveGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onComplete={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'clean-tooth' ? <CleanToothGame cleaned={cleaned} canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onClean={(index) => setCleaned((items) => items.map((item, itemIndex) => itemIndex === index ? true : item))} onReset={() => setCleaned(cleanItems.map(() => false))} onComplete={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'smile-quiz' ? <SmileQuizGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onComplete={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'smile-race' ? <SmileRaceGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onComplete={(smileStars) => awardGame(selectedGame.id, smileStars)} /> : selectedGame.id === 'clean-my-smile' ? <CleanMySmileGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onComplete={() => awardGame(selectedGame.id)} /> : <GenericGame game={selectedGame} score={score} onScore={() => setScore((value) => value + 1)} />}
+        {selectedGame.id === 'plaque-pop' ? <StrongToothGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onWin={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'food-sorter' ? <HealthyPicksGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onWin={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'sugar-detective' ? <SugarDetectiveGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onComplete={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'clean-tooth' ? <CleanToothGame cleaned={cleaned} canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onClean={(index) => setCleaned((items) => items.map((item, itemIndex) => itemIndex === index ? true : item))} onReset={() => setCleaned(cleanItems.map(() => false))} onComplete={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'smile-quiz' ? <SmileQuizGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onComplete={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'smile-race' ? <SmileRaceGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onComplete={(smileStars, raceScore) => awardGame(selectedGame.id, smileStars, { score: raceScore })} /> : selectedGame.id === 'clean-my-smile' ? <CleanMySmileGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onComplete={(durationSeconds) => awardGame(selectedGame.id, undefined, { durationSeconds })} /> : <GenericGame game={selectedGame} score={score} onScore={() => setScore((value) => value + 1)} />}
       </Screen>
     );
   }
@@ -686,7 +686,7 @@ export const GamesScreen = () => {
         return (
           <Card key={game.id} style={styles.listCard}>
             <View style={styles.row}>
-              <IconBubble spec={icon} size={game.id === 'clean-tooth' ? 86 : 64} />
+              <IconBubble spec={icon} size={game.id === 'smile-race' ? 78 : game.id === 'clean-my-smile' ? 80 : 64} />
               <View style={styles.copy}>
                 <Text style={styles.gameCardTitle}>{t(game.titleKey)}</Text>
                 <Text style={[bodyFont, styles.gameCardDescription]}>
@@ -696,12 +696,12 @@ export const GamesScreen = () => {
               </View>
             </View>
             <AppButton
-              label={left > 0 ? (game.id === 'smile-race' ? `${t('play')} • SCORE REWARDS` : `${t('play')} +${game.points}`) : t('limitReachedShort')}
+              label={left > 0 ? t('play') : t('limitReachedShort')}
               onPress={() => openGame(game)}
               variant={left > 0 ? 'primary' : 'secondary'}
               style={[
                 styles.gamePlayButton,
-                left <= 0 ? { backgroundColor: '#F8A5C2', borderColor: '#C8447C' } : undefined
+                left <= 0 ? styles.gamePlayButtonLimited : undefined
               ]}
             />
           </Card>
@@ -733,9 +733,8 @@ const styles = StyleSheet.create({
   },
   gameCardDescription: {
     color: '#867f78c6',
-    fontSize: 16,
-    fontStyle: 'italic',
-    fontWeight: '700',
+    fontSize: 14,
+    fontFamily: 'Fredoka_700Bold',
     lineHeight: 23
   },
   gamePlayButton: {
@@ -746,6 +745,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#1D9BF0',
     borderColor: '#1D9BF0',
     marginBottom: 10
+  },
+  gamePlayButtonLimited: {
+    backgroundColor: '#F8A5C2',
+    borderColor: '#C8447C',
+    elevation: 0,
+    shadowOpacity: 0
   },
   limit: { fontWeight: '900', fontSize: 15 },
   gameHeader: { gap: 12 },

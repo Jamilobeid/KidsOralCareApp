@@ -1,4 +1,5 @@
 import {
+  browserLocalPersistence,
   createUserWithEmailAndPassword,
   deleteUser,
   EmailAuthProvider,
@@ -6,14 +7,18 @@ import {
   reload,
   sendEmailVerification,
   sendPasswordResetEmail,
+  inMemoryPersistence,
+  setPersistence,
   signInWithEmailAndPassword,
   signOut,
   User
 } from 'firebase/auth';
+import { Platform } from 'react-native';
 import { collection, doc, getDoc, getDocs, increment, limit, orderBy, query, runTransaction, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { AdminUserSummary, ChildProfile, LeaderboardEntry, ThemeName, UserRole } from '../types/app';
 import { emptyWeeklyBrushes, getLocalDateKey, getLocalWeekKey, normalizeWeeklyBrushes } from '../utils/calendar';
 import { auth, db, isFirebaseConfigured } from './firebase';
+import { nativeAuthPersistence } from './firebaseAuthPersistence';
 
 const publicEnvironment = process.env as Record<string, string | undefined>;
 
@@ -114,8 +119,10 @@ const normalizedCalendarFields = (data: Partial<ChildDocument>, now = new Date()
   };
 };
 
-export const signInFirebaseUser = async (email: string, password: string) => {
+export const signInFirebaseUser = async (email: string, password: string, rememberMe = false) => {
   if (!auth) throw new Error('Firebase Auth is not configured.');
+  const persistentStorage = Platform.OS === 'web' ? browserLocalPersistence : nativeAuthPersistence;
+  await setPersistence(auth, rememberMe && persistentStorage ? persistentStorage : inMemoryPersistence);
   return signInWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
 };
 

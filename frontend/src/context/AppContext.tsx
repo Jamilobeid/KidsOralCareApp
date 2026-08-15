@@ -17,11 +17,16 @@ import { subscribeToInternetConnection } from '../services/connectivity';
 import { createSyncActionId, loadOfflineProgress, loadSyncQueue, saveOfflineProgress, saveSyncQueue, SyncAction } from '../services/offlineProgress';
 import { getLevelForPoints } from '../utils/levels';
 import { isToothBuddyUnlocked, toothBuddies } from '../data/toothBuddies';
+import { setBackgroundMusicPlayback } from '../services/backgroundMusic';
+import { playLevelUpSound } from '../services/levelUpSound';
+import { playBadgeUnlockSound } from '../services/badgeUnlockSound';
+import { playToothBuddyUnlockSound } from '../services/toothBuddyUnlockSound';
 
 const initialLanguage = getInitialLanguage();
 applyTextDirection(initialLanguage);
 const LEGACY_REMEMBERED_PARENT_EMAIL_KEY = 'kidsOralCare:rememberedChild';
 const PREFERRED_LANGUAGE_KEY = 'eSmile:preferredLanguage';
+const BACKGROUND_MUSIC_ENABLED_KEY = 'eSmile:backgroundMusicEnabled';
 const CHARACTER_LEVEL_REQUIREMENTS: Record<string, number> = {
   Toothy: 1,
   'Tooth Fairy': 2,
@@ -39,22 +44,15 @@ const CHARACTER_LEVEL_REQUIREMENTS: Record<string, number> = {
 };
 type BrushingPeriod = 'morning' | 'evening';
 const BRUSHING_REWARD_POINTS = 5;
+const MORNING_WINDOW_START_MINUTES = 6 * 60;
 const NOON_MINUTES = 12 * 60;
 const EVENING_WINDOW_START_MINUTES = 18 * 60;
 
-const parseTimeMinutes = (time: string) => {
-  const [hours, minutes] = time.split(':').map(Number);
-  if (!Number.isInteger(hours) || !Number.isInteger(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
-  return hours * 60 + minutes;
-};
-
-const getRewardPeriod = (brushedAt: Date, reminders: ReminderSettings): BrushingPeriod | null => {
+const getRewardPeriod = (brushedAt: Date): BrushingPeriod | null => {
   const brushedMinutes = brushedAt.getHours() * 60 + brushedAt.getMinutes();
-  const morningReminderMinutes = parseTimeMinutes(reminders.morning);
-  const eveningReminderMinutes = parseTimeMinutes(reminders.evening);
 
-  if (morningReminderMinutes !== null && brushedMinutes >= morningReminderMinutes && brushedMinutes < NOON_MINUTES) return 'morning';
-  if (eveningReminderMinutes !== null && brushedMinutes >= EVENING_WINDOW_START_MINUTES && brushedMinutes <= eveningReminderMinutes) return 'evening';
+  if (brushedMinutes >= MORNING_WINDOW_START_MINUTES && brushedMinutes < NOON_MINUTES) return 'morning';
+  if (brushedMinutes >= EVENING_WINDOW_START_MINUTES) return 'evening';
   return null;
 };
 type PendingBrushingReminder = {
@@ -63,6 +61,12 @@ type PendingBrushingReminder = {
 };
 
 const REMINDER_FOLLOW_WINDOW_MS = 60 * 60 * 1000;
+
+const hasNewToothBuddyUnlock = (current: ChildProfile, next: ChildProfile) =>
+  toothBuddies.some((buddy) =>
+    !isToothBuddyUnlocked(buddy, current.level, current.unlockedCharacters)
+    && isToothBuddyUnlocked(buddy, next.level, next.unlockedCharacters)
+  );
 
 type AppContextValue = {
   screen: RootScreen;
@@ -83,7 +87,7 @@ type AppContextValue = {
   refreshAdminUsers: () => Promise<void>;
   authMode: AuthMode;
   setAuthMode: (mode: AuthMode) => void;
-  signInChild: (parentEmail: string, password: string) => Promise<void>;
+  signInChild: (parentEmail: string, password: string, rememberMe?: boolean) => Promise<void>;
   registerParent: (password: string, parentEmail: string) => Promise<void>;
   verificationPending: boolean;
   verificationEmailMasked: string;
@@ -102,11 +106,15 @@ type AppContextValue = {
   setReminders: (settings: ReminderSettings) => void;
   saveReminders: (options?: { morningEnabled?: boolean; eveningEnabled?: boolean }) => Promise<void>;
   sendTestReminder: () => Promise<void>;
+  backgroundMusicEnabled: boolean;
+  setBackgroundMusicEnabled: (enabled: boolean) => void;
   brushingCountToday: number;
+  brushedPeriodsToday: BrushingPeriod[];
+  openedReminderPeriod: BrushingPeriod | null;
   completeBrushing: (startedAt?: Date) => boolean;
   gamePlays: Record<string, number>;
   recordGamePlay: (gameId: string) => boolean;
-  awardGame: (gameId: string, pointsOverride?: number) => void;
+  awardGame: (gameId: string, pointsOverride?: number, result?: { score?: number; durationSeconds?: number }) => void;
   challenges: Challenge[];
   updateAvatar: (avatar: string) => void;
   updateTheme: (theme: ThemeName) => void;
@@ -138,8 +146,11 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [consentPending, setConsentPending] = useState(false);
   const [childSetupPending, setChildSetupPending] = useState(false);
   const [reminders, setReminders] = useState<ReminderSettings>({ morning: '07:30', evening: '19:30' });
+  const [backgroundMusicEnabled, setBackgroundMusicEnabledState] = useState(true);
+  const [backgroundMusicPreferenceLoaded, setBackgroundMusicPreferenceLoaded] = useState(false);
   const [brushingCountToday, setBrushingCountToday] = useState(0);
   const [brushedPeriodsToday, setBrushedPeriodsToday] = useState<BrushingPeriod[]>([]);
+  const [openedReminderPeriod, setOpenedReminderPeriod] = useState<BrushingPeriod | null>(null);
   const [gamePlays, setGamePlays] = useState<Record<string, number>>({});
   const [challenges, setChallenges] = useState<Challenge[]>(initialChallenges.map((challenge) => ({ ...challenge, progress: 0 })));
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
@@ -154,10 +165,55 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const usageStartedAtRef = React.useRef<number | null>(null);
   const dailyDateKeyRef = React.useRef(getLocalDateKey());
   const weekKeyRef = React.useRef(getLocalWeekKey());
+  const brushedPeriodsTodayRef = React.useRef<BrushingPeriod[]>([]);
 
   const pendingReminderRef = React.useRef<PendingBrushingReminder | null>(null);
 
   React.useEffect(() => subscribeToInternetConnection(setIsOnline), []);
+
+  React.useEffect(() => {
+    let active = true;
+    void AsyncStorage.getItem(BACKGROUND_MUSIC_ENABLED_KEY)
+      .then((savedValue) => {
+        if (!active) return;
+        setBackgroundMusicEnabledState(savedValue !== 'false');
+        setBackgroundMusicPreferenceLoaded(true);
+      })
+      .catch((error) => {
+        console.warn('Could not restore the background music preference:', error);
+        if (active) setBackgroundMusicPreferenceLoaded(true);
+      });
+    return () => { active = false; };
+  }, []);
+
+  React.useEffect(() => {
+    if (!backgroundMusicPreferenceLoaded) return;
+    void setBackgroundMusicPlayback(backgroundMusicEnabled);
+  }, [backgroundMusicEnabled, backgroundMusicPreferenceLoaded]);
+
+  const setBackgroundMusicEnabled = (enabled: boolean) => {
+    setBackgroundMusicEnabledState(enabled);
+    void AsyncStorage.setItem(BACKGROUND_MUSIC_ENABLED_KEY, String(enabled))
+      .catch((error) => console.warn('Could not save the background music preference:', error));
+  };
+
+  const showRewardMessage = async (title: string, message: string) => {
+    if (backgroundMusicEnabled) await setBackgroundMusicPlayback(false);
+    Alert.alert(title, message, [{
+      text: 'OK',
+      onPress: () => {
+        if (backgroundMusicEnabled) void setBackgroundMusicPlayback(true);
+      }
+    }]);
+  };
+
+  React.useEffect(() => {
+    brushedPeriodsTodayRef.current = brushedPeriodsToday;
+  }, [brushedPeriodsToday]);
+
+  React.useEffect(() => {
+    if (screen !== 'brushing') setOpenedReminderPeriod(null);
+  }, [screen]);
 
   const enqueueSyncAction = async (userId: string, action: SyncAction) => {
     queueWriteRef.current = queueWriteRef.current.then(async () => {
@@ -249,6 +305,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
     if (dayChanged) {
       dailyDateKeyRef.current = nextDailyDateKey;
+      brushedPeriodsTodayRef.current = [];
       setBrushingCountToday(0);
       setBrushedPeriodsToday([]);
       setGamePlays({});
@@ -292,6 +349,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     const notificationDate = notification.date;
     const age = Date.now() - notificationDate;
 
+    resetCalendarStateIfNeeded();
+    setOpenedReminderPeriod(data.period);
     setScreen('brushing');
 
     if ( age < 0 || age > REMINDER_FOLLOW_WINDOW_MS) {
@@ -416,6 +475,9 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       if (nextPoints >= 500) earnedBadges.add('star-captain');
       if (nextPoints >= 1000) earnedBadges.add('galaxy-of-smiles');
       const nextChild = { ...current, points: nextPoints, badges: [...earnedBadges], level: getLevelForPoints(nextPoints) };
+      if (nextChild.level > current.level) void playLevelUpSound();
+      if (earnedBadges.size > current.badges.length) void playBadgeUnlockSound();
+      if (hasNewToothBuddyUnlock(current, nextChild)) void playToothBuddyUnlockSound();
       if (currentUserId && canUseFirebase) {
         const action: SyncAction = { id: createSyncActionId(), type: 'profile', child: nextChild };
         if (isOnline) void performSyncAction(currentUserId, action).catch(() => enqueueSyncAction(currentUserId, action));
@@ -584,7 +646,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  const signInChild = async (parentEmail: string, password: string) => {
+  const signInChild = async (parentEmail: string, password: string, rememberMe = false) => {
     if (!parentEmail.trim() || !password.trim()) {
       Alert.alert(t('missingLogin'));
       return;
@@ -592,7 +654,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     const cleanEmail = parentEmail.trim().toLowerCase();
     if (canUseFirebase) {
       try {
-        const credential = await signInFirebaseUser(cleanEmail, password);
+        const credential = await signInFirebaseUser(cleanEmail, password, rememberMe);
         const nextRole = await getFirebaseUserRole(credential.user);
         if (nextRole === 'user' && !credential.user.emailVerified) {
           setVerificationPending(true);
@@ -864,7 +926,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const completeBrushing = (startedAt = new Date()) => {
     const now = new Date();
     const { dayChanged } = resetCalendarStateIfNeeded(now);
-    const period = getRewardPeriod(startedAt, reminders);
+    const period = getRewardPeriod(startedAt);
     const completedPeriods = dayChanged ? [] : brushedPeriodsToday;
 
     if (!period || completedPeriods.includes(period)) return false;
@@ -896,6 +958,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       const nextPeriods = [...currentPeriods, period];
+      brushedPeriodsTodayRef.current = nextPeriods;
       const nextCount = Math.min(nextPeriods.length, 2);
       setBrushingCountToday(nextCount);
       setChallenges((items) => items.map((challenge) => {
@@ -939,6 +1002,9 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
           lastBrushingAt: now.toISOString(),
           weeklyBrushes
         };
+        if (nextChild.level > current.level) void playLevelUpSound();
+        if (earnedBadges.size > current.badges.length) void playBadgeUnlockSound();
+        if (hasNewToothBuddyUnlock(current, nextChild)) void playToothBuddyUnlockSound();
         if (currentUserId && canUseFirebase) {
           const action: SyncAction = { id: createSyncActionId(), type: 'brushing', period, nextCount, weeklyBrushes, child: nextChild };
           if (isOnline) void performSyncAction(currentUserId, action).catch(() => enqueueSyncAction(currentUserId, action));
@@ -970,11 +1036,48 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     return true;
   };
 
-  const awardGame = (gameId: string, pointsOverride?: number) => {
+  const awardGame = (gameId: string, pointsOverride?: number, result?: { score?: number; durationSeconds?: number }) => {
     const game = games.find((item) => item.id === gameId);
     if (!game) return;
     setChallenges((items) => items.map((challenge) => challenge.id === 'weekly-games' ? { ...challenge, progress: Math.min(challenge.progress + 1, challenge.target) } : challenge));
-    addPoints(pointsOverride ?? game.points);
+    const rewardMessages: string[] = [];
+    if (gameId === 'smile-race' && (result?.score ?? 0) >= 35 && !child.badges.includes('turbo-tooth')) rewardMessages.push('Amazing racing! You earned the Turbo Tooth badge!');
+    if (gameId === 'smile-race' && (result?.score ?? 0) >= 50 && !child.unlockedCharacters.includes('Zoomy')) rewardMessages.push('Incredible! Zoomy raced into your Tooth Buddy team!');
+    if (gameId === 'clean-my-smile' && (result?.durationSeconds ?? Number.POSITIVE_INFINITY) <= 120 && !child.badges.includes('sparkle-sprinter')) rewardMessages.push('Super cleaning! You earned the Sparkle Sprinter badge!');
+    if (gameId === 'clean-my-smile' && (result?.durationSeconds ?? Number.POSITIVE_INFINITY) <= 90 && !child.unlockedCharacters.includes('Floss Flash')) rewardMessages.push('Fantastic! Floss Flash joined your Tooth Buddy team!');
+    setChild((current) => {
+      const nextPoints = current.points + (pointsOverride ?? game.points);
+      const earnedBadges = new Set(current.badges);
+      const unlockedCharacters = new Set(current.unlockedCharacters);
+      if (nextPoints >= 50) earnedBadges.add('pocket-of-stars');
+      if (nextPoints >= 100) earnedBadges.add('star-saver');
+      if (nextPoints >= 250) earnedBadges.add('star-explorer');
+      if (nextPoints >= 500) earnedBadges.add('star-captain');
+      if (nextPoints >= 1000) earnedBadges.add('galaxy-of-smiles');
+      if (gameId === 'smile-race' && (result?.score ?? 0) >= 35 && !earnedBadges.has('turbo-tooth')) {
+        earnedBadges.add('turbo-tooth');
+      }
+      if (gameId === 'smile-race' && (result?.score ?? 0) >= 50 && !unlockedCharacters.has('Zoomy')) {
+        unlockedCharacters.add('Zoomy');
+      }
+      if (gameId === 'clean-my-smile' && (result?.durationSeconds ?? Number.POSITIVE_INFINITY) <= 120 && !earnedBadges.has('sparkle-sprinter')) {
+        earnedBadges.add('sparkle-sprinter');
+      }
+      if (gameId === 'clean-my-smile' && (result?.durationSeconds ?? Number.POSITIVE_INFINITY) <= 90 && !unlockedCharacters.has('Floss Flash')) {
+        unlockedCharacters.add('Floss Flash');
+      }
+      const nextChild = { ...current, points: nextPoints, badges: [...earnedBadges], unlockedCharacters: [...unlockedCharacters], level: getLevelForPoints(nextPoints) };
+      if (nextChild.level > current.level) void playLevelUpSound();
+      if (earnedBadges.size > current.badges.length) void playBadgeUnlockSound();
+      if (hasNewToothBuddyUnlock(current, nextChild)) void playToothBuddyUnlockSound();
+      if (currentUserId && canUseFirebase) {
+        const action: SyncAction = { id: createSyncActionId(), type: 'profile', child: nextChild };
+        if (isOnline) void performSyncAction(currentUserId, action).catch(() => enqueueSyncAction(currentUserId, action));
+        else void enqueueSyncAction(currentUserId, action);
+      }
+      return nextChild;
+    });
+    if (rewardMessages.length > 0) setTimeout(() => void showRewardMessage('New rewards unlocked!', rewardMessages.join('\n\n')), 0);
     
     if (currentUserId && canUseFirebase) {
       const action: SyncAction = { id: createSyncActionId(), type: 'activityCompletion' };
@@ -1039,12 +1142,18 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   });
   const chooseCharacter = (character: string) => setChild((current) => {
     const buddy = toothBuddies.find((item) => item.id === character);
-    if (!buddy || !isToothBuddyUnlocked(buddy, current.level)) return current;
-    return {
+    if (!buddy || !isToothBuddyUnlocked(buddy, current.level, current.unlockedCharacters)) return current;
+    const nextChild = {
       ...current,
       unlockedCharacters: current.unlockedCharacters.includes(character) ? current.unlockedCharacters : [...current.unlockedCharacters, character],
       selectedCharacter: character
     };
+    if (currentUserId && canUseFirebase) {
+      const action: SyncAction = { id: createSyncActionId(), type: 'profile', child: nextChild };
+      if (isOnline) void performSyncAction(currentUserId, action).catch(() => enqueueSyncAction(currentUserId, action));
+      else void enqueueSyncAction(currentUserId, action);
+    }
+    return nextChild;
   });
   const unlockCharacter = (character: string) => {
     const requiredLevel = CHARACTER_LEVEL_REQUIREMENTS[character] ?? 1;
@@ -1087,8 +1196,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const adminUsers = canUseFirebase && role === 'admin' ? firebaseAdminUsers : demoDashboardUsers;
 
   const value = useMemo<AppContextValue>(() => ({
-    screen, setScreen, language, setLanguage, t, isRtl, child, username, role, isAdmin: role === 'admin', adminUsers, adminUsersStatus, isFirebaseReady: canUseFirebase, isOnline, pendingSyncCount, refreshAdminUsers, authMode, setAuthMode, signInChild, registerParent, verificationPending, verificationEmailMasked, consentPending, childSetupPending, checkParentEmailVerification, submitParentalConsent, completeChildSetup, resendVerificationEmail, cancelVerification, requestPasswordReset, signOutAccount, deleteAccountAndData, theme: themes[child.theme], reminders, setReminders, saveReminders, sendTestReminder, brushingCountToday, completeBrushing, gamePlays, recordGamePlay, awardGame, challenges, updateAvatar, updateTheme, chooseCharacter, unlockCharacter, games, leaderboard, leaderboardStatus, leaderboardParticipating, refreshLeaderboard, leaveLeaderboard, avatarOptions
-  }), [screen, language, child, username, role, adminUsers, authMode, verificationPending, verificationEmailMasked, consentPending, childSetupPending, reminders, brushingCountToday, gamePlays, challenges, brushedPeriodsToday, leaderboard, leaderboardStatus, leaderboardParticipating, isOnline, pendingSyncCount]);
+    screen, setScreen, language, setLanguage, t, isRtl, child, username, role, isAdmin: role === 'admin', adminUsers, adminUsersStatus, isFirebaseReady: canUseFirebase, isOnline, pendingSyncCount, refreshAdminUsers, authMode, setAuthMode, signInChild, registerParent, verificationPending, verificationEmailMasked, consentPending, childSetupPending, checkParentEmailVerification, submitParentalConsent, completeChildSetup, resendVerificationEmail, cancelVerification, requestPasswordReset, signOutAccount, deleteAccountAndData, theme: themes[child.theme], reminders, setReminders, saveReminders, sendTestReminder, backgroundMusicEnabled, setBackgroundMusicEnabled, brushingCountToday, brushedPeriodsToday, openedReminderPeriod, completeBrushing, gamePlays, recordGamePlay, awardGame, challenges, updateAvatar, updateTheme, chooseCharacter, unlockCharacter, games, leaderboard, leaderboardStatus, leaderboardParticipating, refreshLeaderboard, leaveLeaderboard, avatarOptions
+  }), [screen, language, child, username, role, adminUsers, authMode, verificationPending, verificationEmailMasked, consentPending, childSetupPending, reminders, backgroundMusicEnabled, brushingCountToday, gamePlays, challenges, brushedPeriodsToday, openedReminderPeriod, leaderboard, leaderboardStatus, leaderboardParticipating, isOnline, pendingSyncCount]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

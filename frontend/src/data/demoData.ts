@@ -24,8 +24,8 @@ export const ageTips: Record<AgeGroup, string[]> = {
 };
 
 export const games: Game[] = [
-  { id: 'smile-race', titleKey: 'gameSmileRace', descriptionKey: 'gameSmileRaceDesc', category: 'oral', ageGroups: ['3-5', '6-8', '9-12'], dailyLimit: 3, points: 20 },
-  { id: 'clean-my-smile', titleKey: 'gameCleanMySmile', descriptionKey: 'gameCleanMySmileDesc', category: 'oral', ageGroups: ['3-5', '6-8', '9-12'], dailyLimit: 2, points: 20 }
+  { id: 'smile-race', titleKey: 'gameSmileRace', descriptionKey: 'gameSmileRaceDesc', category: 'oral', ageGroups: ['3-5', '6-8', '9-12'], dailyLimit: 10, points: 20 },
+  { id: 'clean-my-smile', titleKey: 'gameCleanMySmile', descriptionKey: 'gameCleanMySmileDesc', category: 'oral', ageGroups: ['3-5', '6-8', '9-12'], dailyLimit: 10, points: 20 }
 ];
 
 export const challenges: Challenge[] = [

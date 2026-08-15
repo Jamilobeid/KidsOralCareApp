@@ -51,7 +51,9 @@ export const scheduleDailyReminder = async (
   return Notifications.scheduleNotificationAsync({
     content: {
       title: label,
-      body: 'Time to brush for a healthy smile!',
+      body: period === 'evening'
+        ? 'Time to brush for a healthy smile! Don\'t forget to floss.'
+        : 'Time to brush for a healthy smile!',
       sound: 'default',
       data: {
         type: 'brushing-reminder',

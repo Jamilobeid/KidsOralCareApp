@@ -7,6 +7,8 @@ export type ToothBuddy = {
   image: ImageSourcePropType;
   requiredLevel: number;
   tone: string;
+  achievementId?: string;
+  unlockDescription?: string;
 };
 
 export const toothBuddies: ToothBuddy[] = [
@@ -22,7 +24,10 @@ export const toothBuddies: ToothBuddy[] = [
   { id: 'Captain Enamel', title: 'Captain Enamel', subtitle: 'The strong smile protector', image: require('../../assets/images/rewards-buddy-captain-enamel-custom.png'), requiredLevel: 7, tone: '#EAF2FF' },
   { id: 'Luna Smile', title: 'Luna Smile', subtitle: 'The bedtime brushing buddy', image: require('../../assets/images/rewards-buddy-luna-smile-custom.png'), requiredLevel: 8, tone: '#F2ECFF' },
   { id: 'Professor Pearl', title: 'Professor Pearl', subtitle: 'The smile scientist', image: require('../../assets/images/rewards-buddy-professor-pearl-custom.png'), requiredLevel: 9, tone: '#EEF7FF' },
-  { id: 'King Sparkle', title: 'King Sparkle', subtitle: 'The legendary smile', image: require('../../assets/images/rewards-buddy-king-sparkle-custom.png'), requiredLevel: 10, tone: '#FFF6D9' }
+  { id: 'King Sparkle', title: 'King Sparkle', subtitle: 'The legendary smile', image: require('../../assets/images/rewards-buddy-king-sparkle-custom.png'), requiredLevel: 10, tone: '#FFF6D9' },
+  { id: 'Zoomy', title: 'Zoomy', subtitle: 'The Smile Race speedster', image: require('../../assets/images/rewards-buddy-zoomy.png'), requiredLevel: 1, tone: '#E7F1FF', achievementId: 'smile-race-50', unlockDescription: 'Score 50 or more in Smile Race' },
+  { id: 'Floss Flash', title: 'Floss Flash', subtitle: 'The super-fast flossing hero', image: require('../../assets/images/rewards-buddy-floss-flash.png'), requiredLevel: 1, tone: '#EAFBE4', achievementId: 'clean-my-smile-90', unlockDescription: 'Complete Clean My Smile in 1 minute 30 seconds or less' }
 ];
 
-export const isToothBuddyUnlocked = (buddy: ToothBuddy, level: number) => level >= buddy.requiredLevel;
+export const isToothBuddyUnlocked = (buddy: ToothBuddy, level: number, unlockedCharacters: string[] = []) =>
+  buddy.achievementId ? unlockedCharacters.includes(buddy.id) : level >= buddy.requiredLevel;

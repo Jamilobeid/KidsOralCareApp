@@ -29,6 +29,7 @@ export const AuthScreen = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [age, setAge] = useState(6);
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [parentLegalName, setParentLegalName] = useState('');
   const [consentSignature, setConsentSignature] = useState('');
@@ -83,7 +84,7 @@ export const AuthScreen = () => {
             <Ionicons name="mail-unread-outline" size={72} color="#6155F6" />
             <Text style={[headingFont, styles.recoveryTitle]}>{t('verifyParentEmail')}</Text>
             <Text style={[bodyFont, styles.recoveryMessage]}>
-              {`We sent a Firebase verification link to ${verificationEmailMasked}. Open the link, then come back and continue.`}
+              {`We sent a verification link to ${verificationEmailMasked}. Open the link, then come back and continue.`}
             </Text>
             <Pressable accessibilityRole="button" onPress={checkParentEmailVerification} style={styles.loginButton}>
               <Text style={[headingFont, styles.loginButtonText]}>{t('emailVerifiedButton')}</Text>
@@ -347,6 +348,13 @@ export const AuthScreen = () => {
               </View>
             </View>
 
+            <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: rememberMe }} onPress={() => setRememberMe((value) => !value)} style={styles.rememberRow}>
+              <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+                {rememberMe ? <Ionicons name="checkmark" size={14} color="#FFFFFF" /> : null}
+              </View>
+              <Text style={[bodyFont, styles.rememberText]}>{t('rememberMe')}</Text>
+            </Pressable>
+
             <Pressable accessibilityRole="button" onPress={() => setShowForgotPassword(true)} style={styles.forgotButton}>
               <Text style={[bodyFont, styles.forgotButtonText]}>{t('forgotPassword')}</Text>
             </Pressable>
@@ -354,7 +362,7 @@ export const AuthScreen = () => {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t('login')}
-              onPress={() => signInChild(parentEmail, password)}
+              onPress={() => signInChild(parentEmail, password, rememberMe)}
               style={({ pressed }) => [styles.loginButton, pressed && styles.loginButtonPressed]}
             >
               <Text style={[headingFont, styles.loginButtonText]}>{t('login')}</Text>
@@ -480,6 +488,19 @@ const styles = StyleSheet.create({
   checkboxChecked: {
     backgroundColor: '#6155F6'
   },
+  rememberRow: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    gap: 9,
+    marginTop: -18,
+    paddingVertical: 8
+  },
+  rememberText: {
+    color: '#41438F',
+    fontSize: 14,
+    fontWeight: '800'
+  },
   loginButton: {
     alignItems: 'center',
     alignSelf: 'center',
@@ -505,7 +526,7 @@ const styles = StyleSheet.create({
   },
   forgotButton: {
     alignSelf: 'center',
-    marginTop: 17,
+    marginTop: 5,
     padding: 6
   },
   forgotButtonText: {
@@ -652,7 +673,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.14,
     shadowRadius: 5,
     width: 260,
-    elevation: 3
+    elevation: 3,
+    marginBottom: 20
   },
   signupCreateButtonText: {
     color: '#FFFFFF',

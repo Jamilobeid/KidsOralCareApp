@@ -85,12 +85,11 @@ const languageOptions: { code: LanguageCode; label: string; emoji: string; color
 ];
 
 export const SettingsScreen = () => {
-  const { t, child, isAdmin, language, setLanguage, setScreen } = useApp();
+  const { t, child, isAdmin, language, setLanguage, setScreen, backgroundMusicEnabled, setBackgroundMusicEnabled } = useApp();
   const [morningReminder, setMorningReminder] = useState(true);
   const [eveningReminder, setEveningReminder] = useState(true);
   const [dailyChallenges, setDailyChallenges] = useState(true);
   const [soundEffects, setSoundEffects] = useState(true);
-  const [backgroundMusic, setBackgroundMusic] = useState(false);
   const [voiceInstructions, setVoiceInstructions] = useState(true);
   const floatAnim = useRef(new Animated.Value(0)).current;
 
@@ -150,7 +149,7 @@ export const SettingsScreen = () => {
 
       <SettingsCard imageSource={artwork.sounds} fallbackIcon="musical-notes" color="#FF6B9A" background="#FFEAF3" title={t('soundsMusic')} subtitle={t('soundsMusicSubtitle')}>
         <ToggleRow imageSource={artwork.effects} fallbackIcon="sparkles" label={t('soundEffects')} value={soundEffects} onValueChange={setSoundEffects} color="#FFB703" background="#FFF4D6" />
-        <ToggleRow imageSource={artwork.music} fallbackIcon="radio" label={t('backgroundMusic')} value={backgroundMusic} onValueChange={setBackgroundMusic} color="#7B61FF" background="#F0ECFF" />
+        <ToggleRow imageSource={artwork.music} fallbackIcon="radio" label={t('backgroundMusic')} value={backgroundMusicEnabled} onValueChange={setBackgroundMusicEnabled} color="#7B61FF" background="#F0ECFF" />
         <ToggleRow imageSource={artwork.voice} fallbackIcon="mic" label={t('voiceInstructions')} value={voiceInstructions} onValueChange={setVoiceInstructions} color="#2EC4B6" background="#E6FFF8" />
       </SettingsCard>
 
