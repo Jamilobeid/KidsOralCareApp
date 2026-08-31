@@ -1,4 +1,4 @@
-package com.example.kidsoralcare
+package com.jamilobeid.esmile
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

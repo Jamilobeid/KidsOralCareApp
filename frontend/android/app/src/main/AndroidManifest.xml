@@ -29,7 +29,7 @@
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="kidsoralcare"/>
-        <data android:scheme="com.example.kidsoralcare"/>
+        <data android:scheme="com.jamilobeid.esmile"/>
         <data android:scheme="exp+kids-oral-care"/>
       </intent-filter>
     </activity>

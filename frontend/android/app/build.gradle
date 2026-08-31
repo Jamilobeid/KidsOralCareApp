@@ -86,9 +86,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.example.kidsoralcare'
+    namespace 'com.jamilobeid.esmile'
     defaultConfig {
-        applicationId 'com.example.kidsoralcare'
+        applicationId 'com.jamilobeid.esmile'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

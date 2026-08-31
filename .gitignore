@@ -8,6 +8,8 @@ web-build/
 coverage/
 *firebase-adminsdk*.json
 service-account*.json
+google-services.json
+GoogleService-Info.plist
 
 # Local Netlify folder
 .netlify

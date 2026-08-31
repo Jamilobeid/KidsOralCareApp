@@ -17,14 +17,14 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.example.kidsoralcare",
+      "bundleIdentifier": "com.jamilobeid.esmile",
       "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.example.kidsoralcare",
+      "package": "com.jamilobeid.esmile",
       "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#7BDFF2"

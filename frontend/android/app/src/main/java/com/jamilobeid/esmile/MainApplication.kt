@@ -1,4 +1,4 @@
-package com.example.kidsoralcare
+package com.jamilobeid.esmile
 
 import android.app.Application
 import android.content.res.Configuration
