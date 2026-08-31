@@ -8,12 +8,12 @@ import { nativeAuthPersistence } from './firebaseAuthPersistence';
 const publicEnvironment = process.env as Record<string, string | undefined>;
 
 const firebaseConfig = {
-  apiKey: publicEnvironment.EXPO_PUBLIC_FIREBASE_API_KEY || 'AIzaSyBPquTZO6oICq7O2eQvM-wOz6pvREK81qA',
-  authDomain: publicEnvironment.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN || 'kids-oral-care.firebaseapp.com',
-  projectId: publicEnvironment.EXPO_PUBLIC_FIREBASE_PROJECT_ID || 'kids-oral-care',
-  storageBucket: publicEnvironment.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET || 'kids-oral-care.firebasestorage.app',
-  messagingSenderId: publicEnvironment.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '587130937499',
-  appId: publicEnvironment.EXPO_PUBLIC_FIREBASE_APP_ID || '1:587130937499:web:2b22c69d3868892cd8e63e'
+  apiKey: publicEnvironment.EXPO_PUBLIC_FIREBASE_API_KEY?.trim(),
+  authDomain: publicEnvironment.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN?.trim(),
+  projectId: publicEnvironment.EXPO_PUBLIC_FIREBASE_PROJECT_ID?.trim(),
+  storageBucket: publicEnvironment.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET?.trim(),
+  messagingSenderId: publicEnvironment.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID?.trim(),
+  appId: publicEnvironment.EXPO_PUBLIC_FIREBASE_APP_ID?.trim()
 };
 
 export const isFirebaseConfigured = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId);
