@@ -221,6 +221,10 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    match /securityRateLimits/{rateLimitId} {
+      allow read, write: if false;
+    }
+
     match /parentalConsents/{parentId} {
       allow get: if isParent(parentId) || isAdmin();
       allow create: if isParent(parentId)

@@ -3,6 +3,8 @@ const { getAuth } = require('firebase-admin/auth');
 const { FieldValue, getFirestore, Timestamp } = require('firebase-admin/firestore');
 
 const RECENT_AUTH_WINDOW_SECONDS = 5 * 60;
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+const RATE_LIMIT_MAX_ATTEMPTS = 5;
 const JSON_HEADERS = {
   'Access-Control-Allow-Headers': 'Authorization, Content-Type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -12,9 +14,9 @@ const JSON_HEADERS = {
   'X-Content-Type-Options': 'nosniff'
 };
 
-const response = (statusCode, body) => ({
+const response = (statusCode, body, additionalHeaders = {}) => ({
   statusCode,
-  headers: JSON_HEADERS,
+  headers: { ...JSON_HEADERS, ...additionalHeaders },
   body: JSON.stringify(body)
 });
 
@@ -40,6 +42,43 @@ const deleteQueryResults = async (db, query) => {
     await batch.commit();
     deleted += snapshot.size;
   }
+};
+
+const consumeRateLimit = async (db, uid) => {
+  const rateLimitRef = db.doc(`securityRateLimits/accountDeletion_${uid}`);
+  const nowMs = Date.now();
+
+  return db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(rateLimitRef);
+    const data = snapshot.data();
+    const windowStartedAtMs = data?.windowStartedAt?.toMillis?.() ?? 0;
+    const windowExpiresAtMs = windowStartedAtMs + RATE_LIMIT_WINDOW_MS;
+
+    if (!snapshot.exists || nowMs >= windowExpiresAtMs) {
+      transaction.set(rateLimitRef, {
+        operation: 'account-deletion',
+        attempts: 1,
+        windowStartedAt: Timestamp.fromMillis(nowMs),
+        lastAttemptAt: Timestamp.fromMillis(nowMs)
+      });
+      return { allowed: true, rateLimitRef };
+    }
+
+    const attempts = Number(data?.attempts ?? 0);
+    if (attempts >= RATE_LIMIT_MAX_ATTEMPTS) {
+      return {
+        allowed: false,
+        rateLimitRef,
+        retryAfterSeconds: Math.max(1, Math.ceil((windowExpiresAtMs - nowMs) / 1000))
+      };
+    }
+
+    transaction.update(rateLimitRef, {
+      attempts: attempts + 1,
+      lastAttemptAt: Timestamp.fromMillis(nowMs)
+    });
+    return { allowed: true, rateLimitRef };
+  });
 };
 
 exports.handler = async (event) => {
@@ -82,6 +121,15 @@ exports.handler = async (event) => {
     }
 
     const uid = decodedToken.uid;
+    const rateLimit = await consumeRateLimit(db, uid);
+    if (!rateLimit.allowed) {
+      return response(
+        429,
+        { error: 'too-many-requests' },
+        { 'Retry-After': String(rateLimit.retryAfterSeconds) }
+      );
+    }
+
     const jobRef = db.doc(`deletionJobs/${uid}`);
     const parentRef = db.doc(`parents/${uid}`);
     const childRef = db.doc(`children/${uid}`);
@@ -149,6 +197,9 @@ exports.handler = async (event) => {
         completedAt: FieldValue.serverTimestamp()
       });
       await jobRef.delete();
+      await rateLimit.rateLimitRef.delete().catch((cleanupError) => {
+        console.error('Could not remove completed deletion rate limit:', cleanupError);
+      });
 
       return response(200, { deleted: true });
     } catch (error) {

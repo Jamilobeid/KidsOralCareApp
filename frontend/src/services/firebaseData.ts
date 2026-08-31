@@ -301,6 +301,7 @@ export const requestFirebaseAccountDeletion = async (password: string) => {
         'admin-account-protected': 'Administrator accounts cannot be deleted from this screen.',
         'parent-email-not-verified': 'Verify the parent email before deleting the account.',
         'recent-authentication-required': 'Enter the parent password again and retry.',
+        'too-many-requests': 'Too many deletion attempts. Wait a few minutes and try again.',
         'deletion-failed-retry-safe': 'Deletion was not completed. The secure request was recorded and can be retried.'
       };
       throw new Error(messages[result.error ?? ''] ?? 'The secure server could not complete account deletion.');
