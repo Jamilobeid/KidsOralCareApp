@@ -3,6 +3,7 @@
 dist/
 web-build/
 .env
+.env.*
 .firebase/
 coverage/
 *firebase-adminsdk*.json
