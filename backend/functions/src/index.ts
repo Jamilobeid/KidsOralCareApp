@@ -1,4 +1,4 @@
-import * as admin from 'firebase-admin';
+﻿import * as admin from 'firebase-admin';
 import { createHash, randomBytes } from 'crypto';
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { HttpsError, onCall, onRequest } from 'firebase-functions/v2/https';
@@ -17,7 +17,8 @@ const callableOptions = {
 const normalizeUsername = (value: string) =>
   value.trim().toLowerCase().replace(/[^a-z0-9._-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'user';
 const normalizeEmail = (value: string) => value.trim().toLowerCase();
-const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+const isValidEmail = (value: string) => value.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+const isValidUsernameInput = (value: string) => value.length >= 3 && value.length <= 64;
 const hashToken = (value: string) => createHash('sha256').update(value).digest('hex');
 const maskEmail = (email: string) => {
   const [name, domain] = email.split('@');
@@ -45,15 +46,18 @@ const sendVerification = async (uid: string, recoveryEmail: string) => {
   }, { merge: true });
   await queueEmail(
     recoveryEmail,
-    'Verify your eSmile parent email',
+    'Verify your Kids Oral Care parent email',
     `Verify the parent email for this account: ${link}\n\nThis link expires in 24 hours.`,
-    `<h2>Verify the parent email</h2><p>Tap the button below to unlock the eSmile account.</p><p><a href="${link}" style="background:#6155F6;color:#fff;padding:12px 20px;border-radius:22px;text-decoration:none;font-weight:bold">Verify parent email</a></p><p>This link expires in 24 hours.</p>`
+    `<h2>Verify the parent email</h2><p>Tap the button below to unlock the Kids Oral Care account.</p><p><a href="${link}" style="background:#6155F6;color:#fff;padding:12px 20px;border-radius:22px;text-decoration:none;font-weight:bold">Verify parent email</a></p><p>This link expires in 24 hours.</p>`
   );
 };
 
 export const startParentEmailVerification = onCall(callableOptions, async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in is required.');
-  const recoveryEmail = normalizeEmail(String(request.data?.recoveryEmail ?? ''));
+  if (!request.data || typeof request.data.recoveryEmail !== 'string') {
+    throw new HttpsError('invalid-argument', 'Enter a valid parent email.');
+  }
+  const recoveryEmail = normalizeEmail(request.data.recoveryEmail);
   if (!isValidEmail(recoveryEmail)) throw new HttpsError('invalid-argument', 'Enter a valid parent email.');
   const userDoc = await db.doc(`users/${request.auth.uid}`).get();
   if (!userDoc.exists || userDoc.data()?.role !== 'user') {
@@ -85,7 +89,7 @@ export const getParentEmailVerificationStatus = onCall(callableOptions, async (r
 
 export const verifyParentEmail = onRequest(async (request, response) => {
   const token = String(request.query.token ?? '');
-  if (!token) {
+  if (!/^[a-f0-9]{64}$/.test(token)) {
     response.status(400).send('This verification link is invalid.');
     return;
   }
@@ -107,13 +111,15 @@ export const verifyParentEmail = onRequest(async (request, response) => {
     verificationExpiresAt: admin.firestore.FieldValue.delete(),
     updatedAt: admin.firestore.FieldValue.serverTimestamp()
   });
-  response.status(200).send('<!doctype html><html><meta name="viewport" content="width=device-width"><body style="font-family:Arial;text-align:center;padding:48px;color:#17324D"><h1 style="color:#41438F">Email verified!</h1><p>Return to eSmile and tap “I’ve verified my email”.</p></body></html>');
+  response.status(200).send('<!doctype html><html><meta name="viewport" content="width=device-width"><body style="font-family:Arial;text-align:center;padding:48px;color:#17324D"><h1 style="color:#41438F">Email verified!</h1><p>Return to Kids Oral Care and tap “I’ve verified my email”.</p></body></html>');
 });
 
 export const requestPasswordReset = onCall(callableOptions, async (request) => {
-  const username = normalizeUsername(String(request.data?.username ?? ''));
-  const recoveryEmail = normalizeEmail(String(request.data?.recoveryEmail ?? ''));
   const genericResult = { accepted: true };
+  if (!request.data || typeof request.data.username !== 'string' || typeof request.data.recoveryEmail !== 'string') return genericResult;
+  if (!isValidUsernameInput(request.data.username)) return genericResult;
+  const username = normalizeUsername(request.data.username);
+  const recoveryEmail = normalizeEmail(request.data.recoveryEmail);
   if (!username || !isValidEmail(recoveryEmail)) return genericResult;
   const users = await db.collection('users').where('normalizedUsername', '==', username).limit(1).get();
   if (users.empty) return genericResult;
@@ -126,7 +132,7 @@ export const requestPasswordReset = onCall(callableOptions, async (request) => {
   const resetLink = await admin.auth().generatePasswordResetLink(`${username}@${AUTH_DOMAIN}`);
   await queueEmail(
     recoveryEmail,
-    'Reset your eSmile password',
+    'Reset your Kids Oral Care password',
     `Choose a new password using this secure link: ${resetLink}`,
     `<h2>Reset the account password</h2><p><a href="${resetLink}" style="background:#6155F6;color:#fff;padding:12px 20px;border-radius:22px;text-decoration:none;font-weight:bold">Choose a new password</a></p><p>If you did not request this, you can ignore this email.</p>`
   );

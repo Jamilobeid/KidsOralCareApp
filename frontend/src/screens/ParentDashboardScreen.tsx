@@ -4,6 +4,7 @@ import { Image, ImageSourcePropType, Pressable, StyleSheet, Switch, Text, View }
 import { Screen } from '../components/Screen';
 import { useApp } from '../context/AppContext';
 import { toothBuddies } from '../data/toothBuddies';
+import { getDisplayUsername } from '../utils/displayUsername';
 
 const artwork = {
   smileStars: require('../../assets/images/parent-smile-star.png'),
@@ -76,7 +77,7 @@ export const ParentDashboardScreen = () => {
             </View>
           </View>
           <View style={styles.profileCopy}>
-            <Text style={styles.dashboardTitle}>{t('childDashboard').replace('{{name}}', child.nickname)}</Text>
+            <Text style={styles.dashboardTitle}>{t('childDashboard').replace('{{name}}', getDisplayUsername(child.nickname))}</Text>
             <Text style={styles.encouragement}>{t('keepGreatWork')}</Text>
           </View>
         </View>
@@ -259,8 +260,8 @@ const styles = StyleSheet.create({
   profileRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   buddyWrap: { width: 98, height: 98, borderRadius: 32, backgroundColor: '#F4F8FF', alignItems: 'center', justifyContent: 'center', shadowColor: '#17324D', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
   buddyImage: { width: 100, height: 100 },
-  levelBadge: { position: 'absolute', bottom: -10, borderRadius: 999, backgroundColor: '#FFD21F', paddingHorizontal: 12, paddingVertical: 5 },
-  levelBadgeText: { color: '#17324D', fontFamily: 'Fredoka_700Bold', fontSize: 13, lineHeight: 16 },
+  levelBadge: { position: 'absolute', bottom: -10, borderRadius: 999, backgroundColor: '#FFD21F', paddingHorizontal: 8, paddingVertical: 5 },
+  levelBadgeText: { color: '#17324D', fontFamily: 'Fredoka_700Bold', fontSize: 10, lineHeight: 13 },
   profileCopy: { flex: 1 },
   dashboardTitle: { color: '#17324D', fontFamily: 'Fredoka_700Bold', fontSize: 29, lineHeight: 35 },
   encouragement: { color: '#627693', fontFamily: 'Fredoka_700Bold', fontSize: 16, lineHeight: 22 },

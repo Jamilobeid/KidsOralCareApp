@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Alert, Image, ImageSourcePropType, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '../components/Screen';
 import { useApp } from '../context/AppContext';
-import { isToothBuddyUnlocked, toothBuddies } from '../data/toothBuddies';
+import { isToothBuddyUnlocked, toothBuddies, toothBuddySubtitleKeys, toothBuddyUnlockKeys } from '../data/toothBuddies';
 import { rewardFont } from '../utils/kidStyle';
 import { getLevelForPoints } from '../utils/levels';
 
@@ -73,7 +73,7 @@ export const RewardsScreen = () => {
       chooseCharacter(buddy.id);
       return;
     }
-    Alert.alert(buddy.achievementId ? t('locked') : t('keepLeveling'), buddy.unlockDescription ?? t('unlocksAtLevel').replace('{{name}}', buddy.title).replace('{{level}}', `${buddy.requiredLevel}`));
+    Alert.alert(buddy.achievementId ? t('locked') : t('keepLeveling'), buddy.achievementId ? t(toothBuddyUnlockKeys[buddy.id]) : t('unlocksAtLevel').replace('{{name}}', buddy.title).replace('{{level}}', `${buddy.requiredLevel}`));
   };
 
   return (
@@ -122,7 +122,7 @@ export const RewardsScreen = () => {
                 {!unlocked ? <View style={styles.buddyLockOverlay}><Ionicons name="lock-closed" size={14} color="#FFFFFF" /><Text style={styles.lockText}>{buddy.achievementId ? t('goal').toUpperCase() : `${t('level').toUpperCase()} ${buddy.requiredLevel}`}</Text></View> : null}
               </View>
               <Text style={styles.buddyName}>{buddy.title}</Text>
-              <Text style={styles.buddySubtitle}>{buddy.subtitle}</Text>
+              <Text style={styles.buddySubtitle}>{t(toothBuddySubtitleKeys[buddy.id])}</Text>
               {unlocked ? (
                 <View style={[styles.chooseButton, active && styles.activeButton]}>
                   <Text style={[styles.chooseText, active && styles.activeText]}>{active ? t('active') : t('choose')}</Text>
@@ -130,7 +130,7 @@ export const RewardsScreen = () => {
               ) : (
                 <View style={styles.levelLockButton}>
                   <Ionicons name="lock-closed" size={17} color="#8A6A1D" />
-                  <Text style={styles.levelLockText}>{buddy.unlockDescription ?? t('chooseLevel').replace('{{level}}', `${buddy.requiredLevel}`)}</Text>
+                  <Text style={styles.levelLockText}>{buddy.achievementId ? t(toothBuddyUnlockKeys[buddy.id]) : t('chooseLevel').replace('{{level}}', `${buddy.requiredLevel}`)}</Text>
                 </View>
               )}
             </Pressable>

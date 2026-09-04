@@ -1,0 +1,22 @@
+{
+  "hosting": {
+    "site": "kids-oral-care-edu-videos",
+    "public": "firebase-educational-videos",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "headers": [
+      {
+        "source": "**/*.mp4",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      }
+    ]
+  }
+}

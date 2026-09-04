@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Image, ImageSourcePropType, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Image, ImageSourcePropType, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from '../components/Card';
 import { toothBuddies } from '../data/toothBuddies';
@@ -14,6 +14,8 @@ const TICK_MS = 80;
 const ARENA_HEIGHT = 470;
 const PLAYER_Y = ARENA_HEIGHT - 94;
 const ITEM_REMOVAL_Y = ARENA_HEIGHT - 10;
+const raceBackgroundA = require('../../assets/images/smile-race-background-a.png');
+const raceBackgroundB = require('../../assets/images/smile-race-background-b.png');
 const getSmileStarReward = (score: number) => {
   if (score >= 35) return 20;
   if (score >= 20) return 15;
@@ -47,8 +49,8 @@ const raceAssets: RaceAsset[] = [
 const healthyAssetIndexes = raceAssets.flatMap((asset, index) => asset.healthy ? [index] : []);
 const unhealthyAssetIndexes = raceAssets.flatMap((asset, index) => asset.healthy ? [] : [index]);
 
-export const SmileRaceGame = ({ canPlayAgain, onComplete, onReplay }: { canPlayAgain: boolean; onComplete: (smileStars: number, score: number) => void; onReplay: () => boolean }) => {
-  const { child } = useApp();
+export const SmileRaceGame = ({ canPlayAgain, onComplete, onReplay, onStart }: { canPlayAgain: boolean; onComplete: (smileStars: number, score: number) => void; onReplay: () => boolean; onStart: () => boolean }) => {
+  const { child, t } = useApp();
   const buddy = toothBuddies.find((item) => item.id === child.selectedCharacter) ?? toothBuddies[0];
   const [status, setStatus] = useState<RaceStatus>('ready');
   const [lane, setLane] = useState(1);
@@ -64,9 +66,12 @@ export const SmileRaceGame = ({ canPlayAgain, onComplete, onReplay }: { canPlayA
   const nextIdRef = useRef(1);
   const awardedRef = useRef(false);
   const arenaWidthRef = useRef(1);
+  const gestureStartLaneRef = useRef(1);
   const statusRef = useRef<RaceStatus>('ready');
+  const backgroundProgress = useRef(new Animated.Value(0)).current;
 
   const resetRace = () => {
+    if (statusRef.current === 'ready' && !onStart()) return;
     laneRef.current = 1;
     jumpingRef.current = false;
     scoreRef.current = 0;
@@ -131,6 +136,23 @@ export const SmileRaceGame = ({ canPlayAgain, onComplete, onReplay }: { canPlayA
     return () => clearInterval(timer);
   }, [onComplete, status]);
 
+  useEffect(() => {
+    if (status !== 'running') {
+      backgroundProgress.stopAnimation();
+      backgroundProgress.setValue(0);
+      return;
+    }
+
+    const backgroundAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(backgroundProgress, { toValue: 1, duration: 4200, useNativeDriver: true }),
+        Animated.timing(backgroundProgress, { toValue: 0, duration: 4200, useNativeDriver: true })
+      ])
+    );
+    backgroundAnimation.start();
+    return () => backgroundAnimation.stop();
+  }, [backgroundProgress, status]);
+
   const jump = () => {
     if (statusRef.current !== 'running' || jumpingRef.current) return;
     jumpingRef.current = true;
@@ -145,13 +167,14 @@ export const SmileRaceGame = ({ canPlayAgain, onComplete, onReplay }: { canPlayA
   const raceGestures = useRef(PanResponder.create({
     onStartShouldSetPanResponder: () => statusRef.current === 'running',
     onMoveShouldSetPanResponder: () => statusRef.current === 'running',
-    onPanResponderGrant: (event) => {
-      const nextLane = Math.max(0, Math.min(2, Math.floor(event.nativeEvent.locationX / (arenaWidthRef.current / 3))));
-      laneRef.current = nextLane;
-      setLane(nextLane);
+    onPanResponderGrant: () => {
+      gestureStartLaneRef.current = laneRef.current;
     },
-    onPanResponderMove: (event) => {
-      const nextLane = Math.max(0, Math.min(2, Math.floor(event.nativeEvent.locationX / (arenaWidthRef.current / 3))));
+    onPanResponderMove: (_event, gesture) => {
+      const laneWidth = Math.max(1, arenaWidthRef.current / 3);
+      const laneOffset = Math.round(gesture.dx / laneWidth);
+      const nextLane = Math.max(0, Math.min(2, gestureStartLaneRef.current + laneOffset));
+      if (nextLane === laneRef.current) return;
       laneRef.current = nextLane;
       setLane(nextLane);
     },
@@ -170,14 +193,13 @@ export const SmileRaceGame = ({ canPlayAgain, onComplete, onReplay }: { canPlayA
     return (
       <Card style={styles.introCard}>
         <View style={styles.buddyPreview}><Image source={buddy.image} style={styles.previewImage} resizeMode="contain" /></View>
-        <Text style={[headingFont, styles.introTitle]}>Ready, Set, Smile!</Text>
-        <Text style={[bodyFont, styles.introText]}>Drag to move, tap to jump, and score to go faster!</Text>
+        <Text style={[headingFont, styles.introTitle]}>{t('raceReady')}</Text>
+        <Text style={[bodyFont, styles.introText]}>{t('raceInstructions')}</Text>
         <View style={styles.legendRow}>
-          <View style={styles.legendPill}><Ionicons name="sparkles" size={18} color="#129B65" /><Text style={styles.legendGood}>COLLECT</Text></View>
-          <View style={styles.legendPill}><Ionicons name="warning" size={18} color="#D94B6A" /><Text style={styles.legendBad}>AVOID</Text></View>
+          <View style={styles.legendPill}><Ionicons name="sparkles" size={18} color="#129B65" /><Text style={styles.legendGood}>{t('collect')}</Text></View>
+          <View style={styles.legendPill}><Ionicons name="warning" size={18} color="#D94B6A" /><Text style={styles.legendBad}>{t('avoid')}</Text></View>
         </View>
-        <Text style={[bodyFont, styles.rewardGuide]}>{'5 points = 5 stars\n10 points = 10 stars\n20 points = 15 stars\n35+ points = 20 stars'}</Text>
-        <Pressable accessibilityRole="button" onPress={resetRace} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={[headingFont, styles.primaryButtonText]}>START RACE</Text></Pressable>
+        <Pressable accessibilityRole="button" onPress={resetRace} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={[headingFont, styles.primaryButtonText]}>{t('startRace')}</Text></Pressable>
       </Card>
     );
   }
@@ -187,11 +209,11 @@ export const SmileRaceGame = ({ canPlayAgain, onComplete, onReplay }: { canPlayA
     return (
       <Card style={styles.resultCard}>
         <Text style={styles.resultEmoji}>🏆</Text>
-        <Text style={[headingFont, styles.resultTitle]}>Great Racing!</Text>
-        <Text style={[bodyFont, styles.resultText]}>The track got tricky, but {buddy.title} achieved a score of {score}!</Text>
-        <View style={styles.scorePill}><Text style={[headingFont, styles.scorePillText]}>Score: {score}</Text></View>
-        {smileStars > 0 ? <Text style={[headingFont, styles.rewardText]}>+{smileStars} SMILE STARS</Text> : null}
-        {canPlayAgain ? <Pressable accessibilityRole="button" onPress={replay} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={[headingFont, styles.primaryButtonText]}>RACE AGAIN</Text></Pressable> : <Text style={[bodyFont, styles.noTriesText]}>All races finished for today. Come back tomorrow!</Text>}
+        <Text style={[headingFont, styles.resultTitle]}>{t('greatRacing')}</Text>
+        <Text style={[bodyFont, styles.resultText]}>{t('raceResult').replace('{{name}}', buddy.title).replace('{{score}}', `${score}`)}</Text>
+        <View style={styles.scorePill}><Text style={[headingFont, styles.scorePillText]}>{t('score')}: {score}</Text></View>
+        {smileStars > 0 ? <Text style={[headingFont, styles.rewardText]}>+{smileStars} {t('smileStars')}</Text> : null}
+        {canPlayAgain ? <Pressable accessibilityRole="button" onPress={replay} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={[headingFont, styles.primaryButtonText]}>{t('raceAgain')}</Text></Pressable> : <Text style={[bodyFont, styles.noTriesText]}>{t('racesFinishedToday')}</Text>}
       </Card>
     );
   }
@@ -200,15 +222,44 @@ export const SmileRaceGame = ({ canPlayAgain, onComplete, onReplay }: { canPlayA
     <View style={styles.gameWrap}>
       <View style={styles.hudRow}>
         <View style={styles.hudPill}><Ionicons name="star" size={18} color="#F7B500" /><Text style={styles.hudText}>{score}</Text></View>
-        <View style={styles.hudPill}><Ionicons name="speedometer" size={18} color="#6552EB" /><Text style={styles.hudText}>Speed {Math.min(11, 1 + score)}</Text></View>
+        <View style={styles.hudPill}><Ionicons name="speedometer" size={18} color="#6552EB" /><Text style={styles.hudText}>{t('speed')} {Math.min(11, 1 + score)}</Text></View>
         <View style={styles.hudPill}><Text style={styles.hearts}>{'❤️'.repeat(lives)}</Text></View>
       </View>
       <View
         {...raceGestures.panHandlers}
-        accessibilityLabel="Smile Race track. Drag left or right to move and tap to jump."
+        accessibilityLabel={t('raceTrackAccessibility')}
         onLayout={(event) => { arenaWidthRef.current = event.nativeEvent.layout.width; }}
         style={styles.arena}
       >
+        <Animated.Image
+          resizeMode="cover"
+          source={raceBackgroundA}
+          style={[
+            styles.raceBackground,
+            {
+              opacity: backgroundProgress.interpolate({ inputRange: [0, 0.72, 1], outputRange: [1, 0.82, 0.2] }),
+              transform: [
+                { scale: backgroundProgress.interpolate({ inputRange: [0, 1], outputRange: [1.02, 1.1] }) },
+                { translateY: backgroundProgress.interpolate({ inputRange: [0, 1], outputRange: [0, 12] }) }
+              ]
+            }
+          ]}
+        />
+        <Animated.Image
+          resizeMode="cover"
+          source={raceBackgroundB}
+          style={[
+            styles.raceBackground,
+            {
+              opacity: backgroundProgress.interpolate({ inputRange: [0, 0.28, 1], outputRange: [0.12, 0.35, 1] }),
+              transform: [
+                { scale: backgroundProgress.interpolate({ inputRange: [0, 1], outputRange: [1.1, 1.02] }) },
+                { translateY: backgroundProgress.interpolate({ inputRange: [0, 1], outputRange: [-12, 0] }) }
+              ]
+            }
+          ]}
+        />
+        <View pointerEvents="none" style={styles.backgroundShade} />
         {[0, 1, 2].map((trackLane) => <View key={trackLane} style={styles.lane} />)}
         {items.map((item) => (
           <Image key={item.id} source={raceAssets[item.assetIndex].image} style={[styles.raceItem, { left: `${item.lane * 33.333 + 8}%` as `${number}%`, top: item.y }]} resizeMode="contain" />
@@ -218,8 +269,8 @@ export const SmileRaceGame = ({ canPlayAgain, onComplete, onReplay }: { canPlayA
         </View>
       </View>
       <View style={styles.touchHint}>
-        <View style={styles.touchHintItem}><Ionicons name="hand-left" size={22} color="#6552EB" /><Text style={[headingFont, styles.touchHintText]}>DRAG TO MOVE</Text></View>
-        <View style={styles.touchHintItem}><Ionicons name="finger-print" size={22} color="#35A99A" /><Text style={[headingFont, styles.touchHintText]}>TAP TO JUMP</Text></View>
+        <View style={styles.touchHintItem}><Ionicons name="hand-left" size={22} color="#6552EB" /><Text style={[headingFont, styles.touchHintText]}>{t('dragToMove')}</Text></View>
+        <View style={styles.touchHintItem}><Ionicons name="finger-print" size={22} color="#35A99A" /><Text style={[headingFont, styles.touchHintText]}>{t('tapToJump')}</Text></View>
       </View>
     </View>
   );
@@ -245,7 +296,9 @@ const styles = StyleSheet.create({
   hudText: { color: '#26373B', fontFamily: 'Fredoka_700Bold', fontSize: 16 },
   hearts: { fontSize: 15 },
   arena: { backgroundColor: '#DDF8F3', borderColor: '#FFFFFF', borderRadius: 28, borderWidth: 5, elevation: 5, flexDirection: 'row', height: ARENA_HEIGHT, overflow: 'hidden', position: 'relative' },
-  lane: { backgroundColor: 'rgba(255,255,255,0.18)', height: '100%', width: '33.333%' },
+  raceBackground: { ...StyleSheet.absoluteFillObject, height: '100%', width: '100%' },
+  backgroundShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(218, 250, 247, 0.08)', zIndex: 1 },
+  lane: { backgroundColor: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.2)', borderLeftWidth: 1, height: '100%', width: '33.333%', zIndex: 2 },
   raceItem: { height: 64, position: 'absolute', width: 64, zIndex: 3 },
   player: { alignItems: 'center', bottom: 14, height: 82, justifyContent: 'center', position: 'absolute', width: '22%', zIndex: 5 },
   playerImage: { height: 82, width: 82 },

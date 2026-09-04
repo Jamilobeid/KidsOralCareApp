@@ -37,19 +37,19 @@ const brushingSteps: BrushingStep[] = [
 ];
 
 const rewardStarImage = require('../../assets/images/brushing-reward-star.png');
-const toothpasteSignLanguageVideo = require('../../assets/videos/toothpaste-sign-language.mov');
-const letsBrushOurTeethSignLanguageVideo = require('../../assets/videos/lets-brush-our-teeth-sign-language.mov');
-const closeTeethSignLanguageVideo = require('../../assets/videos/close-teeth-sign-language.mov');
-const outsideTeethSignLanguageVideo = require('../../assets/videos/outside-teeth-sign-language.mov');
-const openMouthSignLanguageVideo = require('../../assets/videos/open-mouth-sign-language.mov');
-const insideUpperTeethSignLanguageVideo = require('../../assets/videos/inside-upper-teeth-sign-language.mov');
-const insideLowerTeethSignLanguageVideo = require('../../assets/videos/inside-lower-teeth-sign-language.mov');
-const chewingUpperTeethSignLanguageVideo = require('../../assets/videos/chewing-upper-teeth-sign-language.mov');
-const chewingLowerTeethSignLanguageVideo = require('../../assets/videos/chewing-lower-teeth-sign-language.mov');
-const brushTongueSignLanguageVideo = require('../../assets/videos/brush-tongue-sign-language.mov');
-const spitNoRinsingSignLanguageVideo = require('../../assets/videos/spit-no-rinsing-sign-language.mov');
-const flossingSignLanguageVideo = require('../../assets/videos/flossing-sign-language.mov');
-const cleanFinishSignLanguageVideo = require('../../assets/videos/clean-finish-sign-language.mov');
+const toothpasteSignLanguageVideo = require('../../assets/videos/toothpaste-sign-language.mp4');
+const letsBrushOurTeethSignLanguageVideo = require('../../assets/videos/lets-brush-our-teeth-sign-language.mp4');
+const closeTeethSignLanguageVideo = require('../../assets/videos/close-teeth-sign-language.mp4');
+const outsideTeethSignLanguageVideo = require('../../assets/videos/outside-teeth-sign-language.mp4');
+const openMouthSignLanguageVideo = require('../../assets/videos/open-mouth-sign-language.mp4');
+const insideUpperTeethSignLanguageVideo = require('../../assets/videos/inside-upper-teeth-sign-language.mp4');
+const insideLowerTeethSignLanguageVideo = require('../../assets/videos/inside-lower-teeth-sign-language.mp4');
+const chewingUpperTeethSignLanguageVideo = require('../../assets/videos/chewing-upper-teeth-sign-language.mp4');
+const chewingLowerTeethSignLanguageVideo = require('../../assets/videos/chewing-lower-teeth-sign-language.mp4');
+const brushTongueSignLanguageVideo = require('../../assets/videos/brush-tongue-sign-language.mp4');
+const spitNoRinsingSignLanguageVideo = require('../../assets/videos/spit-no-rinsing-sign-language.mp4');
+const flossingSignLanguageVideo = require('../../assets/videos/flossing-sign-language.mp4');
+const cleanFinishSignLanguageVideo = require('../../assets/videos/clean-finish-sign-language.mp4');
 const SIGN_LANGUAGE_STEPS = {
   1: {
     source: toothpasteSignLanguageVideo,
@@ -132,7 +132,7 @@ const SIGN_LANGUAGE_STEPS = {
 } as const;
 
 export const BrushingTimerScreen = () => {
-  const { t, completeBrushing, brushedPeriodsToday, openedReminderPeriod, theme } = useApp();
+  const { t, completeBrushing, brushedPeriodsToday, openedReminderPeriod, theme, brushingSignLanguageVideosEnabled } = useApp();
   const [stepIndex, setStepIndex] = useState(0);
   const [stepSecondsLeft, setStepSecondsLeft] = useState(0);
   const [running, setRunning] = useState(false);
@@ -155,6 +155,7 @@ export const BrushingTimerScreen = () => {
   const signLanguageAccessibilityLabelKey = useSecondarySignLanguageContent && signLanguageStep && 'secondaryAccessibilityLabelKey' in signLanguageStep
     ? signLanguageStep.secondaryAccessibilityLabelKey
     : signLanguageStep?.accessibilityLabelKey;
+  const showSignLanguageVideo = brushingSignLanguageVideosEnabled && Boolean(signLanguageStep);
 
   const brushingSecondsLeft = useMemo(() => {
     if (stepIndex < FIRST_BRUSHING_STEP) return BRUSHING_SECONDS;
@@ -228,12 +229,12 @@ export const BrushingTimerScreen = () => {
           ) : null}
 
           <View style={styles.titleBlock}>
-            <Text style={[headingFont, styles.brushPageTitle]}>{t('Brush')}</Text>
+            <Text style={[headingFont, styles.brushPageTitle]}>{t('brushAction')}</Text>
             <Text style={[headingFont, styles.subtitle]}>{t('brushInstructionFull')}</Text>
           </View>
 
           <View style={styles.panel}>
-            {signLanguageStep ? (
+            {showSignLanguageVideo ? (
               <View style={styles.signLanguageBlock}>
                 <Video
                   key={signLanguageCaptionKey}
@@ -253,7 +254,7 @@ export const BrushingTimerScreen = () => {
               </View>
             ) : null}
 
-            <View style={styles.imageWrap}>
+            <View style={[styles.imageWrap, !showSignLanguageVideo && signLanguageStep && styles.imageWrapWithoutSignLanguageVideo]}>
               <Image source={step.image} style={[styles.stepImage, stepIndex === 9 && styles.lowerInnerTeethImage]} resizeMode="contain" />
             </View>
 
@@ -265,11 +266,17 @@ export const BrushingTimerScreen = () => {
 
             {stepIndex === LAST_BRUSHING_STEP + 1 ? (
               <View style={styles.moreStepsMessage}>
-                <Text style={[headingFont, styles.moreStepsMessageText]}>Great brushing! You’re not finished yet — just a few quick smile steps to go!</Text>
+                <Text style={[headingFont, styles.moreStepsMessageText]}>{t('moreBrushingSteps')}</Text>
               </View>
             ) : null}
-            {!signLanguageStep ? <Text style={[headingFont, styles.instruction]}>{step.instruction}</Text> : null}
-            {!finished && step.duration ? <Text style={styles.stepHint}>{step.countsTowardBrushing ? 'Brushing time' : `${stepSecondsLeft} seconds`}</Text> : null}
+            {!showSignLanguageVideo ? (
+              <View style={[styles.instructionCard, signLanguageStep && styles.instructionCardWithoutSignLanguageVideo]}>
+                <Text accessibilityRole="text" style={[headingFont, styles.instruction]}>
+                  {signLanguageCaptionKey ? t(signLanguageCaptionKey) : step.instruction}
+                </Text>
+              </View>
+            ) : null}
+            {!finished && step.duration ? <Text style={styles.stepHint}>{step.countsTowardBrushing ? t('brushingTime') : t('secondsRemaining').replace('{{count}}', `${stepSecondsLeft}`)}</Text> : null}
 
             <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${progress * 100}%` as `${number}%` }]} /></View>
             {finished ? <CelebrationCard rewardEarned={rewardEarned} t={t} /> : null}
@@ -309,11 +316,14 @@ const styles = StyleSheet.create({
   signLanguageVideo: { aspectRatio: 16 / 9, backgroundColor: '#EAF8F5', borderRadius: 20, width: '100%' },
   videoCaption: { color: '#192B32', fontSize: 18, lineHeight: 25, minHeight: 50, paddingHorizontal: 4, textAlign: 'center', width: '100%' },
   imageWrap: { alignItems: 'center', height: 260, justifyContent: 'center', width: '100%' }, stepImage: { height: '100%', width: '100%' },
+  imageWrapWithoutSignLanguageVideo: { height: 330, marginTop: 4 },
   lowerInnerTeethImage: { transform: [{ scale: 1.35 }] },
   timerRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'center' }, timerSpacer: { height: 12 },
   timerPart: { color: '#050505', fontFamily: 'Fredoka_700Bold', fontSize: 50, lineHeight: 58, minWidth: 76, textAlign: 'center' },
   timerSeparator: { color: '#050505', fontFamily: 'Fredoka_700Bold', fontSize: 50, lineHeight: 58 },
-  instruction: { color: '#192B32', fontSize: 21, lineHeight: 28, minHeight: 56, textAlign: 'center' }, stepHint: { color: '#7A8589', fontFamily: 'Fredoka_700Bold', fontSize: 14 },
+  instructionCard: { alignItems: 'center', backgroundColor: '#F0FBF8', borderColor: '#CBEFE7', borderRadius: 20, borderWidth: 1, justifyContent: 'center', minHeight: 76, paddingHorizontal: 16, paddingVertical: 12, width: '100%' },
+  instructionCardWithoutSignLanguageVideo: { backgroundColor: '#EAF8F5', borderColor: '#BFE8DE', marginTop: 2 },
+  instruction: { color: '#192B32', fontSize: 21, lineHeight: 28, textAlign: 'center' }, stepHint: { color: '#7A8589', fontFamily: 'Fredoka_700Bold', fontSize: 14 },
   moreStepsMessage: { backgroundColor: '#FFF4C7', borderColor: '#F4CA56', borderRadius: 18, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, width: '100%' },
   moreStepsMessageText: { color: '#765C13', fontSize: 17, lineHeight: 23, textAlign: 'center' },
   progressTrack: { backgroundColor: '#DDF8DD', borderRadius: 999, height: 19, marginTop: 8, overflow: 'hidden', width: '88%' }, progressFill: { backgroundColor: '#54F160', borderRadius: 999, height: '100%' },

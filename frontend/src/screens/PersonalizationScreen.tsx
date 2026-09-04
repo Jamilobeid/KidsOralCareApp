@@ -6,7 +6,7 @@ import { Screen } from '../components/Screen';
 import { BodyText, Title } from '../components/Typography';
 import { useApp } from '../context/AppContext';
 import { themes } from '../data/themes';
-import { isToothBuddyUnlocked, toothBuddies } from '../data/toothBuddies';
+import { isToothBuddyUnlocked, toothBuddies, toothBuddyUnlockKeys } from '../data/toothBuddies';
 import { ThemeName } from '../types/app';
 
 export const PersonalizationScreen = () => {
@@ -17,7 +17,7 @@ export const PersonalizationScreen = () => {
       chooseCharacter(buddy.id);
       return;
     }
-    Alert.alert(buddy.achievementId ? t('locked') : t('keepLeveling'), buddy.unlockDescription ?? t('unlocksAtLevel').replace('{{name}}', buddy.title).replace('{{level}}', `${buddy.requiredLevel}`));
+    Alert.alert(buddy.achievementId ? t('locked') : t('keepLeveling'), buddy.achievementId ? t(toothBuddyUnlockKeys[buddy.id]) : t('unlocksAtLevel').replace('{{name}}', buddy.title).replace('{{level}}', `${buddy.requiredLevel}`));
   };
 
   return (
@@ -76,9 +76,9 @@ export const PersonalizationScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  buddyGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  buddyGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center' },
   buddyCard: {
-    width: '30.8%',
+    width: '47%',
     minHeight: 142,
     borderRadius: 28,
     borderWidth: 0,

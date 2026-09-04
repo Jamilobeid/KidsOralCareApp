@@ -33,7 +33,7 @@ const RootNavigator = ({ previewInset = false }: { previewInset?: boolean }) => 
   const showBottomNav = !['welcome', 'auth', 'language', 'legalInformation'].includes(screen);
 
   const renderScreen = () => {
-    if (!isOnline && ['auth', 'learn', 'leaderboard', 'adminDashboard'].includes(screen)) {
+    if (!isOnline && ['auth', 'leaderboard', 'adminDashboard'].includes(screen)) {
       return <InternetRequiredScreen />;
     }
     switch (screen) {

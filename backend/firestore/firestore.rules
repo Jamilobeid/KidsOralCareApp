@@ -35,6 +35,64 @@ service cloud.firestore {
       return avatar in ['star', 'sun', 'rocket', 'leaf', 'rainbow', 'tooth'];
     }
 
+    function isValidTheme(theme) {
+      return theme in ['ocean', 'sunny', 'mint', 'berry'];
+    }
+
+    function isValidDateKey(value) {
+      return value is string && value.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+    }
+
+    function isValidWeekKey(value) {
+      return value is string && value.matches('^[0-9]{4}-W[0-9]{2}$');
+    }
+
+    function isValidWeeklyBrushes(value) {
+      return value is list && value.size() == 7
+        && value[0] is int && value[0] >= 0 && value[0] <= 2
+        && value[1] is int && value[1] >= 0 && value[1] <= 2
+        && value[2] is int && value[2] >= 0 && value[2] <= 2
+        && value[3] is int && value[3] >= 0 && value[3] <= 2
+        && value[4] is int && value[4] >= 0 && value[4] <= 2
+        && value[5] is int && value[5] >= 0 && value[5] <= 2
+        && value[6] is int && value[6] >= 0 && value[6] <= 2;
+    }
+
+    function hasValidChildValues(data) {
+      return data.nickname is string && data.nickname.size() >= 3 && data.nickname.size() <= 15
+        && data.normalizedUsername is string && data.normalizedUsername.size() >= 3 && data.normalizedUsername.size() <= 30
+        && data.usernameKey is string && data.usernameKey.size() >= 5 && data.usernameKey.size() <= 100
+        && data.age is int && data.age >= 4 && data.age <= 12
+        && data.points is int && data.points >= 0 && data.points <= 1000000
+        && data.badges is list && data.badges.size() <= 100
+        && data.level is int && data.level >= 1 && data.level <= 1000
+        && data.todayBrushes is int && data.todayBrushes >= 0 && data.todayBrushes <= 2
+        && data.weeklyBrushes is int && data.weeklyBrushes >= 0 && data.weeklyBrushes <= 14
+        && isValidWeeklyBrushes(data.weeklyBrushesByDay)
+        && data.brushedPeriodsToday is list && data.brushedPeriodsToday.size() <= 2
+        && data.dailyGamePlays is map && data.dailyGamePlays.size() <= 25
+        && isValidDateKey(data.dailyDateKey) && isValidWeekKey(data.weekKey)
+        && data.totalBrushes is int && data.totalBrushes >= 0 && data.totalBrushes <= 1000000
+        && (!('appSessions' in data) || (data.appSessions is int && data.appSessions >= 0 && data.appSessions <= 1000000))
+        && (!('daysUsed' in data) || (data.daysUsed is int && data.daysUsed >= 0 && data.daysUsed <= 1000000))
+        && (!('lastUsageDateKey' in data) || data.lastUsageDateKey == '' || isValidDateKey(data.lastUsageDateKey))
+        && (!('educationalVideoViews' in data) || (data.educationalVideoViews is int && data.educationalVideoViews >= 0 && data.educationalVideoViews <= 1000000))
+        && data.unlockedCharacters is list && data.unlockedCharacters.size() >= 1 && data.unlockedCharacters.size() <= 20
+        && data.selectedCharacter is string && data.selectedCharacter.size() >= 1 && data.selectedCharacter.size() <= 40
+        && data.timeSpentMinutes is int && data.timeSpentMinutes >= 0 && data.timeSpentMinutes <= 10000000
+        && data.gamesPlayed is int && data.gamesPlayed >= 0 && data.gamesPlayed <= 1000000
+        && data.rewardsEarned is int && data.rewardsEarned >= 0 && data.rewardsEarned <= 100
+        && data.engagementScore is int && data.engagementScore >= 0 && data.engagementScore <= 100
+        && data.totalUsageSeconds is int && data.totalUsageSeconds >= 0 && data.totalUsageSeconds <= 1000000000
+        && data.loginCount is int && data.loginCount >= 0 && data.loginCount <= 1000000
+        && data.activitiesCompleted is int && data.activitiesCompleted >= 0 && data.activitiesCompleted <= 1000000
+        && data.remindersFollowed is int && data.remindersFollowed >= 0 && data.remindersFollowed <= 1000000
+        && data.lastActive is string && data.lastActive.size() <= 40
+        && isValidTheme(data.theme)
+        && data.avatar is string && data.avatar.size() >= 1 && data.avatar.size() <= 40
+        && data.leaderboardParticipating is bool;
+    }
+
     function isSafeLeaderboardNickname(nickname) {
       return nickname is string
         && nickname.size() >= 3
@@ -68,24 +126,49 @@ service cloud.firestore {
     match /parents/{parentId} {
       allow create: if signedIn()
         && request.auth.uid == parentId
+        && request.resource.data.keys().hasOnly([
+          'uid', 'email', 'role', 'registrationVersion', 'privacyPolicyVersion',
+          'termsOfUseVersion', 'legalAcceptedAt', 'consentStatus', 'createdAt', 'updatedAt'
+        ])
         && request.resource.data.uid == request.auth.uid
-        && request.resource.data.role == 'parent';
+        && request.resource.data.email is string
+        && request.resource.data.email.size() >= 3
+        && request.resource.data.email.size() <= 254
+        && request.resource.data.role == 'parent'
+        && request.resource.data.registrationVersion == 2
+        && request.resource.data.privacyPolicyVersion is string
+        && request.resource.data.termsOfUseVersion is string
+        && request.resource.data.consentStatus == 'pending';
 
       allow read: if isParent(parentId) || isAdmin();
 
       allow update: if isParent(parentId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['consentStatus', 'updatedAt'])
         && request.resource.data.uid == resource.data.uid
-        && request.resource.data.role == resource.data.role;
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.consentStatus in ['pending', 'granted', 'withdrawn'];
 
       allow delete: if isParent(parentId) || isAdmin();
     }
 
     match /children/{childId} {
       allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'id', 'parentId', 'nickname', 'normalizedUsername', 'usernameKey', 'age',
+          'points', 'badges', 'level', 'todayBrushes', 'weeklyBrushes', 'weeklyBrushesByDay',
+          'brushedPeriodsToday', 'dailyGamePlays', 'dailyDateKey', 'weekKey', 'totalBrushes',
+          'appSessions', 'daysUsed', 'lastUsageDateKey', 'educationalVideoViews',
+          'unlockedCharacters', 'selectedCharacter', 'timeSpentMinutes', 'gamesPlayed',
+          'rewardsEarned', 'engagementScore', 'totalUsageSeconds', 'loginCount',
+          'activitiesCompleted', 'remindersFollowed', 'lastActive', 'theme', 'avatar',
+          'consentRequired', 'leaderboardParticipating', 'lastActiveAt', 'createdAt', 'updatedAt'
+        ])
         && request.resource.data.id == childId
         && request.resource.data.parentId == request.auth.uid
         && hasActiveParentalConsent(request.auth.uid)
         && !("deletionPending" in request.resource.data)
+        && hasValidChildValues(request.resource.data)
+        && request.resource.data.consentRequired == true
         && request.resource.data.normalizedUsername is string
         && request.resource.data.usernameKey is string
         && request.resource.data.points == 0
@@ -104,6 +187,17 @@ service cloud.firestore {
 
       allow update: if ownsChild(childId)
         && !("deletionPending" in request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'points', 'badges', 'level', 'todayBrushes', 'weeklyBrushes', 'weeklyBrushesByDay',
+          'brushedPeriodsToday', 'dailyGamePlays', 'dailyDateKey', 'weekKey', 'totalBrushes',
+          'appSessions', 'daysUsed', 'lastUsageDateKey', 'educationalVideoViews',
+          'lastBrushingAt', 'unlockedCharacters', 'selectedCharacter', 'gamesPlayed',
+          'rewardsEarned', 'engagementScore', 'totalUsageSeconds', 'loginCount',
+          'activitiesCompleted', 'remindersFollowed', 'lastActive', 'theme', 'avatar',
+          'leaderboardParticipating', 'lastActiveAt', 'lastActivityCompletedAt',
+          'lastReminderPeriod', 'lastReminderFollowedAt', 'updatedAt'
+        ])
+        && hasValidChildValues(request.resource.data)
         && request.resource.data.id == resource.data.id
         && request.resource.data.parentId == resource.data.parentId
         && request.resource.data.nickname == resource.data.nickname
@@ -138,6 +232,10 @@ service cloud.firestore {
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.usernameKey == usernameKey
         && request.resource.data.normalizedUsername is string
+        && request.resource.data.normalizedUsername.size() >= 3
+        && request.resource.data.normalizedUsername.size() <= 30
+        && request.resource.data.usernameKey.size() >= 5
+        && request.resource.data.usernameKey.size() <= 100
         && getAfter(/databases/$(database)/documents/children/$(request.auth.uid)).data.usernameKey == usernameKey
         && getAfter(/databases/$(database)/documents/children/$(request.auth.uid)).data.normalizedUsername == request.resource.data.normalizedUsername;
       allow update: if false;
@@ -149,7 +247,15 @@ service cloud.firestore {
 
     match /brushingSessions/{sessionId} {
       allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['id', 'childId', 'completedAt', 'durationSeconds', 'period'])
+        && request.resource.data.id == sessionId
         && request.resource.data.childId is string
+        && request.resource.data.completedAt is string
+        && request.resource.data.completedAt.size() <= 40
+        && request.resource.data.durationSeconds is int
+        && request.resource.data.durationSeconds >= 1
+        && request.resource.data.durationSeconds <= 600
+        && request.resource.data.period in ['morning', 'evening']
         && ownsChild(request.resource.data.childId);
       allow read: if isAdmin() || ownsChild(resource.data.childId);
       allow update, delete: if false;
@@ -157,7 +263,16 @@ service cloud.firestore {
 
     match /gameSessions/{sessionId} {
       allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['id', 'childId', 'gameId', 'completedAt', 'score'])
+        && request.resource.data.id == sessionId
         && request.resource.data.childId is string
+        && request.resource.data.gameId is string
+        && request.resource.data.gameId.matches('^[a-z0-9][a-z0-9-]{0,63}$')
+        && request.resource.data.completedAt is string
+        && request.resource.data.completedAt.size() <= 40
+        && request.resource.data.score is int
+        && request.resource.data.score >= 0
+        && request.resource.data.score <= 100000
         && ownsChild(request.resource.data.childId);
       allow read: if isAdmin() || ownsChild(resource.data.childId);
       allow update, delete: if false;
@@ -221,10 +336,6 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    match /securityRateLimits/{rateLimitId} {
-      allow read, write: if false;
-    }
-
     match /parentalConsents/{parentId} {
       allow get: if isParent(parentId) || isAdmin();
       allow create: if isParent(parentId)
@@ -268,3 +379,4 @@ service cloud.firestore {
     }
   }
 }
+

@@ -5,6 +5,7 @@ const { FieldValue, getFirestore, Timestamp } = require('firebase-admin/firestor
 const RECENT_AUTH_WINDOW_SECONDS = 5 * 60;
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const RATE_LIMIT_MAX_ATTEMPTS = 5;
+const MAX_REQUEST_BODY_BYTES = 1024;
 const JSON_HEADERS = {
   'Access-Control-Allow-Headers': 'Authorization, Content-Type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -92,13 +93,17 @@ exports.handler = async (event) => {
     }
 
     let requestBody;
+    if (Buffer.byteLength(event.body || '', 'utf8') > MAX_REQUEST_BODY_BYTES) {
+      return response(413, { error: 'request-too-large' });
+    }
     try {
       requestBody = JSON.parse(event.body || '{}');
     } catch {
       return response(400, { error: 'invalid-json' });
     }
 
-    if (requestBody.confirmation !== 'DELETE') {
+    if (!requestBody || Array.isArray(requestBody) || typeof requestBody !== 'object'
+      || Object.keys(requestBody).length !== 1 || requestBody.confirmation !== 'DELETE') {
       return response(400, { error: 'confirmation-required' });
     }
 
@@ -223,3 +228,4 @@ exports.handler = async (event) => {
     return response(401, { error: 'invalid-or-expired-authentication' });
   }
 };
+

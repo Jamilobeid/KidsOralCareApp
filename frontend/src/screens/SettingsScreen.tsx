@@ -8,6 +8,7 @@ import { toothBuddies } from '../data/toothBuddies';
 import { PasswordVisibilityIcon } from '../components/PasswordVisibilityIcon';
 import { LanguageCode, RootScreen } from '../types/app';
 import { bodyFont, buttonFont, headingFont, rewardFont } from '../utils/kidStyle';
+import { getDisplayUsername } from '../utils/displayUsername';
 
 type IconArtwork = {
   imageSource?: ImageSourcePropType;
@@ -63,16 +64,13 @@ const artwork = {
   reminders: require('../../assets/images/settings-reminders-cutout.png'),
   morning: require('../../assets/images/settings-morning-cutout.png'),
   evening: require('../../assets/images/settings-evening-cutout.png'),
-  dailyChallenges: require('../../assets/images/settings-daily-challenges-cutout.png'),
   sounds: require('../../assets/images/settings-sounds-cutout.png'),
-  effects: require('../../assets/images/settings-effects-cutout.png'),
   music: require('../../assets/images/settings-music-cutout.png'),
   voice: require('../../assets/images/settings-voice-cutout.png'),
   personalization: require('../../assets/images/settings-personalization-cutout.png'),
   rewards: require('../../assets/images/settings-rewards-cutout.png'),
   language: require('../../assets/images/settings-language-custom.png'),
   parent: require('../../assets/images/settings-parent-cutout.png'),
-  screenTime: require('../../assets/images/settings-screen-time-cutout.png'),
   playLimit: require('../../assets/images/settings-play-limit-cutout.png'),
   parentDashboard: require('../../assets/images/settings-parent-dashboard-cutout.png'),
   about: require('../../assets/images/settings-about-cutout.png')
@@ -85,12 +83,9 @@ const languageOptions: { code: LanguageCode; label: string; emoji: string; color
 ];
 
 export const SettingsScreen = () => {
-  const { t, child, isAdmin, language, setLanguage, setScreen, backgroundMusicEnabled, setBackgroundMusicEnabled } = useApp();
+  const { t, child, isAdmin, language, setLanguage, setScreen, backgroundMusicEnabled, setBackgroundMusicEnabled, brushingSignLanguageVideosEnabled, setBrushingSignLanguageVideosEnabled } = useApp();
   const [morningReminder, setMorningReminder] = useState(true);
   const [eveningReminder, setEveningReminder] = useState(true);
-  const [dailyChallenges, setDailyChallenges] = useState(true);
-  const [soundEffects, setSoundEffects] = useState(true);
-  const [voiceInstructions, setVoiceInstructions] = useState(true);
   const floatAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -117,8 +112,7 @@ export const SettingsScreen = () => {
           <Ionicons name="sparkles" size={15} color="#2EC4B6" style={styles.profileSparkleBottom} />
         </Animated.View>
         <View style={styles.profileCopy}>
-          <Text style={[headingFont, styles.profileTitle]}>Hello {child.nickname}</Text>
-          <Text style={[bodyFont, styles.profileMessage]}>{t('settingsProfileMessage')}</Text>
+          <Text style={[headingFont, styles.profileTitle]}>{t('profileGreeting').replace('{{name}}', getDisplayUsername(child.nickname))}</Text>
           <View style={styles.profileStats}>
             <MiniStat imageSource={artwork.levels[Math.min(Math.max(child.level, 1), 5) - 1]} label={t('level')} value={`${child.level}`} tint="#FFF4D6" />
             <MiniStat imageSource={artwork.stars} label={t('smileStars')} value={`${child.points}`} tint="#FFF8D9" />
@@ -130,7 +124,6 @@ export const SettingsScreen = () => {
       <SettingsCard imageSource={artwork.reminders} fallbackIcon="notifications" color="#1D9BF0" background="#E5F6FF" title={t('reminders')} subtitle={t('remindersSubtitle')}>
         <ToggleRow imageSource={artwork.morning} fallbackIcon="sunny" label={t('morningReminder')} value={morningReminder} onValueChange={setMorningReminder} color="#FFB703" background="#FFF5D6" />
         <ToggleRow imageSource={artwork.evening} fallbackIcon="moon" label={t('eveningReminder')} value={eveningReminder} onValueChange={setEveningReminder} color="#7B61FF" background="#F0ECFF" />
-        <ToggleRow imageSource={artwork.dailyChallenges} fallbackIcon="flag" label={t('dailyChallenges')} value={dailyChallenges} onValueChange={setDailyChallenges} color="#FF6B9A" background="#FFEAF3" />
       </SettingsCard>
 
       <SettingsCard imageSource={artwork.language} fallbackIcon="language" color="#2EC4B6" background="#E6FFF8" title={t('language')} subtitle={t('languageSubtitleSettings')} iconSize={58}>
@@ -148,9 +141,11 @@ export const SettingsScreen = () => {
       </SettingsCard>
 
       <SettingsCard imageSource={artwork.sounds} fallbackIcon="musical-notes" color="#FF6B9A" background="#FFEAF3" title={t('soundsMusic')} subtitle={t('soundsMusicSubtitle')}>
-        <ToggleRow imageSource={artwork.effects} fallbackIcon="sparkles" label={t('soundEffects')} value={soundEffects} onValueChange={setSoundEffects} color="#FFB703" background="#FFF4D6" />
         <ToggleRow imageSource={artwork.music} fallbackIcon="radio" label={t('backgroundMusic')} value={backgroundMusicEnabled} onValueChange={setBackgroundMusicEnabled} color="#7B61FF" background="#F0ECFF" />
-        <ToggleRow imageSource={artwork.voice} fallbackIcon="mic" label={t('voiceInstructions')} value={voiceInstructions} onValueChange={setVoiceInstructions} color="#2EC4B6" background="#E6FFF8" />
+      </SettingsCard>
+
+      <SettingsCard imageSource={artwork.voice} fallbackIcon="accessibility" color="#2EC4B6" background="#E6FFF8" title={t('brushingAccessibility')} subtitle={t('brushingAccessibilitySubtitle')}>
+        <ToggleRow fallbackIcon="videocam" label={t('brushingSignLanguageVideos')} value={brushingSignLanguageVideosEnabled} onValueChange={setBrushingSignLanguageVideosEnabled} color="#2EC4B6" background="#E6FFF8" />
       </SettingsCard>
 
       <LinkCard imageSource={artwork.personalization} fallbackIcon="color-palette" color="#7B61FF" background="#F0ECFF" title={t('personalization')} subtitle={t('personalizationSubtitle')} onPress={() => navigateTo('personalization')} />
@@ -240,7 +235,6 @@ const ParentLock = () => {
   const { deleteAccountAndData, signOutAccount, leaveLeaderboard, leaderboardParticipating, isAdmin, isFirebaseReady, setScreen, t } = useApp();
   const [answer, setAnswer] = useState('');
   const [unlocked, setUnlocked] = useState(false);
-  const [screenLimit, setScreenLimit] = useState(true);
   const [playLimit, setPlayLimit] = useState(true);
   const [showDeletion, setShowDeletion] = useState(false);
   const [deletionPassword, setDeletionPassword] = useState('');
@@ -323,7 +317,6 @@ const ParentLock = () => {
 
   return (
     <SettingsCard imageSource={artwork.parent} fallbackIcon="shield-checkmark" color="#31C778" background="#E9FFF4" title={zoneTitle} subtitle={t('parentZoneUnlockedSubtitle')}>
-      <ToggleRow imageSource={artwork.screenTime} fallbackIcon="phone-portrait" label={t('screenTimeLimit')} value={screenLimit} onValueChange={setScreenLimit} color="#7B61FF" background="#F0ECFF" />
       <ToggleRow imageSource={artwork.playLimit} fallbackIcon="game-controller" label={t('dailyPlayLimit')} value={playLimit} onValueChange={setPlayLimit} color="#1D9BF0" background="#E5F6FF" />
       <LinkCard
         imageSource={artwork.parentDashboard}
@@ -464,8 +457,8 @@ const MiniStat = ({ imageSource, label, value, tint }: MiniStatProps) => (
   <View style={[styles.miniStat, { backgroundColor: tint }]}>
     <Image source={imageSource} style={styles.miniStatImage} resizeMode="contain" />
     <View style={styles.miniStatCopy}>
-      <Text style={[bodyFont, styles.miniStatLabel]}>{label}</Text>
-      <Text style={[rewardFont, styles.miniStatText]}>{value}</Text>
+      <Text adjustsFontSizeToFit minimumFontScale={0.72} numberOfLines={1} style={[bodyFont, styles.miniStatLabel]}>{label}</Text>
+      <Text adjustsFontSizeToFit minimumFontScale={0.72} numberOfLines={1} style={[rewardFont, styles.miniStatText]}>{value}</Text>
     </View>
   </View>
 );
@@ -486,15 +479,15 @@ const styles = StyleSheet.create({
   profileSparkleTop: { position: 'absolute', top: 9, right: 9, zIndex: 2 },
   profileSparkleBottom: { position: 'absolute', bottom: 13, left: 10, zIndex: 2 },
   profileTooth: { width: 132, height: 132, zIndex: 1 },
-  profileCopy: { flex: 1, gap: 8 },
+  profileCopy: { flex: 1, gap: 8, minWidth: 0 },
   profileTitle: { color: '#41438F', fontSize: 27, lineHeight: 31, fontFamily: 'Fredoka_700Bold' },
   profileMessage: { color: '#454f59', fontSize: 13, lineHeight: 21, fontFamily: 'Fredoka_700Bold' },
   profileStats: { gap: 8 },
-  miniStat: { minHeight: 54, flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 18, paddingHorizontal: 10, paddingVertical: 8 },
-  miniStatImage: { width: 38, height: 38 },
-  miniStatCopy: { flex: 1, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 },
-  miniStatLabel: { color: '#000000', fontSize: 12, fontFamily: 'Fredoka_700Bold' },
-  miniStatText: { color: '#000000', fontSize: 17, fontFamily: 'Fredoka_700Bold' },
+  miniStat: { minHeight: 54, width: '100%', flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: 18, paddingHorizontal: 8, paddingVertical: 8, overflow: 'hidden' },
+  miniStatImage: { width: 36, height: 36, flexShrink: 0 },
+  miniStatCopy: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 5 },
+  miniStatLabel: { flex: 1, minWidth: 0, color: '#000000', fontSize: 12, fontFamily: 'Fredoka_700Bold' },
+  miniStatText: { flexShrink: 0, maxWidth: '38%', color: '#000000', fontSize: 17, fontFamily: 'Fredoka_700Bold', textAlign: 'right' },
   settingsCard: { gap: 15, backgroundColor: '#ffffff', alignItems: 'center', borderWidth: 0, borderRadius: 28, shadowColor: '#17324D', shadowOpacity: 0.09, shadowRadius: 9, shadowOffset: { width: 0, height: 5 }, elevation: 3 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 13 },
   cardIcon: { width: 64, height: 64, borderRadius: 22, alignItems: 'center', justifyContent: 'center', overflow: 'visible' },
@@ -511,18 +504,18 @@ const styles = StyleSheet.create({
   linkCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: '#F7FFFC', borderWidth: 0, borderRadius: 28, shadowColor: '#17324D', shadowOpacity: 0.09, shadowRadius: 9, shadowOffset: { width: 0, height: 5 }, elevation: 3 },
   lockedCard: { borderColor: '#f9f9f9', backgroundColor: '#97792d' },
   lockBox: { width: '90%', alignSelf: 'center', gap: 16, borderRadius: 20, backgroundColor: '#f8f6f6', paddingHorizontal: 16, paddingVertical: 22, borderWidth: 0, shadowColor: '#17324D', shadowOpacity: 0.09, shadowRadius: 9, shadowOffset: { width: 0, height: 5 }, elevation: 7 },
-  lockQuestion: { color: '#41438F', fontSize: 20, fontFamily: 'Fredoka_700Bold' },
+  lockQuestion: { color: '#41438F', fontSize: 20, lineHeight: 25 },
   lockInputRow: { width: '100%', flexDirection: 'row', alignItems: 'center', gap: 7 },
   lockInput: { flex: 1, minHeight: 48, borderRadius: 10, backgroundColor: '#FFFFFF', borderWidth: 0, paddingHorizontal: 13, color: '#41438F', fontSize: 16, shadowColor: '#17324D', shadowOpacity: 0.09, shadowRadius: 9, shadowOffset: { width: 10, height: 10 }, elevation: 15 },
   unlockButton: { minHeight: 48, width: 76, borderRadius: 16, backgroundColor: '#454f59', alignItems: 'center', justifyContent: 'center' },
-  unlockText: { color: '#FFFFFF', fontSize: 15, fontFamily: 'Fredoka_700Bold' },
+  unlockText: { color: '#FFFFFF', fontSize: 15, lineHeight: 20 },
   dangerZone: { width: 310, gap: 15, borderRadius: 24, backgroundColor: '#FFF2F4', borderWidth: 2, borderColor: '#FFC7D0', padding: 18 },
   signOutZone: { width: 310, gap: 14, borderRadius: 24, backgroundColor: '#F3F2FF', borderWidth: 2, borderColor: '#D8D5FF', padding: 18 },
-  leaderboardControl: { width: 310, gap: 14, borderRadius: 24, backgroundColor: '#F7F3FF', borderWidth: 2, borderColor: '#DDD2FF', padding: 18 },
+  leaderboardControl: { width: 310, gap: 14, marginTop: 15, borderRadius: 24, backgroundColor: '#F7F3FF', borderWidth: 2, borderColor: '#DDD2FF', padding: 18 },
   leaderboardControlTitle: { color: '#5D3FC0', fontSize: 19, lineHeight: 24 },
   leaderboardControlText: { color: '#594F75', fontSize: 12, lineHeight: 18 },
   leaveLeaderboardButton: { alignItems: 'center', backgroundColor: '#7B61FF', borderRadius: 16, flexDirection: 'row', gap: 8, justifyContent: 'center', minHeight: 48, paddingHorizontal: 12 },
-  leaveLeaderboardText: { color: '#FFFFFF', fontSize: 14, textAlign: 'center' },
+  leaveLeaderboardText: { color: '#FFFFFF', fontSize: 15, lineHeight: 20, textAlign: 'center' },
   rejoinText: { color: '#594F75', fontSize: 11, lineHeight: 17 },
   signOutCopy: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   signOutTitle: { color: '#41438F', fontSize: 19, lineHeight: 24 },
@@ -552,6 +545,6 @@ const styles = StyleSheet.create({
   aboutRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F7FBFF', borderRadius: 18, padding: 12, gap: 65 },
   aboutLabel: { color: '#54708A', fontSize: 16, fontFamily: 'Fredoka_700Bold' },
   aboutValue: { color: '#16324F', fontSize: 16, fontFamily: 'Fredoka_700Bold' },
-  legalButton: { alignItems: 'center', backgroundColor: '#41438F', borderRadius: 18, flexDirection: 'row', gap: 9, justifyContent: 'center', minHeight: 52, paddingHorizontal: 14 },
-  legalButtonText: { color: '#FFFFFF', flex: 1, fontSize: 15, lineHeight: 20, textAlign: 'center' }
+  legalButton: { alignItems: 'center', backgroundColor: '#41438F', borderRadius: 18, flexDirection: 'row', gap: 9, justifyContent: 'center', minHeight: 58, paddingHorizontal: 14, paddingVertical: 8 },
+  legalButtonText: { color: '#FFFFFF', flex: 1, fontSize: 13, lineHeight: 17, textAlign: 'center' }
 });

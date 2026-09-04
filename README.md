@@ -1,4 +1,4 @@
-# eSmile App
+﻿# Kids Oral Care App
 
 A cross-platform Expo + React Native mobile application for children's oral hygiene. It includes child brushing guidance, games, rewards, challenges, parent monitoring, admin statistics, and multilingual support for English, French, and Arabic with RTL handling.
 
@@ -71,8 +71,17 @@ EXPO_PUBLIC_FIREBASE_APP_ID=
 
 1. Open Android Studio.
 2. Create or start an emulator from Device Manager.
-3. In the frontend folder, run `npm start`.
-4. Press `a` in the Expo terminal.
+3. Make sure no Expo server from another copy of this project is using port 8081.
+4. In the `frontend` folder, run `npm run android`.
+
+This command starts the development-client server on localhost, configures the
+Android emulator connection, and opens the installed development build. Keep the
+terminal running while using a development build. If Metro has stale cache data,
+use `npm run android:clean` once.
+
+The development build requires Metro and will show a loading timeout if Metro is
+stopped or unreachable. An APK created with the `preview` profile is standalone
+and does not require Metro.
 
 ## iPhone With Expo Go
 

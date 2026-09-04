@@ -1,5 +1,6 @@
 ﻿import React, { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
+import { useRef } from 'react';
 import { Animated, Image, ImageSourcePropType, Pressable, StyleSheet, Text, View } from 'react-native';
 import { AppButton } from '../components/AppButton';
 import { Card } from '../components/Card';
@@ -9,6 +10,7 @@ import { Game } from '../types/app';
 import { bodyFont, buttonFont, headingFont, rewardFont } from '../utils/kidStyle';
 import { SmileRaceGame } from './SmileRaceGame';
 import { CleanMySmileGame } from './CleanMySmileGame';
+import { PickTheRightOneGame } from './PickTheRightOneGame';
 
 type IconSpec = { icon?: keyof typeof Ionicons.glyphMap; image?: ImageSourcePropType; color: string; background: string };
 type TargetSpec = IconSpec & { label: string };
@@ -71,7 +73,8 @@ const gameIcons: Record<string, IconSpec> = {
   'clean-tooth': { image: require('../../assets/images/game-rescue-icon.png'), color: '#2BBBAD', background: '#FFFFFF' },
   'smile-quiz': { image: require('../../assets/images/game-genius-icon.png'), color: '#7B61FF', background: '#FFFFFF' },
   'smile-race': { image: require('../../assets/images/game-smile-race-icon.png'), color: '#6552EB', background: '#E9FFF9' },
-  'clean-my-smile': { image: require('../../assets/images/game-clean-my-smile-icon.png'), color: '#35A99A', background: '#E9FFF9' }
+  'clean-my-smile': { image: require('../../assets/images/game-clean-my-smile-icon.png'), color: '#35A99A', background: '#E9FFF9' },
+  'pick-right-one': { image: require('../../assets/images/game-quick-pick-icon.png'), color: '#6552EB', background: '#F0ECFF' }
 };
 
 const targetSets: Record<string, TargetSpec[]> = {
@@ -115,6 +118,18 @@ const quizQuestions: QuizQuestion[] = [
   { question: 'When should you change your toothbrush?', choices: [{ label: 'Every 3 months', image: require('../../assets/images/game-genius-calendar-3m.png'), icon: 'calendar', color: '#7B61FF', background: '#F0ECFF' }, { label: 'Every day', image: require('../../assets/images/game-genius-calendar-day.png'), icon: 'today', color: '#1D9BF0', background: '#EAF7FF' }, { label: 'Never', image: require('../../assets/images/game-genius-never.png'), icon: 'infinite', color: '#6D8BFF', background: '#EEF2FF' }], answer: 0 },
   { question: 'What drink helps make teeth strong?', choices: [{ label: 'Soda', image: require('../../assets/images/game-genius-soda.png'), icon: 'cafe', color: '#FF5C8A', background: '#FFEAF2' }, { label: 'Milk', image: require('../../assets/images/game-genius-milk.png'), icon: 'water', color: '#8EC5FF', background: '#EAF7FF' }, { label: 'Sugary juice', image: require('../../assets/images/game-genius-juice.png'), icon: 'cube', color: '#35B779', background: '#E9FFF4' }], answer: 1 }
 ];
+
+const gameTextKeys: Record<string, string> = {
+  Broccoli: 'foodBroccoli', Apple: 'foodApple', Milk: 'foodMilk', Carrot: 'foodCarrot', Yogurt: 'foodYogurt', Donut: 'foodDonut', Cookie: 'foodCookie', Lollipop: 'foodLollipop', Candy: 'foodCandy', Cupcake: 'foodCupcake',
+  Veggie: 'foodVeggie', Sweets: 'foodSweets', Drink: 'drink', Water: 'water', Brush: 'brushAction', Teeth: 'teeth', Rinse: 'rinse', Shine: 'shine',
+  'Gummy Bear': 'gummyBear', MilkShake: 'milkshake', 'Cake-Slice': 'cakeSlice', 'Chocolate Bar': 'chocolateBar', 'Cheese Cube': 'cheeseCube', 'Ice Cream': 'iceCream', Marshmallow: 'marshmallow',
+  'How many times a day should you brush?': 'quizBrushFrequency', '1 time': 'oneTime', '2 times': 'twoTimes', Never: 'never',
+  'How long is a good brushing?': 'quizBrushDuration', '10 seconds': 'tenSeconds', '2 minutes': 'twoMinutes', '1 hour': 'oneHour',
+  'Which food is a friend to your teeth?': 'quizToothFriendlyFood', 'When should you change your toothbrush?': 'quizChangeToothbrush', 'Every 3 months': 'everyThreeMonths', 'Every day': 'everyDay',
+  'What drink helps make teeth strong?': 'quizStrongDrink', Soda: 'soda', 'Sugary juice': 'sugaryJuice'
+};
+
+const localizedGameText = (t: (key: string) => string, value: string) => t(gameTextKeys[value] ?? value);
 
 const IconBubble = ({ spec, size = 48 }: { spec: IconSpec; size?: number }) => (
   <View style={[styles.iconBubble, { width: size, height: size, borderRadius: size / 3, backgroundColor: spec.background }]}>
@@ -161,7 +176,7 @@ const GameWinResult = ({ message, points, canPlayAgain, onPlayAgain }: { message
   );
 };
 
-const StrongToothGame = ({ canPlayAgain, onReplay, onWin }: { canPlayAgain: boolean; onReplay: () => boolean; onWin: () => void }) => {
+const StrongToothGame = ({ canPlayAgain, onReplay, onStart, onWin }: { canPlayAgain: boolean; onReplay: () => boolean; onStart: () => boolean; onWin: () => void }) => {
   const { theme, t } = useApp();
   const [selected, setSelected] = useState<number | null>(null);
   const [roundIndex, setRoundIndex] = useState(0);
@@ -174,6 +189,7 @@ const StrongToothGame = ({ canPlayAgain, onReplay, onWin }: { canPlayAgain: bool
 
   const choose = (choice: ToothChoice, index: number) => {
     if (selected !== null || complete) return;
+    if (!onStart()) return;
     setSelected(index);
     if (choice.clean) setCorrectCount((value) => value + 1);
   };
@@ -255,7 +271,7 @@ const StrongToothGame = ({ canPlayAgain, onReplay, onWin }: { canPlayAgain: bool
   );
 };
 
-const HealthyPicksGame = ({ canPlayAgain, onReplay, onWin }: { canPlayAgain: boolean; onReplay: () => boolean; onWin: () => void }) => {
+const HealthyPicksGame = ({ canPlayAgain, onReplay, onStart, onWin }: { canPlayAgain: boolean; onReplay: () => boolean; onStart: () => boolean; onWin: () => void }) => {
   const { theme, t } = useApp();
   const [selected, setSelected] = useState<number | null>(null);
   const [roundIndex, setRoundIndex] = useState(0);
@@ -268,6 +284,7 @@ const HealthyPicksGame = ({ canPlayAgain, onReplay, onWin }: { canPlayAgain: boo
 
   const choose = (choice: FoodChoice, index: number) => {
     if (selected !== null || complete) return;
+    if (!onStart()) return;
     setSelected(index);
     if (choice.healthy) setCorrectCount((value) => value + 1);
   };
@@ -336,7 +353,7 @@ const HealthyPicksGame = ({ canPlayAgain, onReplay, onWin }: { canPlayAgain: boo
           return (
             <Pressable key={choice.label} onPress={() => choose(choice, index)} style={[styles.foodChoice, chosen ? (choice.healthy ? styles.foodChoiceCorrect : styles.foodChoiceWrong) : undefined]}>
               <Image source={choice.image} style={styles.foodChoiceImage} resizeMode="contain" />
-              <Text style={[buttonFont, styles.foodChoiceLabel, { color: theme.text }]}>{choice.label}</Text>
+              <Text style={[buttonFont, styles.foodChoiceLabel, { color: theme.text }]}>{localizedGameText(t, choice.label)}</Text>
               {chosen ? <Ionicons name={choice.healthy ? 'checkmark-circle' : 'close-circle'} size={28} color={choice.healthy ? '#31C778' : '#FF5C8A'} style={styles.choiceBadge} /> : null}
             </Pressable>
           );
@@ -360,7 +377,7 @@ const GenericGame = ({ game, score, onScore }: { game: Game; score: number; onSc
         {targets.map((item, index) => (
           <Pressable key={`${item.label}-${index}`} onPress={onScore} style={[styles.largeTarget, { backgroundColor: item.background }]}>
             <Ionicons name={item.icon} size={34} color={item.color} />
-            <Text style={[buttonFont, styles.targetLabel, { color: theme.text }]}>{item.label}</Text>
+            <Text style={[buttonFont, styles.targetLabel, { color: theme.text }]}>{localizedGameText(t, item.label)}</Text>
           </Pressable>
         ))}
       </View>
@@ -376,7 +393,7 @@ const getSugarOptions = (answer: number) => {
   return Array.from(new Set(candidates)).slice(0, 4).sort((a, b) => a - b);
 };
 
-const SugarDetectiveGame = ({ canPlayAgain, onReplay, onComplete }: { canPlayAgain: boolean; onReplay: () => boolean; onComplete: () => void }) => {
+const SugarDetectiveGame = ({ canPlayAgain, onReplay, onStart, onComplete }: { canPlayAgain: boolean; onReplay: () => boolean; onStart: () => boolean; onComplete: () => void }) => {
   const { theme, t } = useApp();
   const [questionIndex, setQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
@@ -399,6 +416,7 @@ const SugarDetectiveGame = ({ canPlayAgain, onReplay, onComplete }: { canPlayAga
 
   const chooseAnswer = (choice: number) => {
     if (selected === answer) return;
+    if (!onStart()) return;
     setSelected(choice);
     animateCard();
     if (choice !== answer) {
@@ -438,7 +456,7 @@ const SugarDetectiveGame = ({ canPlayAgain, onReplay, onComplete }: { canPlayAga
   if (complete) {
     return (
       <GameWinResult
-        message={`You solved ${score} out of ${sugarProducts.length} sugar clues.`}
+        message={t('sugarSolved').replace('{{count}}', `${score}`).replace('{{total}}', `${sugarProducts.length}`)}
         points={starsEarned}
         canPlayAgain={canPlayAgain}
         onPlayAgain={restart}
@@ -449,19 +467,19 @@ const SugarDetectiveGame = ({ canPlayAgain, onReplay, onComplete }: { canPlayAga
   return (
     <Card style={[styles.gamePanelBorder, styles.sugarCard]}>
       <View style={styles.sugarTopRow}>
-        <Text style={[rewardFont, styles.sugarScore, { color: theme.primary }]}>Score: {score}</Text>
+        <Text style={[rewardFont, styles.sugarScore, { color: theme.primary }]}>{t('score')}: {score}</Text>
       </View>
-      <Text style={[buttonFont, styles.sugarRule]}>1 sugar cube = 4 grams of sugar</Text>
+      <Text style={[buttonFont, styles.sugarRule]}>{t('sugarRule')}</Text>
       <View style={styles.quizProgressShell}>
         <View style={[styles.quizProgressFill, { width: `${(questionIndex / sugarProducts.length) * 100}%` }]} />
       </View>
-      <Text style={[buttonFont, styles.quizSubtitle]}>Question {questionIndex + 1} / {sugarProducts.length}</Text>
+      <Text style={[buttonFont, styles.quizSubtitle]}>{t('questionProgress').replace('{{current}}', `${questionIndex + 1}`).replace('{{total}}', `${sugarProducts.length}`)}</Text>
 
       <Animated.View style={[styles.productCard, { transform: [{ scale: bounce }] }]}>
         <Image source={product.image} style={styles.productImage} resizeMode="contain" />
         <View style={styles.productCopy}>
-          <Text style={[headingFont, styles.productName, { color: theme.text }]}>{product.name}</Text>
-          <Text style={[rewardFont, styles.sugarGrams]}>{product.sugarGrams}g sugar</Text>
+          <Text style={[headingFont, styles.productName, { color: theme.text }]}>{localizedGameText(t, product.name)}</Text>
+          <Text style={[rewardFont, styles.sugarGrams]}>{t('sugarGrams').replace('{{count}}', `${product.sugarGrams}`)}</Text>
         </View>
       </Animated.View>
 
@@ -546,12 +564,12 @@ const CleanToothGame = ({ cleaned, canPlayAgain, onReplay, onClean, onReset, onC
           );
         })}
       </View>
-      <Text style={[buttonFont, styles.feedback, { color: '#168954' }]}>{remaining === 0 ? 'Smile rescued!' : `Nice cleaning! ${remaining} spots left.`}</Text>
+      <Text style={[buttonFont, styles.feedback, { color: '#168954' }]}>{remaining === 0 ? t('smileRescued') : t('spotsLeft').replace('{{count}}', `${remaining}`)}</Text>
     </Card>
   );
 };
 
-const SmileQuizGame = ({ canPlayAgain, onReplay, onComplete }: { canPlayAgain: boolean; onReplay: () => boolean; onComplete: () => void }) => {
+const SmileQuizGame = ({ canPlayAgain, onReplay, onStart, onComplete }: { canPlayAgain: boolean; onReplay: () => boolean; onStart: () => boolean; onComplete: () => void }) => {
   const { theme, t } = useApp();
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
@@ -562,7 +580,7 @@ const SmileQuizGame = ({ canPlayAgain, onReplay, onComplete }: { canPlayAgain: b
   const progress = complete ? 1 : questionIndex / quizQuestions.length;
   const isCorrect = selected === question.answer;
 
-  const choose = (index: number) => { if (selected !== null) return; setSelected(index); if (index === question.answer) setCorrectCount((value) => value + 1); };
+  const choose = (index: number) => { if (selected !== null || !onStart()) return; setSelected(index); if (index === question.answer) setCorrectCount((value) => value + 1); };
   const next = () => {
     if (selected === null) return;
     if (questionIndex === quizQuestions.length - 1) {
@@ -616,12 +634,12 @@ const SmileQuizGame = ({ canPlayAgain, onReplay, onComplete }: { canPlayAgain: b
 
   return (
     <Card style={[styles.gamePanelBorder, styles.quizCard, styles.quizPlayCard]}>
-      <Text style={[buttonFont, styles.quizSubtitle]}>Question {questionIndex + 1} / {quizQuestions.length}</Text>
-      <Text style={[rewardFont, styles.quizLiveScore, { color: theme.primary }]}>Score: {correctCount}</Text>
+      <Text style={[buttonFont, styles.quizSubtitle]}>{t('questionProgress').replace('{{current}}', `${questionIndex + 1}`).replace('{{total}}', `${quizQuestions.length}`)}</Text>
+      <Text style={[rewardFont, styles.quizLiveScore, { color: theme.primary }]}>{t('score')}: {correctCount}</Text>
       <View style={styles.quizProgressShell}><View style={[styles.quizProgressFill, { width: `${progress * 100}%` }]} /></View>
       <View style={styles.questionBox}>
         <Image source={require('../../assets/images/game-genius-icon.png')} style={styles.questionIconImage} resizeMode="contain" />
-        <Text style={[buttonFont, styles.questionText, { color: theme.text }]}>{question.question}</Text>
+        <Text style={[buttonFont, styles.questionText, { color: theme.text }]}>{localizedGameText(t, question.question)}</Text>
       </View>
       <View style={styles.answerList}>
         {question.choices.map((choice, index) => {
@@ -633,14 +651,14 @@ const SmileQuizGame = ({ canPlayAgain, onReplay, onComplete }: { canPlayAgain: b
               <View style={styles.answerImageBox}>
                 {choice.image ? <Image source={choice.image} style={styles.answerImage} resizeMode="contain" /> : <Ionicons name={choice.icon} size={25} color={choice.color} />}
               </View>
-              <Text style={[buttonFont, styles.answerText, { color: theme.text }]}>{choice.label}</Text>
+              <Text style={[buttonFont, styles.answerText, { color: theme.text }]}>{localizedGameText(t, choice.label)}</Text>
               {chosen && answer ? <Ionicons name="checkmark" size={24} color="#31C778" /> : null}
             </Pressable>
           );
         })}
       </View>
-      {selected !== null ? <Text style={[buttonFont, styles.feedback, { color: isCorrect ? '#168954' : '#C8447C' }]}>{isCorrect ? 'Brilliant! Your tooth brain is sparkling.' : 'Nice try! Keep thinking like a Tooth Genius.'}</Text> : null}
-      {selected !== null ? <AppButton label={questionIndex === quizQuestions.length - 1 ? 'Finish' : 'Next ›'} onPress={next} /> : null}
+      {selected !== null ? <Text style={[buttonFont, styles.feedback, { color: isCorrect ? '#168954' : '#C8447C' }]}>{isCorrect ? t('brilliant') : t('niceTry')}</Text> : null}
+      {selected !== null ? <AppButton label={questionIndex === quizQuestions.length - 1 ? t('finish') : t('next')} onPress={next} /> : null}
     </Card>
   );
 };
@@ -650,18 +668,25 @@ export const GamesScreen = () => {
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [cleaned, setCleaned] = useState<boolean[]>(cleanItems.map(() => false));
+  const attemptStartedRef = useRef(false);
   const availableGames = games.filter((game) => game.ageGroups.includes(child.ageGroup));
   const selectedGame = availableGames.find((game) => game.id === selectedGameId) ?? null;
 
   const openGame = (game: Game) => {
     const used = gamePlays[game.id] ?? 0;
     if (used >= game.dailyLimit) return;
-    if (!recordGamePlay(game.id)) return;
+    attemptStartedRef.current = false;
     setSelectedGameId(game.id);
     setScore(0);
     setCleaned(cleanItems.map(() => false));
   };
-  const leaveGame = () => { setSelectedGameId(null); setScore(0); };
+  const leaveGame = () => { attemptStartedRef.current = false; setSelectedGameId(null); setScore(0); };
+  const startSelectedGame = () => {
+    if (attemptStartedRef.current) return true;
+    if (!selectedGame || !recordGamePlay(selectedGame.id)) return false;
+    attemptStartedRef.current = true;
+    return true;
+  };
   const replaySelectedGame = () => selectedGame ? recordGamePlay(selectedGame.id) : false;
 
   if (selectedGame) {
@@ -671,7 +696,7 @@ export const GamesScreen = () => {
     return (
       <Screen gradientBackground showDecorations={false}>
         <GameHeader game={{ ...selectedGame, titleKey: t(selectedGame.titleKey) }} onBack={leaveGame} />
-        {selectedGame.id === 'plaque-pop' ? <StrongToothGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onWin={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'food-sorter' ? <HealthyPicksGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onWin={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'sugar-detective' ? <SugarDetectiveGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onComplete={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'clean-tooth' ? <CleanToothGame cleaned={cleaned} canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onClean={(index) => setCleaned((items) => items.map((item, itemIndex) => itemIndex === index ? true : item))} onReset={() => setCleaned(cleanItems.map(() => false))} onComplete={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'smile-quiz' ? <SmileQuizGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onComplete={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'smile-race' ? <SmileRaceGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onComplete={(smileStars, raceScore) => awardGame(selectedGame.id, smileStars, { score: raceScore })} /> : selectedGame.id === 'clean-my-smile' ? <CleanMySmileGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onComplete={(durationSeconds) => awardGame(selectedGame.id, undefined, { durationSeconds })} /> : <GenericGame game={selectedGame} score={score} onScore={() => setScore((value) => value + 1)} />}
+        {selectedGame.id === 'plaque-pop' ? <StrongToothGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onStart={startSelectedGame} onWin={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'food-sorter' ? <HealthyPicksGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onStart={startSelectedGame} onWin={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'sugar-detective' ? <SugarDetectiveGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onStart={startSelectedGame} onComplete={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'clean-tooth' ? <CleanToothGame cleaned={cleaned} canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onClean={(index) => { if (startSelectedGame()) setCleaned((items) => items.map((item, itemIndex) => itemIndex === index ? true : item)); }} onReset={() => setCleaned(cleanItems.map(() => false))} onComplete={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'smile-quiz' ? <SmileQuizGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onStart={startSelectedGame} onComplete={() => awardGame(selectedGame.id)} /> : selectedGame.id === 'smile-race' ? <SmileRaceGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onStart={startSelectedGame} onComplete={(smileStars, raceScore) => awardGame(selectedGame.id, smileStars, { score: raceScore })} /> : selectedGame.id === 'clean-my-smile' ? <CleanMySmileGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onStart={startSelectedGame} onComplete={(durationSeconds) => awardGame(selectedGame.id, undefined, { durationSeconds })} /> : selectedGame.id === 'pick-right-one' ? <PickTheRightOneGame canPlayAgain={canPlayAgain} onReplay={replaySelectedGame} onStart={startSelectedGame} onComplete={() => awardGame(selectedGame.id, 10)} /> : <GenericGame game={selectedGame} score={score} onScore={() => { if (startSelectedGame()) setScore((value) => value + 1); }} />}
       </Screen>
     );
   }
@@ -686,7 +711,7 @@ export const GamesScreen = () => {
         return (
           <Card key={game.id} style={styles.listCard}>
             <View style={styles.row}>
-              <IconBubble spec={icon} size={game.id === 'smile-race' ? 78 : game.id === 'clean-my-smile' ? 80 : 64} />
+              <IconBubble spec={icon} size={game.id === 'smile-race' ? 78 : game.id === 'clean-my-smile' || game.id === 'pick-right-one' ? 80 : 64} />
               <View style={styles.copy}>
                 <Text style={styles.gameCardTitle}>{t(game.titleKey)}</Text>
                 <Text style={[bodyFont, styles.gameCardDescription]}>

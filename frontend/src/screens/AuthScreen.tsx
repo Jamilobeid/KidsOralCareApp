@@ -51,9 +51,7 @@ export const AuthScreen = () => {
   }, [isSignup]);
 
   const validateSignup = () => {
-    const cleanPassword = password.trim();
-
-    if (cleanPassword.length < 6 || cleanPassword.length > 20) {
+    if (password.length < 6 || password.length > 128) {
       Alert.alert(t('passwordSparkleCheck'), t('passwordSparkleMessage'));
       return;
     }
@@ -73,7 +71,7 @@ export const AuthScreen = () => {
       return;
     }
 
-    registerParent(cleanPassword, parentEmail.trim());
+    registerParent(password, parentEmail.trim());
   };
 
   if (verificationPending) {

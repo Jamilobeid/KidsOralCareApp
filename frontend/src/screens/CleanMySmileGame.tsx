@@ -3,11 +3,10 @@ import { Image, ImageSourcePropType, LayoutAnimation, PanResponder, Pressable, S
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from '../components/Card';
 import { useApp } from '../context/AppContext';
-import { toothBuddies } from '../data/toothBuddies';
 import { bodyFont, headingFont } from '../utils/kidStyle';
 type Stage = 'intro' | 'brushing' | 'flossing' | 'complete';
 type Point = { x: number; y: number };
-type BrushZone = { name: string; instruction: string; image: ImageSourcePropType; arrow: keyof typeof Ionicons.glyphMap };
+type BrushZone = { nameKey: string; instructionKey: string; image: ImageSourcePropType; arrow: keyof typeof Ionicons.glyphMap };
 type FlossParticle = Point & { id: number; kind: 'brown' | 'yellow'; size: number };
 type DebrisKind = 'greenGerm' | 'sugarCube' | 'pinkGerm' | 'grayPlaque' | 'purpleCandy';
 type SurfaceDebris = Point & { id: number; kind: DebrisKind; zoneIndex: number; size: number };
@@ -18,10 +17,10 @@ const BRUSH_REWARD = 20;
 const DEBRIS_BRUSH_PASSES = 3;
 const PLAQUE_FLOSS_PASSES = 3;
 const brushZones: BrushZone[] = [
-  { name: 'Front teeth', instruction: 'Brush all highlighted upper and lower front teeth', image: require('../../assets/images/clean-smile-front-teeth.png'), arrow: 'swap-horizontal' },
-  { name: 'Left back teeth', instruction: 'Brush every highlighted tooth on the left side', image: require('../../assets/images/clean-smile-left-back-teeth.png'), arrow: 'swap-horizontal' },
-  { name: 'Right back teeth', instruction: 'Brush every highlighted tooth on the right side', image: require('../../assets/images/clean-smile-right-back-teeth.png'), arrow: 'swap-horizontal' },
-  { name: 'Chewing surfaces', instruction: 'Use short back-and-forth strokes on every highlighted surface', image: require('../../assets/images/clean-smile-chewing-surfaces.png'), arrow: 'swap-horizontal' }
+  { nameKey: 'cleanFrontTeeth', instructionKey: 'cleanFrontInstruction', image: require('../../assets/images/clean-smile-front-teeth.png'), arrow: 'swap-horizontal' },
+  { nameKey: 'cleanLeftBackTeeth', instructionKey: 'cleanLeftInstruction', image: require('../../assets/images/clean-smile-left-back-teeth.png'), arrow: 'swap-horizontal' },
+  { nameKey: 'cleanRightBackTeeth', instructionKey: 'cleanRightInstruction', image: require('../../assets/images/clean-smile-right-back-teeth.png'), arrow: 'swap-horizontal' },
+  { nameKey: 'cleanChewingSurfaces', instructionKey: 'cleanChewingInstruction', image: require('../../assets/images/clean-smile-chewing-surfaces.png'), arrow: 'swap-horizontal' }
 ];
 const cleanMouthImage = require('../../assets/images/clean-smile-clean-mouth.png');
 const flossParticles: FlossParticle[] = [
@@ -88,9 +87,8 @@ const toBoardPoint = (point: Point, boardWidth: number) => {
   return { x: point.x * boardWidth, y: imageTop + point.y * imageHeight };
 };
 
-export const CleanMySmileGame = ({ canPlayAgain, onComplete, onReplay }: { canPlayAgain: boolean; onComplete: (durationSeconds: number) => void; onReplay: () => boolean }) => {
-  const { child } = useApp();
-  const buddy = toothBuddies.find((item) => item.id === child.selectedCharacter) ?? toothBuddies[0];
+export const CleanMySmileGame = ({ canPlayAgain, onComplete, onReplay, onStart }: { canPlayAgain: boolean; onComplete: (durationSeconds: number) => void; onReplay: () => boolean; onStart: () => boolean }) => {
+  const { t } = useApp();
   const [stage, setStage] = useState<Stage>('intro');
   const [zoneIndex, setZoneIndex] = useState(0);
   const [cleanedZones, setCleanedZones] = useState<boolean[]>(brushZones.map(() => false));
@@ -112,6 +110,7 @@ export const CleanMySmileGame = ({ canPlayAgain, onComplete, onReplay }: { canPl
   const startedAtRef = useRef<number | null>(null);
 
   const reset = () => {
+    if (stageRef.current === 'intro' && !onStart()) return;
     startedAtRef.current = Date.now();
     setStage('flossing');
     setZoneIndex(0);
@@ -235,18 +234,16 @@ export const CleanMySmileGame = ({ canPlayAgain, onComplete, onReplay }: { canPl
     return (
       <Card style={styles.introCard}>
         <View style={styles.guideRow}>
-          <Image source={buddy.image} style={styles.guideBuddy} resizeMode="contain" />
-          <View style={styles.guideBubble}><Text style={[headingFont, styles.guideText]}>Let’s clean every tooth!</Text></View>
+          <View style={styles.guideBubble}><Text style={[headingFont, styles.guideText]}>{t('cleanEveryTooth')}</Text></View>
         </View>
         <Image source={cleanMouthImage} style={styles.introMouth} resizeMode="contain" />
-        <Text style={[headingFont, styles.introTitle]}>Floss, then brush every tooth!</Text>
-        <Text style={[bodyFont, styles.introNote]}>Remember to brush the inner surfaces of your teeth in real life, too!</Text>
+        <Text style={[headingFont, styles.introTitle]}>{t('flossThenBrush')}</Text>
         <View style={styles.stepsRow}>
-          <View style={styles.stepPill}><Text style={styles.stepNumber}>1</Text><Text style={styles.stepText}>FLOSS</Text></View>
+          <View style={styles.stepPill}><Text style={styles.stepNumber}>1</Text><Text style={styles.stepText}>{t('floss')}</Text></View>
           <Ionicons name="arrow-forward" size={19} color="#698086" />
-          <View style={styles.stepPill}><Text style={styles.stepNumber}>2</Text><Text style={styles.stepText}>BRUSH</Text></View>
+          <View style={styles.stepPill}><Text style={styles.stepNumber}>2</Text><Text style={styles.stepText}>{t('brushAction')}</Text></View>
         </View>
-        <Pressable accessibilityRole="button" onPress={reset} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={[headingFont, styles.primaryButtonText]}>START CLEANING</Text></Pressable>
+        <Pressable accessibilityRole="button" onPress={reset} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={[headingFont, styles.primaryButtonText]}>{t('startCleaning')}</Text></Pressable>
       </Card>
     );
   }
@@ -255,14 +252,14 @@ export const CleanMySmileGame = ({ canPlayAgain, onComplete, onReplay }: { canPl
     return (
       <Card style={styles.completeCard}>
         <Image source={cleanMouthImage} style={styles.completeMouthImage} resizeMode="contain" />
-        <Text style={[headingFont, styles.completeTitle]}>Sparkling Clean!</Text>
-        <Text style={[bodyFont, styles.completeCopy]}>You flossed away all the plaque characters and brushed every highlighted area.</Text>
-        <View style={styles.finalScore}><Text style={[headingFont, styles.finalScoreLabel]}>FINAL SCORE</Text><Text style={[headingFont, styles.finalScoreValue]}>100 / 100</Text></View>
+        <Text style={[headingFont, styles.completeTitle]}>{t('sparklingClean')}</Text>
+        <Text style={[bodyFont, styles.completeCopy]}>{t('cleanCompleteCopy')}</Text>
+        <View style={styles.finalScore}><Text style={[headingFont, styles.finalScoreLabel]}>{t('finalScore')}</Text><Text style={[headingFont, styles.finalScoreValue]}>100 / 100</Text></View>
         <View style={styles.rewardPill}>
           <Image source={require('../../assets/images/game-clean-reward-star.png')} style={styles.rewardStarImage} resizeMode="contain" />
           <Text style={[headingFont, styles.rewardValue]}>+{BRUSH_REWARD}</Text>
         </View>
-        {canPlayAgain ? <Pressable accessibilityRole="button" onPress={replay} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={[headingFont, styles.primaryButtonText]}>CLEAN AGAIN</Text></Pressable> : null}
+        {canPlayAgain ? <Pressable accessibilityRole="button" onPress={replay} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={[headingFont, styles.primaryButtonText]}>{t('cleanAgain')}</Text></Pressable> : null}
       </Card>
     );
   }
@@ -280,20 +277,20 @@ export const CleanMySmileGame = ({ canPlayAgain, onComplete, onReplay }: { canPl
   return (
     <View style={styles.gameWrap}>
       <View style={styles.stageHeader}>
-        <View style={styles.stagePill}><Ionicons name={stage === 'brushing' ? 'brush' : 'git-branch-outline'} size={19} color="#6552EB" /><Text style={styles.stagePillText}>{stage === 'brushing' ? `BRUSHING ${zoneIndex + 1}/${brushZones.length}` : 'FLOSSING'}</Text></View>
+        <View style={styles.stagePill}><Ionicons name={stage === 'brushing' ? 'brush' : 'git-branch-outline'} size={19} color="#6552EB" /><Text style={styles.stagePillText}>{stage === 'brushing' ? `${t('brushing')} ${zoneIndex + 1}/${brushZones.length}` : t('flossing')}</Text></View>
         <Text style={[headingFont, styles.progressPercent]}>{Math.round(overallProgress)}%</Text>
       </View>
       <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${overallProgress}%` as `${number}%` }]} /></View>
       <View style={styles.instructionCard}>
         <Ionicons name={stage === 'brushing' ? zone.arrow : 'swap-vertical'} size={28} color="#6552EB" />
         <View style={styles.instructionCopy}>
-          <Text style={[headingFont, styles.instructionTitle]}>{stage === 'brushing' ? zone.name : 'Floss between the teeth'}</Text>
-          <Text style={[bodyFont, styles.instructionText]}>{stage === 'brushing' ? `${zone.instruction} • ${cleanedCurrentZoneDebris}/${currentZoneDebris.length}` : `Remove every plaque spot • ${removedParticles.length}/${flossParticles.length}`}</Text>
+          <Text style={[headingFont, styles.instructionTitle]}>{stage === 'brushing' ? t(zone.nameKey) : t('flossBetweenTeeth')}</Text>
+          <Text style={[bodyFont, styles.instructionText]}>{stage === 'brushing' ? `${t(zone.instructionKey)} • ${cleanedCurrentZoneDebris}/${currentZoneDebris.length}` : `${t('removeEveryPlaqueSpot')} • ${removedParticles.length}/${flossParticles.length}`}</Text>
         </View>
       </View>
       <View
         {...gestures.panHandlers}
-        accessibilityLabel={stage === 'brushing' ? `Brush the highlighted ${zone.name}` : 'Drag the floss over every food particle'}
+        accessibilityLabel={stage === 'brushing' ? t('brushHighlightedZone').replace('{{zone}}', t(zone.nameKey)) : t('dragFlossAccessibility')}
         onLayout={(event) => {
           mouthWidthRef.current = event.nativeEvent.layout.width;
           setMouthWidth(event.nativeEvent.layout.width);
@@ -342,20 +339,18 @@ export const CleanMySmileGame = ({ canPlayAgain, onComplete, onReplay }: { canPl
           </View>
         )}
       </View>
-      <Text style={[bodyFont, styles.dragHint]}>{stage === 'brushing' ? 'Keep your finger on the screen and brush away every germ and plaque character.' : 'Drag the floss across every brown and yellow plaque character.'}</Text>
+      <Text style={[bodyFont, styles.dragHint]}>{stage === 'brushing' ? t('cleanBrushDragHint') : t('cleanFlossDragHint')}</Text>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  introCard: { alignItems: 'center', backgroundColor: '#F7FFFC', borderRadius: 28, gap: 13, padding: 22 },
+  introCard: { alignItems: 'center', backgroundColor: '#F7FFFC', borderRadius: 28, borderWidth: 0, gap: 13, padding: 22, shadowColor: '#17324D', shadowOpacity: 0.09, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
   guideRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'center' },
-  guideBuddy: { height: 85, width: 85 },
   guideBubble: { backgroundColor: '#E9FFF8', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 10 },
   guideText: { color: '#28535A', fontSize: 17 },
   introMouth: { height: 180, width: '100%' },
   introTitle: { color: '#41438F', fontSize: 28, lineHeight: 40, textAlign: 'center' },
-  introNote: { color: '#5B7379', fontSize: 14, lineHeight: 20, textAlign: 'center' },
   stepsRow: { alignItems: 'center', flexDirection: 'row', gap: 9 },
   stepPill: { alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 999, elevation: 2, flexDirection: 'row', gap: 6, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 15, marginTop: 10 },
   stepNumber: { backgroundColor: '#6552EB', borderRadius: 12, color: '#FFFFFF', fontFamily: 'Fredoka_700Bold', overflow: 'hidden', paddingHorizontal: 7, paddingVertical: 2 },
@@ -374,7 +369,7 @@ const styles = StyleSheet.create({
   instructionCopy: { flex: 1 },
   instructionTitle: { color: '#314950', fontSize: 17, lineHeight: 21 },
   instructionText: { color: '#6A8085', fontSize: 12, lineHeight: 20, fontFamily: 'Fredoka_700Bold' },
-  mouthBoard: { backgroundColor: '#F7FFFC', borderColor: '#FFFFFF', borderRadius: 28, borderWidth: 5, elevation: 5, height: MOUTH_HEIGHT, overflow: 'hidden', position: 'relative' },
+  mouthBoard: { backgroundColor: '#F7FFFC', borderRadius: 28, borderWidth: 0, elevation: 4, height: MOUTH_HEIGHT, overflow: 'hidden', position: 'relative', shadowColor: '#17324D', shadowOpacity: 0.09, shadowRadius: 12, shadowOffset: { width: 0, height: 6 } },
   mouthImage: { height: '100%', width: '100%' },
   surfaceDebris: { position: 'absolute', zIndex: 2 },
   toothbrushTool: { height: 130, position: 'absolute', transform: [{ rotate: '-80deg' }], width: 90 },
@@ -383,7 +378,7 @@ const styles = StyleSheet.create({
   flossTool: { height: 100, position: 'absolute', width: 78, zIndex: 5 },
   flossToolImage: { height: 100, width: 78 },
   dragHint: { color: '#607A80', fontSize: 13, lineHeight: 18, textAlign: 'center' },
-  completeCard: { alignItems: 'center', backgroundColor: '#F7FFFC', borderRadius: 28, gap: 13, padding: 24 },
+  completeCard: { alignItems: 'center', backgroundColor: '#F7FFFC', borderRadius: 28, borderWidth: 0, gap: 13, padding: 24, shadowColor: '#17324D', shadowOpacity: 0.09, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
   completeMouthImage: { height: 210, width: '100%' },
   completeTitle: { color: '#41438F', fontSize: 29, lineHeight: 40 },
   completeCopy: { color: '#5B7379', fontSize: 15, lineHeight: 24, textAlign: 'center', fontFamily: 'Fredoka_700Bold', margin: 8, marginBottom: 10  },

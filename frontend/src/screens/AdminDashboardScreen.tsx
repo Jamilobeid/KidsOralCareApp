@@ -42,6 +42,11 @@ const UserActivityCard = ({ user, t }: { user: AdminUserSummary; t: (key: string
       <Metric label={t('thisWeek')} value={`${user.weeklyBrushes} ${t('brushes')}`} />
       <Metric label={t('totalBrushingSessions')} value={`${user.totalBrushes}`} />
       <Metric label={t('totalApplicationUse')} value={formatUsageDuration(user.totalUsageSeconds)} />
+      <Metric label={t('totalAppSessions')} value={`${user.appSessions}`} />
+      <Metric label={t('numberOfDaysUsed')} value={`${user.daysUsed}`} />
+      <Metric label={t('totalPointsEarned')} value={`${user.totalPointsEarned}`} />
+      <Metric label={t('educationalVideoViews')} value={`${user.educationalVideoViews}`} />
+      <Metric label={t('totalGamesPlayed')} value={`${user.gamesPlayed}`} />
       <Metric label={t('totalFollowedReminders')} value={`${user.remindersFollowed}`} />
       <Metric label={t('totalLogins')} value={`${user.loginCount}`} />
       <Metric label={t('completedActivities')} value={`${user.activitiesCompleted}`} />

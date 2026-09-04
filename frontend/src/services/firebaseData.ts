@@ -17,6 +17,15 @@ import { Platform } from 'react-native';
 import { collection, doc, getDoc, getDocs, increment, limit, orderBy, query, runTransaction, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { AdminUserSummary, ChildProfile, LeaderboardEntry, ThemeName, UserRole } from '../types/app';
 import { emptyWeeklyBrushes, getLocalDateKey, getLocalWeekKey, normalizeWeeklyBrushes } from '../utils/calendar';
+import {
+  normalizeAndValidateEmail,
+  normalizeAndValidateLegalName,
+  validateChildAge,
+  validateChildProfileForSync,
+  validateDailyGamePlays,
+  validateElapsedSeconds,
+  validatePassword
+} from '../utils/inputValidation';
 import { auth, db, isFirebaseConfigured } from './firebase';
 import { nativeAuthPersistence } from './firebaseAuthPersistence';
 
@@ -40,6 +49,10 @@ type ChildDocument = {
   dailyDateKey: string;
   weekKey: string;
   totalBrushes: number;
+  appSessions: number;
+  daysUsed: number;
+  lastUsageDateKey: string;
+  educationalVideoViews: number;
   lastBrushingAt?: string;
   unlockedCharacters?: string[];
   selectedCharacter?: string;
@@ -121,9 +134,11 @@ const normalizedCalendarFields = (data: Partial<ChildDocument>, now = new Date()
 
 export const signInFirebaseUser = async (email: string, password: string, rememberMe = false) => {
   if (!auth) throw new Error('Firebase Auth is not configured.');
+  const cleanEmail = normalizeAndValidateEmail(email);
+  validatePassword(password);
   const persistentStorage = Platform.OS === 'web' ? browserLocalPersistence : nativeAuthPersistence;
   await setPersistence(auth, rememberMe && persistentStorage ? persistentStorage : inMemoryPersistence);
-  return signInWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
+  return signInWithEmailAndPassword(auth, cleanEmail, password);
 };
 
 export const createFirebaseParentRegistration = async (
@@ -132,7 +147,8 @@ export const createFirebaseParentRegistration = async (
 ) => {
   if (!auth || !db) throw new Error('Firebase is not configured.');
 
-  const cleanEmail = parentEmail.trim().toLowerCase();
+  const cleanEmail = normalizeAndValidateEmail(parentEmail);
+  validatePassword(password);
   const credential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
   const parentId = credential.user.uid;
 
@@ -184,9 +200,10 @@ export const recordFirebaseParentalConsent = async (
 ) => {
   const user = auth?.currentUser;
   if (!user || !db || !user.emailVerified) throw new Error('Verify the parent email before submitting consent.');
+  const cleanLegalName = normalizeAndValidateLegalName(parentLegalName);
   await setDoc(doc(db, 'parentalConsents', user.uid), {
     uid: user.uid,
-    parentLegalName: parentLegalName.trim(),
+    parentLegalName: cleanLegalName,
     signatureAcknowledgement: 'I CONSENT',
     internalUseGranted: true,
     leaderboardDisclosureGranted: leaderboardRequested,
@@ -210,6 +227,7 @@ export const createFirebaseChildProfile = async (
   if (consent.status !== 'granted') throw new Error('Parental consent has not been approved yet.');
 
   const cleanUsername = username.trim();
+  validateChildAge(age);
   const publicNicknameIssue = getPublicNicknameIssue(cleanUsername);
   if (publicNicknameIssue) throw new Error(publicNicknameIssue);
   const normalizedUsername = cleanUsername.normalize('NFKC').toLocaleLowerCase('en-US');
@@ -220,6 +238,7 @@ export const createFirebaseChildProfile = async (
     points: 0, badges: [], level: 1, todayBrushes: 0, weeklyBrushes: 0,
     weeklyBrushesByDay: emptyWeeklyBrushes(), brushedPeriodsToday: [], dailyGamePlays: {},
     dailyDateKey: getLocalDateKey(), weekKey: getLocalWeekKey(), totalBrushes: 0,
+    appSessions: 0, daysUsed: 0, lastUsageDateKey: '', educationalVideoViews: 0,
     unlockedCharacters: ['Toothy'], selectedCharacter: 'Toothy',
     timeSpentMinutes: 0, gamesPlayed: 0, rewardsEarned: 0, engagementScore: 0,
     totalUsageSeconds: 0, loginCount: 1, activitiesCompleted: 0, remindersFollowed: 0,
@@ -268,7 +287,7 @@ export const signOutFirebaseUser = async () => {
 
 export const requestFirebasePasswordReset = async (parentEmail: string) => {
   if (!auth) throw new Error('Firebase Auth is not configured.');
-  await sendPasswordResetEmail(auth, parentEmail.trim().toLowerCase());
+  await sendPasswordResetEmail(auth, normalizeAndValidateEmail(parentEmail));
 };
 
 export const requestFirebaseAccountDeletion = async (password: string) => {
@@ -278,6 +297,7 @@ export const requestFirebaseAccountDeletion = async (password: string) => {
   const deletionEndpoint = publicEnvironment.EXPO_PUBLIC_ACCOUNT_DELETION_URL?.trim();
   if (!deletionEndpoint) throw new Error('Secure account deletion is not configured yet.');
 
+  validatePassword(password);
   const credential = EmailAuthProvider.credential(user.email, password);
   await reauthenticateWithCredential(user, credential);
   const idToken = await user.getIdToken(true);
@@ -301,7 +321,6 @@ export const requestFirebaseAccountDeletion = async (password: string) => {
         'admin-account-protected': 'Administrator accounts cannot be deleted from this screen.',
         'parent-email-not-verified': 'Verify the parent email before deleting the account.',
         'recent-authentication-required': 'Enter the parent password again and retry.',
-        'too-many-requests': 'Too many deletion attempts. Wait a few minutes and try again.',
         'deletion-failed-retry-safe': 'Deletion was not completed. The secure request was recorded and can be retried.'
       };
       throw new Error(messages[result.error ?? ''] ?? 'The secure server could not complete account deletion.');
@@ -416,6 +435,10 @@ export const fetchFirebaseAdminUsers = async (): Promise<AdminUserSummary[]> => 
       todayBrushes: calendar.todayBrushes,
       weeklyBrushes: calendar.weeklyBrushes,
       totalBrushes: data.totalBrushes ?? 0,
+      appSessions: data.appSessions ?? 0,
+      daysUsed: data.daysUsed ?? 0,
+      totalPointsEarned: data.points ?? 0,
+      educationalVideoViews: data.educationalVideoViews ?? 0,
       timeSpentMinutes: data.timeSpentMinutes ?? 0,
       loginCount: data.loginCount ?? 0,
       totalUsageSeconds: data.totalUsageSeconds ?? 0,
@@ -448,6 +471,13 @@ export const recordFirebaseBrushing = async (
   weeklyBrushesByDay: number[]
 ) => {
   if (!db) return;
+  if (childId !== auth?.currentUser?.uid) throw new Error('The child profile is invalid.');
+  if ((period !== 'morning' && period !== 'evening') || !Number.isInteger(todayBrushes) || todayBrushes < 1 || todayBrushes > 2) {
+    throw new Error('Brushing data is invalid.');
+  }
+  if (!Array.isArray(weeklyBrushesByDay) || weeklyBrushesByDay.length !== 7 || weeklyBrushesByDay.some((count) => !Number.isInteger(count) || count < 0 || count > 2)) {
+    throw new Error('Weekly brushing data is invalid.');
+  }
   await updateDoc(doc(db, 'children', childId), {
     dailyDateKey: getLocalDateKey(),
     weekKey: getLocalWeekKey(),
@@ -466,6 +496,8 @@ export const recordFirebaseBrushing = async (
 
 export const recordFirebaseGamePlay = async (childId: string, gameId: string, dailyGamePlays: Record<string, number>) => {
   if (!db) return;
+  if (childId !== auth?.currentUser?.uid) throw new Error('The child profile is invalid.');
+  validateDailyGamePlays(gameId, dailyGamePlays);
   await updateDoc(doc(db, 'children', childId), {
     dailyDateKey: getLocalDateKey(),
     dailyGamePlays,
@@ -478,6 +510,8 @@ export const recordFirebaseGamePlay = async (childId: string, gameId: string, da
 
 export const syncFirebaseChildProfile = async (childId: string, child: ChildProfile) => {
   if (!db) return;
+  if (childId !== auth?.currentUser?.uid || child.id !== childId) throw new Error('The child profile is invalid.');
+  validateChildProfileForSync(child);
   const firestore = db;
   await runTransaction(firestore, async (transaction) => {
     const childRef = doc(firestore, 'children', childId);
@@ -512,6 +546,8 @@ export const syncFirebaseChildProfile = async (childId: string, child: ChildProf
 
 export const recordFirebaseUsage = async (childId: string, elapsedSeconds: number) => {
   if (!db || elapsedSeconds <= 0) return;
+  if (childId !== auth?.currentUser?.uid) throw new Error('The child profile is invalid.');
+  validateElapsedSeconds(elapsedSeconds);
   await updateDoc(doc(db, 'children', childId), {
     totalUsageSeconds: increment(elapsedSeconds),
     lastActiveAt: serverTimestamp(),
@@ -520,8 +556,42 @@ export const recordFirebaseUsage = async (childId: string, elapsedSeconds: numbe
   });
 };
 
+export const recordFirebaseAppSession = async (childId: string) => {
+  if (!db) return;
+  if (childId !== auth?.currentUser?.uid) throw new Error('The child profile is invalid.');
+  const firestore = db;
+  const dateKey = getLocalDateKey();
+  await runTransaction(firestore, async (transaction) => {
+    const childRef = doc(firestore, 'children', childId);
+    const snapshot = await transaction.get(childRef);
+    if (!snapshot.exists()) throw new Error('The child profile could not be found.');
+    const data = snapshot.data() as Partial<ChildDocument>;
+    const firstSessionToday = data.lastUsageDateKey !== dateKey;
+    transaction.update(childRef, {
+      appSessions: (data.appSessions ?? 0) + 1,
+      daysUsed: (data.daysUsed ?? 0) + (firstSessionToday ? 1 : 0),
+      lastUsageDateKey: dateKey,
+      lastActiveAt: serverTimestamp(),
+      lastActive: 'Now',
+      updatedAt: serverTimestamp()
+    });
+  });
+};
+
+export const recordFirebaseEducationalVideoView = async (childId: string) => {
+  if (!db) return;
+  if (childId !== auth?.currentUser?.uid) throw new Error('The child profile is invalid.');
+  await updateDoc(doc(db, 'children', childId), {
+    educationalVideoViews: increment(1),
+    lastActiveAt: serverTimestamp(),
+    lastActive: 'Now',
+    updatedAt: serverTimestamp()
+  });
+};
+
 export const recordFirebaseLogin = async (childId: string) => {
   if (!db) return;
+  if (childId !== auth?.currentUser?.uid) throw new Error('The child profile is invalid.');
   await updateDoc(doc(db, 'children', childId), {
     loginCount: increment(1),
     lastActiveAt: serverTimestamp(),
@@ -532,6 +602,7 @@ export const recordFirebaseLogin = async (childId: string) => {
 
 export const recordFirebaseActivityCompletion = async (childId: string) => {
   if (!db) return;
+  if (childId !== auth?.currentUser?.uid) throw new Error('The child profile is invalid.');
   await updateDoc(doc(db, 'children', childId), {
     activitiesCompleted: increment(1),
     lastActivityCompletedAt: serverTimestamp(),
@@ -543,6 +614,7 @@ export const recordFirebaseActivityCompletion = async (childId: string) => {
 
 export const recordFirebaseReminderFollowed = async (childId: string, period: 'morning' | 'evening') => {
   if (!db) return;
+  if (childId !== auth?.currentUser?.uid || (period !== 'morning' && period !== 'evening')) throw new Error('Reminder data is invalid.');
   await updateDoc(doc(db, 'children', childId), {
     remindersFollowed: increment(1),
     lastReminderPeriod: period,

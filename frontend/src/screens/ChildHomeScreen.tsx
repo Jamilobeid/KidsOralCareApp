@@ -7,6 +7,7 @@ import { toothBuddies } from '../data/toothBuddies';
 import { RootScreen } from '../types/app';
 import { bodyFont, headingFont } from '../utils/kidStyle';
 import { getLevelProgress } from '../utils/levels';
+import { getDisplayUsername } from '../utils/displayUsername';
 
 const brushTimerImage = require('../../assets/images/home-brush-timer.png');
 const starImage = require('../../assets/images/home-smile-stars.png');
@@ -15,7 +16,7 @@ const targetImage = require('../../assets/images/custom-home-target.png');
 const smallStarImage = require('../../assets/images/custom-home-star-new.png');
 const navTiles: { labelKey: string; target: RootScreen; image: ImageSourcePropType }[] = [
   { labelKey: 'games', target: 'games', image: require('../../assets/images/custom-home-games.png') },
-  { labelKey: 'brushing', target: 'brushing', image: require('../../assets/images/custom-home-brush-tile.png') },
+  { labelKey: 'learnZone', target: 'learn', image: require('../../assets/images/custom-home-learn-zone.png') },
   { labelKey: 'leaderboard', target: 'leaderboard', image: require('../../assets/images/custom-home-leaderboard.png') },
   { labelKey: 'personalization', target: 'personalization', image: require('../../assets/images/custom-home-personalization.png') }
 ];
@@ -47,7 +48,7 @@ export const ChildHomeScreen = () => {
                 <View style={styles.levelBadge}><Text style={[headingFont, styles.levelBadgeText]}>{t('levelShort')} {level}</Text></View>
               </View>
               <View style={styles.levelCopy}>
-                <Text style={[headingFont, styles.buddyName]}>{child.nickname}</Text>
+                <Text style={[headingFont, styles.buddyName]}>{getDisplayUsername(child.nickname)}</Text>
                 <View style={styles.levelTrack}>
                   <View style={[styles.levelFill, { width: `${levelProgress * 100}%` }]} />
                 </View>

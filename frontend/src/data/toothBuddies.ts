@@ -29,5 +29,13 @@ export const toothBuddies: ToothBuddy[] = [
   { id: 'Floss Flash', title: 'Floss Flash', subtitle: 'The super-fast flossing hero', image: require('../../assets/images/rewards-buddy-floss-flash.png'), requiredLevel: 1, tone: '#EAFBE4', achievementId: 'clean-my-smile-90', unlockDescription: 'Complete Clean My Smile in 1 minute 30 seconds or less' }
 ];
 
+export const toothBuddySubtitleKeys: Record<string, string> = {
+  Toothy: 'buddyToothySubtitle', 'Tooth Fairy': 'buddyFairySubtitle', 'Super Tooth': 'buddySuperSubtitle', 'Dr Smile': 'buddyDoctorSubtitle', Brushy: 'buddyBrushySubtitle', Minty: 'buddyMintySubtitle', Bubbles: 'buddyBubblesSubtitle', Sparky: 'buddySparkySubtitle', Flossy: 'buddyFlossySubtitle', 'Captain Enamel': 'buddyCaptainSubtitle', 'Luna Smile': 'buddyLunaSubtitle', 'Professor Pearl': 'buddyProfessorSubtitle', 'King Sparkle': 'buddyKingSubtitle', Zoomy: 'buddyZoomySubtitle', 'Floss Flash': 'buddyFlossFlashSubtitle'
+};
+
+export const toothBuddyUnlockKeys: Record<string, string> = {
+  Zoomy: 'buddyZoomyUnlock', 'Floss Flash': 'buddyFlossFlashUnlock'
+};
+
 export const isToothBuddyUnlocked = (buddy: ToothBuddy, level: number, unlockedCharacters: string[] = []) =>
   buddy.achievementId ? unlockedCharacters.includes(buddy.id) : level >= buddy.requiredLevel;

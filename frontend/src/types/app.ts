@@ -69,6 +69,10 @@ export type AdminUserSummary = {
   todayBrushes: number;
   weeklyBrushes: number;
   totalBrushes: number;
+  appSessions: number;
+  daysUsed: number;
+  totalPointsEarned: number;
+  educationalVideoViews: number;
   timeSpentMinutes: number;
   gamesPlayed: number;
   rewardsEarned: number;

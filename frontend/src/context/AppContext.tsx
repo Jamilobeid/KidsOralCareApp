@@ -6,7 +6,7 @@ import { AppState } from 'react-native';
 import { avatarOptions, challenges as initialChallenges, childProfile as demoChild, demoAdminUsers, games } from '../data/demoData';
 import { themes } from '../data/themes';
 import { applyTextDirection, getInitialLanguage, translate } from '../i18n/translations';
-import { canUseFirebase, checkCurrentUserEmailVerification, createFirebaseChildProfile, createFirebaseParentRegistration, ensureFirebaseLeaderboardEntry, fetchFirebaseAdminUsers, fetchFirebaseLeaderboard, getFirebaseParentalConsentStatus, getFirebaseUserProfile, getFirebaseUserRole, getPublicNicknameIssue, normalizeFirebaseChildCalendar, recordFirebaseBrushing, recordFirebaseGamePlay, requestFirebaseAccountDeletion, requestFirebasePasswordReset, sendCurrentUserVerificationEmail, signInFirebaseUser, signOutFirebaseUser, recordFirebaseParentalConsent, syncFirebaseChildProfile, recordFirebaseUsage, recordFirebaseLogin, recordFirebaseActivityCompletion, recordFirebaseReminderFollowed, withdrawFirebaseLeaderboardParticipation } from '../services/firebaseData';
+import { canUseFirebase, checkCurrentUserEmailVerification, createFirebaseChildProfile, createFirebaseParentRegistration, ensureFirebaseLeaderboardEntry, fetchFirebaseAdminUsers, fetchFirebaseLeaderboard, getFirebaseParentalConsentStatus, getFirebaseUserProfile, getFirebaseUserRole, getPublicNicknameIssue, normalizeFirebaseChildCalendar, recordFirebaseAppSession, recordFirebaseBrushing, recordFirebaseEducationalVideoView, recordFirebaseGamePlay, requestFirebaseAccountDeletion, requestFirebasePasswordReset, sendCurrentUserVerificationEmail, signInFirebaseUser, signOutFirebaseUser, recordFirebaseParentalConsent, syncFirebaseChildProfile, recordFirebaseUsage, recordFirebaseLogin, recordFirebaseActivityCompletion, recordFirebaseReminderFollowed, withdrawFirebaseLeaderboardParticipation } from '../services/firebaseData';
 import { cancelBrushingReminders, requestReminderPermission, scheduleDailyReminder, scheduleTestReminder } from '../services/reminders';
 import { auth } from '../services/firebase';
 import { AdminUserSummary, AuthMode, ChildProfile, Challenge, LanguageCode, LeaderboardEntry, ReminderSettings, RootScreen, ThemeName, UserRole } from '../types/app';
@@ -27,6 +27,7 @@ applyTextDirection(initialLanguage);
 const LEGACY_REMEMBERED_PARENT_EMAIL_KEY = 'kidsOralCare:rememberedChild';
 const PREFERRED_LANGUAGE_KEY = 'eSmile:preferredLanguage';
 const BACKGROUND_MUSIC_ENABLED_KEY = 'eSmile:backgroundMusicEnabled';
+const BRUSHING_SIGN_LANGUAGE_VIDEOS_ENABLED_KEY = 'eSmile:brushingSignLanguageVideosEnabled';
 const CHARACTER_LEVEL_REQUIREMENTS: Record<string, number> = {
   Toothy: 1,
   'Tooth Fairy': 2,
@@ -108,10 +109,13 @@ type AppContextValue = {
   sendTestReminder: () => Promise<void>;
   backgroundMusicEnabled: boolean;
   setBackgroundMusicEnabled: (enabled: boolean) => void;
+  brushingSignLanguageVideosEnabled: boolean;
+  setBrushingSignLanguageVideosEnabled: (enabled: boolean) => void;
   brushingCountToday: number;
   brushedPeriodsToday: BrushingPeriod[];
   openedReminderPeriod: BrushingPeriod | null;
   completeBrushing: (startedAt?: Date) => boolean;
+  recordEducationalVideoView: () => void;
   gamePlays: Record<string, number>;
   recordGamePlay: (gameId: string) => boolean;
   awardGame: (gameId: string, pointsOverride?: number, result?: { score?: number; durationSeconds?: number }) => void;
@@ -139,7 +143,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [role, setRole] = useState<UserRole>('user');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [firebaseAdminUsers, setFirebaseAdminUsers] = useState<AdminUserSummary[]>([]);
-  const [adminUsersStatus, setAdminUsersStatus] = useState('Not loaded yet.');
+  const [adminUsersStatus, setAdminUsersStatus] = useState(() => translate(initialLanguage, 'adminNotLoaded'));
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [verificationPending, setVerificationPending] = useState(false);
   const [verificationEmailMasked, setVerificationEmailMasked] = useState('');
@@ -147,6 +151,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [childSetupPending, setChildSetupPending] = useState(false);
   const [reminders, setReminders] = useState<ReminderSettings>({ morning: '07:30', evening: '19:30' });
   const [backgroundMusicEnabled, setBackgroundMusicEnabledState] = useState(true);
+  const [brushingSignLanguageVideosEnabled, setBrushingSignLanguageVideosEnabledState] = useState(true);
   const [backgroundMusicPreferenceLoaded, setBackgroundMusicPreferenceLoaded] = useState(false);
   const [brushingCountToday, setBrushingCountToday] = useState(0);
   const [brushedPeriodsToday, setBrushedPeriodsToday] = useState<BrushingPeriod[]>([]);
@@ -163,6 +168,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const queueWriteRef = React.useRef<Promise<void>>(Promise.resolve());
 
   const usageStartedAtRef = React.useRef<number | null>(null);
+  const appSessionRecordedRef = React.useRef(false);
   const dailyDateKeyRef = React.useRef(getLocalDateKey());
   const weekKeyRef = React.useRef(getLocalWeekKey());
   const brushedPeriodsTodayRef = React.useRef<BrushingPeriod[]>([]);
@@ -187,6 +193,16 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   React.useEffect(() => {
+    let active = true;
+    void AsyncStorage.getItem(BRUSHING_SIGN_LANGUAGE_VIDEOS_ENABLED_KEY)
+      .then((savedValue) => {
+        if (active) setBrushingSignLanguageVideosEnabledState(savedValue !== 'false');
+      })
+      .catch((error) => console.warn('Could not restore the brushing sign-language video preference:', error));
+    return () => { active = false; };
+  }, []);
+
+  React.useEffect(() => {
     if (!backgroundMusicPreferenceLoaded) return;
     void setBackgroundMusicPlayback(backgroundMusicEnabled);
   }, [backgroundMusicEnabled, backgroundMusicPreferenceLoaded]);
@@ -195,6 +211,12 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     setBackgroundMusicEnabledState(enabled);
     void AsyncStorage.setItem(BACKGROUND_MUSIC_ENABLED_KEY, String(enabled))
       .catch((error) => console.warn('Could not save the background music preference:', error));
+  };
+
+  const setBrushingSignLanguageVideosEnabled = (enabled: boolean) => {
+    setBrushingSignLanguageVideosEnabledState(enabled);
+    void AsyncStorage.setItem(BRUSHING_SIGN_LANGUAGE_VIDEOS_ENABLED_KEY, String(enabled))
+      .catch((error) => console.warn('Could not save the brushing sign-language video preference:', error));
   };
 
   const showRewardMessage = async (title: string, message: string) => {
@@ -384,10 +406,17 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   React.useEffect(() => {
     if (!currentUserId || role !== 'user' || !canUseFirebase) {
       usageStartedAtRef.current = null;
+      appSessionRecordedRef.current = false;
       return;
     }
 
     usageStartedAtRef.current = Date.now();
+    if (!appSessionRecordedRef.current) {
+      appSessionRecordedRef.current = true;
+      void recordFirebaseAppSession(currentUserId).catch((error) => {
+        console.warn('Could not record the app session:', error);
+      });
+    }
 
     const flushUsage = () => {
       const startedAt = usageStartedAtRef.current;
@@ -413,6 +442,9 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         if (nextState === 'active') {
           resetCalendarStateIfNeeded();
           usageStartedAtRef.current = Date.now();
+          void recordFirebaseAppSession(currentUserId).catch((error) => {
+            console.warn('Could not record the app session:', error);
+          });
         } else {
           flushUsage();
           usageStartedAtRef.current = null;
@@ -612,11 +644,11 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         }
 
         if (nextRole === 'admin') {
-          setAdminUsersStatus('Loading users from Firebase...');
+          setAdminUsersStatus(t('adminLoadingUsers'));
           const users = await fetchFirebaseAdminUsers();
           if (!active) return;
           setFirebaseAdminUsers(users);
-          setAdminUsersStatus(`Loaded ${users.length} user${users.length === 1 ? '' : 's'} from Firebase.`);
+          setAdminUsersStatus(t('adminUsersLoaded').replace('{{count}}', `${users.length}`));
         }
       } catch (error) {
         console.warn('Could not restore the secure sign-in session:', getFriendlyFirebaseError(error, 'Please sign in again.'));
@@ -688,10 +720,10 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
           });
         }
         if (nextRole === 'admin') {
-          setAdminUsersStatus('Loading users from Firebase...');
+          setAdminUsersStatus(t('adminLoadingUsers'));
           const users = await fetchFirebaseAdminUsers();
           setFirebaseAdminUsers(users);
-          setAdminUsersStatus(`Loaded ${users.length} user${users.length === 1 ? '' : 's'} from Firebase.`);
+          setAdminUsersStatus(t('adminUsersLoaded').replace('{{count}}', `${users.length}`));
         }
         return;
       } catch (error) {
@@ -850,7 +882,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     setLeaderboard([]);
     setLeaderboardStatus('idle');
     setLeaderboardParticipating(false);
-    setAdminUsersStatus('Not loaded yet.');
+    setAdminUsersStatus(t('adminNotLoaded'));
     setVerificationPending(false);
     setVerificationEmailMasked('');
     setConsentPending(false);
@@ -896,7 +928,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       setLeaderboard([]);
       setLeaderboardStatus('idle');
       setLeaderboardParticipating(false);
-      setAdminUsersStatus('Not loaded yet.');
+      setAdminUsersStatus(t('adminNotLoaded'));
       setVerificationPending(false);
       setVerificationEmailMasked('');
       setAuthMode('login');
@@ -912,15 +944,21 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const refreshAdminUsers = async () => {
     if (!canUseFirebase || role !== 'admin') return;
     try {
-      setAdminUsersStatus('Loading users from Firebase...');
+      setAdminUsersStatus(t('adminLoadingUsers'));
       const users = await fetchFirebaseAdminUsers();
       setFirebaseAdminUsers(users);
-      setAdminUsersStatus(users.length ? `Loaded ${users.length} user${users.length === 1 ? '' : 's'} from Firebase.` : 'Firebase loaded successfully, but found 0 child users.');
+      setAdminUsersStatus(users.length ? t('adminUsersLoaded').replace('{{count}}', `${users.length}`) : t('adminNoChildUsers'));
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Could not load users from Firebase.';
-      setAdminUsersStatus(`Firebase read failed: ${message}`);
+      setAdminUsersStatus(t('adminReadFailed'));
       Alert.alert(t('refreshFailed'), getFriendlyFirebaseError(error, t('loadUsersFailed')));
     }
+  };
+
+  const recordEducationalVideoView = () => {
+    if (!currentUserId || role !== 'user' || !canUseFirebase) return;
+    void recordFirebaseEducationalVideoView(currentUserId).catch((error) => {
+      console.warn('Could not record the educational video view:', error);
+    });
   };
 
   const completeBrushing = (startedAt = new Date()) => {
@@ -1174,14 +1212,22 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     const currentWeeklyBrushes = child.weeklyBrushes.reduce((total, brushes) => total + brushes, 0);
 
     return demoAdminUsers.map((user) => {
-      if (user.id !== child.id) return user;
-      return {
+      const baseUser = {
         ...user,
+        appSessions: 0,
+        daysUsed: 0,
+        totalPointsEarned: 0,
+        educationalVideoViews: 0
+      };
+      if (user.id !== child.id) return baseUser;
+      return {
+        ...baseUser,
         nickname: child.nickname,
         age: child.age,
         todayBrushes: brushingCountToday,
         weeklyBrushes: currentWeeklyBrushes,
         totalBrushes: child.totalBrushes,
+        totalPointsEarned: child.points,
         gamesPlayed: Math.max(user.gamesPlayed, currentUserGames),
         activitiesCompleted: user.activitiesCompleted ?? 0,
         remindersFollowed: user.remindersFollowed ?? 0,
@@ -1196,8 +1242,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const adminUsers = canUseFirebase && role === 'admin' ? firebaseAdminUsers : demoDashboardUsers;
 
   const value = useMemo<AppContextValue>(() => ({
-    screen, setScreen, language, setLanguage, t, isRtl, child, username, role, isAdmin: role === 'admin', adminUsers, adminUsersStatus, isFirebaseReady: canUseFirebase, isOnline, pendingSyncCount, refreshAdminUsers, authMode, setAuthMode, signInChild, registerParent, verificationPending, verificationEmailMasked, consentPending, childSetupPending, checkParentEmailVerification, submitParentalConsent, completeChildSetup, resendVerificationEmail, cancelVerification, requestPasswordReset, signOutAccount, deleteAccountAndData, theme: themes[child.theme], reminders, setReminders, saveReminders, sendTestReminder, backgroundMusicEnabled, setBackgroundMusicEnabled, brushingCountToday, brushedPeriodsToday, openedReminderPeriod, completeBrushing, gamePlays, recordGamePlay, awardGame, challenges, updateAvatar, updateTheme, chooseCharacter, unlockCharacter, games, leaderboard, leaderboardStatus, leaderboardParticipating, refreshLeaderboard, leaveLeaderboard, avatarOptions
-  }), [screen, language, child, username, role, adminUsers, authMode, verificationPending, verificationEmailMasked, consentPending, childSetupPending, reminders, backgroundMusicEnabled, brushingCountToday, gamePlays, challenges, brushedPeriodsToday, openedReminderPeriod, leaderboard, leaderboardStatus, leaderboardParticipating, isOnline, pendingSyncCount]);
+    screen, setScreen, language, setLanguage, t, isRtl, child, username, role, isAdmin: role === 'admin', adminUsers, adminUsersStatus, isFirebaseReady: canUseFirebase, isOnline, pendingSyncCount, refreshAdminUsers, authMode, setAuthMode, signInChild, registerParent, verificationPending, verificationEmailMasked, consentPending, childSetupPending, checkParentEmailVerification, submitParentalConsent, completeChildSetup, resendVerificationEmail, cancelVerification, requestPasswordReset, signOutAccount, deleteAccountAndData, theme: themes[child.theme], reminders, setReminders, saveReminders, sendTestReminder, backgroundMusicEnabled, setBackgroundMusicEnabled, brushingSignLanguageVideosEnabled, setBrushingSignLanguageVideosEnabled, brushingCountToday, brushedPeriodsToday, openedReminderPeriod, completeBrushing, recordEducationalVideoView, gamePlays, recordGamePlay, awardGame, challenges, updateAvatar, updateTheme, chooseCharacter, unlockCharacter, games, leaderboard, leaderboardStatus, leaderboardParticipating, refreshLeaderboard, leaveLeaderboard, avatarOptions
+  }), [screen, language, child, username, role, adminUsers, authMode, verificationPending, verificationEmailMasked, consentPending, childSetupPending, reminders, backgroundMusicEnabled, brushingSignLanguageVideosEnabled, brushingCountToday, gamePlays, challenges, brushedPeriodsToday, openedReminderPeriod, leaderboard, leaderboardStatus, leaderboardParticipating, isOnline, pendingSyncCount]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
